@@ -64,14 +64,20 @@ stock void SendColorMessage( int target, int author, const char[] szMsg )
 stock void ShowKeyHintText( int client, int target )
 {
 	if ( TF2_GetPlayerClass(client) != TFClass_DemoMan && TF2_GetPlayerClass(client) != TFClass_Soldier && GetClientTeam( client ) != TFTeam_Spectator ) return;
-	/*static clients[2];
-	
-	clients[0] = client;
-	Handle hMsg = StartMessageEx( g_UsrMsg_HudMsg, clients, 1 );*/
-	char szSpectators[100] = "";
-	char szName[15] = "";
+
+	static char szTime[TIME_SIZE_DEF],
+					szBestTime[TIME_SIZE_DEF],
+					szText[200],
+					szInterval[TIME_SIZE_DEF],
+					szTxt[TIME_SIZE_DEF],
+					tempuswr[TIME_SIZE_DEF],
+					szSpectators[200] = "",
+					szSpecCount[10],
+					WorldRecord[100];
+
 	int Spec_Count = 0;
-	for (int i = 1; i < MaxClients; i++){
+	for (int i = 1; i < MaxClients; i++)
+	{
 		if (!IsClientInGame(i) || !IsClientObserver(i))
 				continue;
 				
@@ -88,11 +94,8 @@ stock void ShowKeyHintText( int client, int target )
 		if (iTarget == target)
 		{
 			Spec_Count++;
-			GetClientName(i, szName, sizeof(szName));
 			if (Spec_Count <= 5)
-				Format(szSpectators, sizeof(szSpectators), "%s\n%s", szSpectators, szName);
-			else
-				Format(szSpectators, sizeof(szSpectators), "%s\n(+%i)", szSpectators, Spec_Count - 5);
+				FormatEx(szSpectators, sizeof(szSpectators), "%s\n%N", szSpectators, i);
 		}
 	}
 	
@@ -100,118 +103,105 @@ stock void ShowKeyHintText( int client, int target )
 	
 	if ( hMsg != null )
 	{
-		static char szTime[TIME_SIZE_DEF];
-		static char szBestTime[TIME_SIZE_DEF];
-		static char szText[200];
-		static bool bDesi;
-		static char wr[32];
-		static char szInterval[TIME_SIZE_DEF];
-		static char szTxt[TIME_SIZE_DEF];
-		static char tempuswr[TIME_SIZE_DEF], tempuspr[TIME_SIZE_DEF];
-		static int run;
-		static int style;
-		static int mode;
-		run = g_iClientRun[target];
-		style = g_iClientStyle[target];
-		mode = g_iClientMode[target];
+		int run = g_iClientRun[target];
+		int style = g_iClientStyle[target];
+		int mode = g_iClientMode[target];
+		int timeleft;
+		GetMapTimeLeft(timeleft);
+
+		char remaining[100],
+				tempus_info[100];
+				//tempus_info_pr[100];
+
 		FormatSeconds( g_TempusWrTime[run][mode], tempuswr, FORMAT_3DECI );
-		FormatSeconds( g_TempusPrTime[target][run][mode], tempuspr, FORMAT_3DECI );
-		float interval;
-		interval = g_flClientBestTime[target][run][mode] - g_flMapBestTime[run][style][mode];
-		static int time;
-		GetMapTimeLeft(time);
-		char times[100];
-		char tempus_info[100], tempus_info_pr[100];
+		//FormatSeconds( g_TempusPrTime[target][run][mode], tempuspr, FORMAT_3DECI );
+		
 		FormatEx(tempus_info, sizeof(tempus_info), " \nTempus WR:\n%s (%s)\n", 
 			(g_TempusWrTime[run][mode] == TIME_INVALID) ? "None" : tempuswr,
 			(g_TempusWrTime[run][mode] == TIME_INVALID) ? "" : sz_TempusWrName[run][mode]);
 
-		FormatEx(tempus_info_pr, sizeof(tempus_info_pr), "\nTempus PR:\n%s\n", 
-			(g_TempusPrTime[target][run][mode] == TIME_INVALID) ? "None" : tempuspr);
+		/*FormatEx(tempus_info_pr, sizeof(tempus_info_pr), "\nTempus PR:\n%s\n", 
+			(g_TempusPrTime[target][run][mode] == TIME_INVALID) ? "None" : tempuspr);*/
 
-		if ( time > 60 )
+		if ( timeleft > 60 )
 		{
-			int tims = time / 60;
-			FormatEx(times, sizeof(times), "%i minutes remaining", tims);
+			int mins = timeleft / 60;
+			FormatEx(remaining, sizeof(remaining), "%i minutes remaining", mins);
 		}
-		else if (time >= 30)
+		else if (timeleft >= 30)
 		{
-			FormatEx(times, sizeof(times), "> 30 sec remaining");
+			FormatEx(remaining, sizeof(remaining), "> 30 sec remaining");
 		}
-		else if (time < 30 && time > 10)
+		else if (timeleft < 30 && timeleft > 10)
 		{
-			FormatEx(times, sizeof(times), "< 30 sec remaining");
+			FormatEx(remaining, sizeof(remaining), "< 30 sec remaining");
 		}
-		else if(time < 10 && time > 0)
+		else if(timeleft < 10 && timeleft > 0)
 		{
-			FormatEx(times, sizeof(times), "%i sec remaining", time);
+			FormatEx(remaining, sizeof(remaining), "%i sec remaining", timeleft);
 		}
-		else if (time <= 0)
+		else if (timeleft <= 0)
 		{
-			FormatEx(times, sizeof(times), "Map ending...");
+			FormatEx(remaining, sizeof(remaining), "Map ending...");
 		}
-		if ( !IsFakeClient( target ) || IsFakeClient( target ) )
-		{
 
-		  if ( g_flClientBestTime[target][run][mode] != TIME_INVALID )
-			{
-				FormatSeconds( g_flClientBestTime[target][run][mode], szTime, FORMAT_3DECI );
-			}
-			else
-			{
-				FormatEx( szTime, sizeof( szTime ), "None" );
-			}
+		if ( g_flClientBestTime[target][run][mode] != TIME_INVALID )
+		{
+			FormatSeconds( g_flClientBestTime[target][run][mode], szTime, FORMAT_3DECI );
+		}
+		else
+		{
+			FormatEx( szTime, sizeof( szTime ), "None" );
+		}
 			
-			if ( g_flMapBestTime[run][style][mode] != TIME_INVALID )
-			{
-				FormatEx( wr, sizeof( wr ), "(%s)", szWrName[run][mode] );
-				FormatSeconds( g_flMapBestTime[run][style][mode], szBestTime, FORMAT_3DECI );
-			
-			}
-			else
-			{
-				FormatEx( wr, sizeof( wr ), "" );
-				FormatEx( szBestTime, sizeof( szBestTime ), "None" );
-				
-			}
+		if ( g_flMapBestTime[run][style][mode] != TIME_INVALID )
+		{
+			FormatSeconds( g_flMapBestTime[run][style][mode], szBestTime, FORMAT_3DECI );
+			FormatEx( WorldRecord, sizeof( WorldRecord ), "%s (%s)", szBestTime, szWrName[run][mode] );
+		}
+		else
+		{
+			FormatEx( WorldRecord, sizeof( WorldRecord ), "None" );
+		}
 
-			if ( g_flClientBestTime[target][run][mode] <= g_flMapBestTime[run][style][mode] || g_flClientBestTime[target][run][mode] <= TIME_INVALID)
-			{
-				FormatEx( szTxt, sizeof( szTxt ), "");
-			}
-			else if ( g_flClientBestTime[target][run][mode] > g_flMapBestTime[run][style][mode] || g_flClientBestTime[target][run][mode] > TIME_INVALID)
-			{
-				FormatSeconds( interval, szInterval, FORMAT_3DECI );
-				FormatEx( szTxt, sizeof( szTxt ), "(+%s)", szInterval );
-			}
-	
+		if ( g_flClientBestTime[target][run][mode] <= g_flMapBestTime[run][style][mode] || g_flClientBestTime[target][run][mode] <= TIME_INVALID)
+		{
+			FormatEx( szTxt, sizeof( szTxt ), "");
+		}
+		else if ( g_flClientBestTime[target][run][mode] > g_flMapBestTime[run][style][mode])
+		{
+			float interval = g_flClientBestTime[target][run][mode] - g_flMapBestTime[run][style][mode];
 			
+			FormatSeconds( interval, szInterval, FORMAT_3DECI );
+			FormatEx( szTxt, sizeof( szTxt ), "(+%s)", szInterval );
+		}
+
+		if ( !g_bClientPractising[target] || run != RUN_SETSTART )
+		{
 			static char szStylePostFix[STYLEPOSTFIX_LENGTH];
 			GetStylePostfix( g_iClientMode[target], szStylePostFix );
 			
-			FormatEx( szText, sizeof( szText ), "%s\n\n::%s%s::\n\nPersonal Record:\n%s %s\n\nWorld Record:\n%s %s\n%s",
-					times,
-					g_szStyleName[NAME_LONG][style],
-					szStylePostFix,
+			FormatEx( szText, sizeof( szText ), "%s\n\n::%s%s::\n\nPersonal Record:\n%s %s\n\nWorld Record:\n%s\n%s",
+					remaining,
+					g_szStyleName[NAME_LONG][style], szStylePostFix,
 					szTime,
 					szTxt,
-					szBestTime,
-					wr,
+					WorldRecord,
 					(!(g_fClientHideFlags[client] & HIDEHUD_TEMPUSWR)) ? tempus_info : ""/*,
 					(!(g_fClientHideFlags[client] & HIDEHUD_TEMPUSPR)) ? tempus_info_pr : ""*/
 					);
-
-			if ( g_bClientPractising[target] || run == RUN_SETSTART )
-			{
-					FormatEx( szText, sizeof( szText ), "%s\n\n", times);
-			}
-	
+		}
+		else
+		{
+			FormatEx( szText, sizeof( szText ), "%s\n\n", remaining);
 		}
 		
+		FormatEx(szSpecCount, sizeof(szSpecCount), "(+%i)", Spec_Count-5);
+
 		if (!(g_fClientHideFlags[client] & HIDEHUD_SPECTYPE))
 			Format(szText, sizeof(szText), "%s\nSpectators: %i", szText, Spec_Count);
 		else
-			Format(szText, sizeof(szText), "%s\nSpectator list:%s", szText, szSpectators);
+			Format(szText, sizeof(szText), "%s\nSpectator list:%s\n%s", szText, szSpectators, ((Spec_Count-5) > 0) ? szSpecCount : "");
 		
 		BfWriteByte( hMsg, 1 );
 		BfWriteString( hMsg, szText );

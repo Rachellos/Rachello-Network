@@ -177,6 +177,9 @@ stock void DB_InitializeDatabase()
 		  `ang2` double NOT NULL
 		)");
 		*/
+
+	//Trying fix mysql closing connection
+	CreateTimer( 30.0, Timer_EmptyQuery, 0, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
 }
 
 // Get map zones, mimics and vote-able maps
@@ -299,8 +302,8 @@ stock void DB_Profile( int client, int args, int how, char[] Name, int id, int m
 
 	g_hDatabase.Format( szQuery, sizeof( szQuery ),  "(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid)), \
 		(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid) and mode = %i), \
-		(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid) AND rank = 1 and mode = %i), \
-		(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid) AND rank > 1 AND rank < 11 and mode = %i), \
+		(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid) AND `rank` = 1 and mode = %i), \
+		(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid) AND `rank` > 1 AND `rank` < 11 and mode = %i), \
 		(SELECT COUNT(overall) FROM plydata WHERE overall > 0.1), \
 		(SELECT COUNT(%s) FROM plydata WHERE %s > 0.1), \
 		(SELECT COUNT(map) FROM maprecs WHERE uid = (@dbuid) AND mode = %i and run = 0), \
@@ -490,6 +493,10 @@ public void OnProfileTxnError(Database g_hDatabase, any client, int numQueries, 
 	{
 		CPrintToChat(client, CHAT_PREFIX..."Player not found");
 	}
+	if (!StrEqual(error, ""))
+	{
+		PrintToServer(error);
+	}
 	return;
 }
 stock void DB_RecordInfo( int client, int id )
@@ -499,7 +506,7 @@ stock void DB_RecordInfo( int client, int id )
 	
 	static char szQuery[512];
 	hPanel.Send( client, Handler_Empty, MENU_TIME_FOREVER );
-	FormatEx( szQuery, sizeof( szQuery ),  "SELECT uid, map, run, style, mode, time, pts, date, name, recordid, rank, allranks, server_id FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE recordid = %i", id );	
+	FormatEx( szQuery, sizeof( szQuery ),  "SELECT uid, map, run, style, mode, time, pts, date, name, recordid, `rank`, allranks, server_id FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE recordid = %i", id );	
 	
 	g_hDatabase.Query( Threaded_RecordInfo, szQuery, client, DBPrio_Normal );
 	delete hPanel;
@@ -980,14 +987,13 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 		// Update their best time.
 		if ( szOldTimePts[client][run][mode] <= TIME_INVALID )
 		{
-			FormatEx( szQuery, sizeof( szQuery ), "INSERT INTO "...TABLE_RECORDS..." ( map, uid, run, style, mode, time, date, demourl, start_tick, end_tick, server_id, demo_status) VALUES ('%s', %i, %i, %i, %i, %.16f, '%s', '%s', %i, %i, %i, %i)",
+			FormatEx( szQuery, sizeof( szQuery ), "INSERT INTO "...TABLE_RECORDS..." ( map, uid, run, style, mode, time, date, demourl, start_tick, end_tick, server_id, demo_status) VALUES ('%s', %i, %i, %i, %i, %.16f, CURRENT_TIMESTAMP, '%s', %i, %i, %i, %i)",
 			g_szCurrentMap,
 			g_iClientId[client],
 			run,
 			style,
 			mode,
 			flNewTime,
-			sTime,
 			DemoUrl,
 			(run != RUN_MAIN && run != RUN_BONUS1 && run != RUN_BONUS2 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS5 && run != RUN_BONUS6 && run != RUN_BONUS7 && run != RUN_BONUS8 && run != RUN_BONUS9 && run != RUN_BONUS10 ) ? (g_flTicks_Cource_Start[client] - 67) : (g_flTicks_Start[client] - 67),
 			(run != RUN_MAIN && run != RUN_BONUS1 && run != RUN_BONUS2 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS5 && run != RUN_BONUS6 && run != RUN_BONUS7 && run != RUN_BONUS8 && run != RUN_BONUS9 && run != RUN_BONUS10 ) ? (g_flTicks_Cource_End[client] - 67) : (g_flTicks_End[client] - 67),
@@ -998,9 +1004,8 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 		}
 		else
 		{
-			FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_RECORDS..." SET time = %.16f, date = '%s', demourl = '%s', start_tick = %i, end_tick = %i, server_id = %i, demo_status = %i WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i",
+			FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_RECORDS..." SET time = %.16f, date = CURRENT_TIMESTAMP, demourl = '%s', start_tick = %i, end_tick = %i, server_id = %i, demo_status = %i WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i",
 			flNewTime,
-			sTime,
 			DemoUrl,
 			(run != RUN_MAIN && run != RUN_BONUS1 && run != RUN_BONUS2 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS5 && run != RUN_BONUS6 && run != RUN_BONUS7 && run != RUN_BONUS8 && run != RUN_BONUS9 && run != RUN_BONUS10 ) ? (g_flTicks_Cource_Start[client] - 67) : (g_flTicks_Start[client] - 67),
 			(run != RUN_MAIN && run != RUN_BONUS1 && run != RUN_BONUS2 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS5 && run != RUN_BONUS6 && run != RUN_BONUS7 && run != RUN_BONUS8 && run != RUN_BONUS9 && run != RUN_BONUS10 ) ? (g_flTicks_Cource_End[client] - 67) : (g_flTicks_End[client] - 67),
@@ -1141,14 +1146,13 @@ stock void DB_RetrieveClientData( int client )
 
 stock void DB_SaveMapZone( int zone, float vecMins[3], float vecMaxs[3], int id = 0, int run = 0, int client = 0 )
 {
-	char szQuery[500], sTime[32];
-	FormatTime(sTime, sizeof(sTime), "%Y-%m-%d %H:%M:%S", GetTime() - 1845 ); 
+	char szQuery[500];
 	if ( zone == ZONE_CP )
 	{
-		g_hDatabase.Format( szQuery, sizeof( szQuery ), "INSERT INTO "...TABLE_CP..." VALUES ('%s', %i,  %i, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %i, '%s')",
+		g_hDatabase.Format( szQuery, sizeof( szQuery ), "INSERT INTO "...TABLE_CP..." VALUES ('%s', %i,  %i, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %i, CURRENT_DATE)",
 		g_szCurrentMap, id, 0,
 		vecMins[0], vecMins[1], vecMins[2],
-		vecMaxs[0], vecMaxs[1], vecMaxs[2], g_iClientId[client], sTime);
+		vecMaxs[0], vecMaxs[1], vecMaxs[2], g_iClientId[client]);
 	}
 	else
 	{
@@ -1162,11 +1166,11 @@ stock void DB_SaveMapZone( int zone, float vecMins[3], float vecMaxs[3], int id 
 				}
 			}
 
-			g_hDatabase.Format( szQuery, sizeof( szQuery ), "INSERT INTO "...TABLE_ZONES..." VALUES ('%s', %i, %i, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %i, %i, '%s')",
+			g_hDatabase.Format( szQuery, sizeof( szQuery ), "INSERT INTO "...TABLE_ZONES..." VALUES ('%s', %i, %i, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %i, %i, CURRENT_DATE)",
 			g_szCurrentMap, zone, id,
 			vecMins[0], vecMins[1], vecMins[2],
 			vecMaxs[0], vecMaxs[1], vecMaxs[2],
-			num, g_iClientId[client], sTime );
+			num, g_iClientId[client] );
 
 		if (zone < NUM_REALZONES)
 			g_bZoneExists[zone][num] = true;
