@@ -1243,6 +1243,149 @@ public int RecentRecords_Runs_Handler( Menu mMenu, MenuAction action, int client
 	return 0;
 }
 
+public Action Command_Ranks(int client, int args)
+{
+	menu_page[client] = 0;
+	Menu mMenu = new Menu(Menu_Ranks_Callback);
+	Ranks_list(client, mMenu, menu_page[client]);
+    return Plugin_Handled;
+}
+
+public void Ranks_list(int client, Menu mMenu, int page)
+{
+    mMenu.SetTitle("<Chat Ranks>\n ");
+    mMenu.RemoveAllItems();
+
+    mMenu.AddItem("Emperor", "[1] Emperor");
+    mMenu.AddItem("King", "[2] King");
+    mMenu.AddItem("Archduke", "[3] Archduke");
+    mMenu.AddItem("Lord", "[4] Lord");
+    mMenu.AddItem("Duke", "[5] Duke");
+    mMenu.AddItem("Prince", "[6-10] Prince");
+    mMenu.AddItem("Earl", "[11-15] Earl");
+    mMenu.AddItem("Sir", "[16-20] Sir");
+    mMenu.AddItem("Count", "[21-25] Count");
+    mMenu.AddItem("Baron", "[26-30] Baron");
+    mMenu.AddItem("Knight", "[31-35] Knight");
+    mMenu.AddItem("Noble", "[36-40] Noble");
+    mMenu.AddItem("Esquire", "[41-45] Esquire");
+    mMenu.AddItem("Jester", "[46-50] Jester");
+    mMenu.AddItem("Plebeian", "[51-55] Plebeian");
+    mMenu.AddItem("Peasant", "[56-60] Peasant");
+    mMenu.AddItem("Peon", "[61+] Peon");
+    
+    mMenu.DisplayAt(client, menu_page[client], MENU_TIME_FOREVER);
+
+    return;
+}
+
+public int Menu_Ranks_Callback( Menu mMenu, MenuAction action, int client, int item )
+{
+    if ( action == MenuAction_Cancel ) return 0;
+
+    if ( action != MenuAction_Select ) return 0;
+    
+    if (action == MenuAction_Select)
+	{
+	    char szItem[10];
+	    menu_page[client] = GetMenuSelectionPosition();
+
+	    Ranks_list(client, mMenu, menu_page[client]);
+
+	    if ( !GetMenuItem( mMenu, item, szItem, sizeof( szItem ) ) ) return 0;
+	    
+	    if (StrEqual(szItem, "Emperor"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Emperor", "[1] Emperor Ranks:\nNo Sub-ranks\n ");
+	    }
+	    else if (StrEqual(szItem, "King"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "King", "[2] King Ranks:\nNo Sub-ranks\n ");
+	    }
+	    else if (StrEqual(szItem, "Archduke"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Archduke", "[3] Archduke Ranks:\nNo Sub-ranks\n ");
+	    }
+	    else if (StrEqual(szItem, "Lord"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Lord", "[4] Lord Ranks:\nNo Sub-ranks\n ");
+	    }
+	    else if (StrEqual(szItem, "Duke"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Duke", "[5] Duke Ranks:\nNo Sub-ranks\n ");
+	    }
+	    else if (StrEqual(szItem, "Prince"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Prince", "[6-10] Prince Ranks:\n[6] Prince I\n[7] Prince II\n[8] Prince III\n[9] Prince IV\n[10] Prince V\n ");
+	    }
+	    else if (StrEqual(szItem, "Earl"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Earl", "[11-15] Earl Ranks:\n[11] Earl I\n[12] Earl II\n[13] Earl III\n[14] Earl IV\n[15] Earl V\n ");
+	    }
+	    else if (StrEqual(szItem, "Sir"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Sir", "[16-20] Sir Ranks:\n[16] Sir I\n[17] Sir II\n[18] Sir III\n[19] Sir IV\n[20] Sir V\n ");
+	    }
+	    else if (StrEqual(szItem, "Count"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Count", "[21-25] Count Ranks:\n[21] Count I\n[22] Count II\n[23] Count III\n[24] Count IV\n[25] Count V\n ");
+	    }
+	    else if (StrEqual(szItem, "Baron"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Baron", "[26-30] Baron Ranks:\n[26] Baron I\n[27] Baron II\n[28] Baron III\n[29] Baron IV\n[30] Baron V\n ");
+	    }
+	    else if (StrEqual(szItem, "Knight"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Knight", "[31-35] Knight Ranks:\n[31] Knight I\n[32] Knight II\n[33] Knight III\n[34] Knight IV\n[35] Knight V\n ");
+	    }
+	    else if (StrEqual(szItem, "Noble"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Noble", "[36-40] Noble Ranks:\n[36] Noble I\n[37] Noble II\n[38] Noble III\n[39] Noble IV\n[40] Noble V\n ");
+	    }
+	    else if (StrEqual(szItem, "Esquire"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Esquire", "[41-45] Esquire Ranks:\n[41] Esquire I\n[42] Esquire II\n[43] Esquire III\n[44] Esquire IV\n[45] Esquire V\n ");
+	    }
+	    else if (StrEqual(szItem, "Jester"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Jester", "[46-50] Jester Ranks:\n[46] Jester I\n[47] Jester II\n[48] Jester III\n[49] Jester IV\n[50] Jester V\n ");
+	    }
+	    else if (StrEqual(szItem, "Plebeian"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Plebeian", "[51-55] Plebeian Ranks:\n[51] Plebeian I\n[52] Plebeian II\n[53] Plebeian III\n[54] Plebeian IV\n[55] Plebeian V\n ");
+	    }
+	    else if (StrEqual(szItem, "Peasant"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Peasant", "[56-60] Peasant Ranks:\n[56] Peasant I\n[57] Peasant II\n[58] Peasant III\n[59] Peasant IV\n[60] Peasant V\n ");
+	    }
+	    else if (StrEqual(szItem, "Peon"))
+	    {
+	    	mMenu.RemoveItem(item);
+	    	mMenu.InsertItem(item, "Peon", "[61+] Peon Ranks:\nNo Sub-ranks\n ");
+	    }
+	    
+    	mMenu.DisplayAt(client, menu_page[client], MENU_TIME_FOREVER);
+	}
+
+    return 0;
+}
+
 public Action Command_Set_Start(int client, int args)
 {
 

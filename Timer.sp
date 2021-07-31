@@ -830,7 +830,8 @@ public void OnPluginStart()
 	RegConsoleCmd( "sm_rrc", Command_ResentRecords_Course );	
 
 	RegConsoleCmd( "sm_rb", Command_ResentBrokenRecords );	
-	RegConsoleCmd( "sm_recentbroken", Command_ResentBrokenRecords );	
+	RegConsoleCmd( "sm_recentbroken", Command_ResentBrokenRecords );
+	RegConsoleCmd( "sm_broken", Command_ResentBrokenRecords );
 
 	RegConsoleCmd( "sm_bonus", Command_Bonus );
 	RegConsoleCmd( "sm_b", Command_Bonus );
@@ -850,6 +851,7 @@ public void OnPluginStart()
 	RegConsoleCmd( "sm_orank", ORank );
 	RegConsoleCmd( "sm_profile", Command_Profile );
 	RegConsoleCmd( "sm_p", Command_Profile );
+	RegConsoleCmd( "sm_ranks", Command_Ranks );
 
 	RegConsoleCmd( "sm_pr", Command_PersonalRecords );
 	RegConsoleCmd( "sm_personalrecords", Command_PersonalRecords );
