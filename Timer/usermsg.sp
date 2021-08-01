@@ -65,15 +65,15 @@ stock void ShowKeyHintText( int client, int target )
 {
 	if ( TF2_GetPlayerClass(client) != TFClass_DemoMan && TF2_GetPlayerClass(client) != TFClass_Soldier && GetClientTeam( client ) != TFTeam_Spectator ) return;
 
-	static char szTime[TIME_SIZE_DEF],
-					szBestTime[TIME_SIZE_DEF],
-					szText[200],
-					szInterval[TIME_SIZE_DEF],
-					szTxt[TIME_SIZE_DEF],
-					tempuswr[TIME_SIZE_DEF],
-					szSpectators[200] = "",
-					szSpecCount[10],
-					WorldRecord[100];
+	char szTime[TIME_SIZE_DEF],
+		szBestTime[TIME_SIZE_DEF],
+		szText[200],
+		szInterval[TIME_SIZE_DEF],
+		szTxt[TIME_SIZE_DEF],
+		tempuswr[TIME_SIZE_DEF],
+		szSpectators[200] = "",
+		szSpecCount[10],
+		WorldRecord[100];
 
 	int Spec_Count = 0;
 	for (int i = 1; i < MaxClients; i++)
@@ -176,7 +176,7 @@ stock void ShowKeyHintText( int client, int target )
 			FormatEx( szTxt, sizeof( szTxt ), "(+%s)", szInterval );
 		}
 
-		if ( !g_bClientPractising[target] || run != RUN_SETSTART )
+		if ( !g_bClientPractising[target] && run != RUN_SETSTART )
 		{
 			static char szStylePostFix[STYLEPOSTFIX_LENGTH];
 			GetStylePostfix( g_iClientMode[target], szStylePostFix );

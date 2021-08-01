@@ -10,6 +10,7 @@ public Action Command_Admin_ZoneEnd( int client, int args )
 	
 	
 	int zone = g_iBuilderZone[client];
+
 	static float vecPos[3];
 	static float vecEye[3];
 	static float end[3];
@@ -35,15 +36,18 @@ public Action Command_Admin_ZoneEnd( int client, int args )
 	float flDif = end[2] - g_vecBuilderStart[client][2];
 	
 	// If player built the mins on the ground and just walks to the other side, we will then automatically make it higher.
-	vecMaxs[2] = float( RoundFloat( end[2] + 0.5 ) );
-	
+	if ( IsBuildingOnGround[client] && ( flDif <= 4.0 && flDif >= -4.0 ) )
+		vecMaxs[2] = float( RoundFloat( end[2] + ZONE_DEF_HEIGHT ) );
+	else
+		vecMaxs[2] = float( RoundFloat( end[2] + 0.5 ) );
+
 	CorrectMinsMaxs( g_vecBuilderStart[client], vecMaxs );
 	
 	
 	int id = 0;
 	int run = g_iClientRun[client];
 	
-	if ( zone == ZONE_BLOCKS || zone == ZONE_COURCE || zone == ZONE_SKIP )
+	if ( zone != ZONE_CP )
 	{
 		// Find out which id is available.
 		int len = g_hZones.Length;
@@ -117,32 +121,32 @@ public Action Command_Admin_ZoneEnd( int client, int args )
 		}
 	}
 	
-		if ( zone == ZONE_BLOCKS || zone == ZONE_COURCE || zone == ZONE_SKIP )
-		{
-			int iData[ZONE_SIZE];
-			
-			iData[ZONE_TYPE] = zone;
-			iData[ZONE_ID] = id;
-			
-			ArrayCopy( g_vecBuilderStart[client], iData[ZONE_MINS], 3 );
-			ArrayCopy( vecMaxs, iData[ZONE_MAXS], 3 );
-			
-			CreateZoneEntity( g_hZones.PushArray( iData, view_as<int>( ZoneData ) ) );
-		}
-		else if ( zone == ZONE_CP )
-		{
-			int iData[CP_SIZE];
-			
-			iData[CP_ID] = id;
-			
-			ArrayCopy( g_vecBuilderStart[client], iData[CP_MINS], 3 );
-			ArrayCopy( vecMaxs, iData[CP_MAXS], 3 );
-			
-			CreateCheckPoint( g_hCPs.PushArray( iData, view_as<int>( CPData ) ) );
-		}
+	if ( zone != ZONE_CP )
+	{
+		int iData[ZONE_SIZE];
+		
+		iData[ZONE_TYPE] = zone;
+		iData[ZONE_ID] = id;
+		
+		ArrayCopy( g_vecBuilderStart[client], iData[ZONE_MINS], 3 );
+		ArrayCopy( vecMaxs, iData[ZONE_MAXS], 3 );
+		
+		CreateZoneEntity( g_hZones.PushArray( iData, view_as<int>( ZoneData ) ) );
+	}
+	else
+	{
+		int iData[CP_SIZE];
+		
+		iData[CP_ID] = id;
+		
+		ArrayCopy( g_vecBuilderStart[client], iData[CP_MINS], 3 );
+		ArrayCopy( vecMaxs, iData[CP_MAXS], 3 );
+		
+		CreateCheckPoint( g_hCPs.PushArray( iData, view_as<int>( CPData ) ) );
+	}
 	
 	CreateZoneBeams( zone, g_vecBuilderStart[client], vecMaxs, id, ZoneIndex[client] );
-	//ZoneIndex[client]
+
 	if ( zone == ZONE_CP )
 	{
 		PRINTCHATV( client, CHAT_PREFIX..."Created "...CLR_TEAM..."%s %i"...CLR_TEXT..." successfully!", g_szZoneNames[zone], id+1 );

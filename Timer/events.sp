@@ -516,11 +516,6 @@ public void Event_WeaponDropPost( int client, int weapon )
 		
 }
 
-/*public Action CS_OnCSWeaponDrop( int client, int wep )
-{
-	return Plugin_Continue;
-}*/
-
 // Set client ready for the map. Collision groups, bots, transparency, etc.
 public Action Event_ClientSpawn( Handle hEvent, const char[] szEvent, bool bDontBroadcast )
 {
@@ -585,6 +580,158 @@ public Action Event_RoundRestart( Handle hEvent, const char[] szEvent, bool bDon
 public void Event_RoundRestart_Delay( any data )
 {
 	CheckZones();
+}
+
+public void CPrintToChatClientAndSpec(int client, const char[] text, any...)
+{
+	char szBuffer[256];
+	VFormat( szBuffer, sizeof( szBuffer ), text, 3 );
+
+	for (int i = 1; i <= MaxClients; i++)
+		if ( ( (IsClientInGame(i) && !IsPlayerAlive(i) ) || i == client) && !(g_fClientHideFlags[i] & HIDEHUD_CHAT))
+			if (GetEntPropEnt(i, Prop_Send, "m_hObserverTarget") == client || i == client)
+			{
+				CPrintToChat( i, szBuffer );
+			}
+}
+
+public void Event_Touch_Zone( int trigger, int client )
+{
+	if ( client < 1 || client > MaxClients || !IsClientInGame(client) || !IsClientConnected(client) ) return;
+
+	int	iData[ZONE_SIZE];
+	g_hZones.GetArray( GetTriggerIndex( trigger ), iData, view_as<int>( ZoneData ) );
+	int zone = iData[ZONE_TYPE];
+
+	int id = iData[ZONE_ID];
+	int run = zone/2;
+
+	bool IsStartZone = (zone % 2 == 0 );
+	if ( IsStartZone )
+	{
+		if (EnteredZone[client] == zone && g_iClientState[client] == STATE_START) return;
+
+		ChangeClientState( client, STATE_START );
+		if ( (!RunIsCourse(run) || run == RUN_COURSE1))
+		{
+			IsMapMode[client] = true;
+			DisplayCpTime[client] = false;
+			g_iClientRun[client] = run;
+		}
+		else
+		{
+			if ( g_iClientRun[client] == run - 1 || g_iClientRun[client] >= run || !IsMapMode[client] )
+			{
+				g_iClientRun[client] = run;
+			}
+			else
+			{
+				EmitSoundToClient( client, g_szSoundsMissCp[0] );
+
+				CPrintToChatClientAndSpec(client, "{red}ERROR {white}| Your run has been closed. You missed:");
+
+				for (int i = (( run - ( run - g_iClientRun[client] ) ) * 2)+1; i < run*2; i++)
+					CPrintToChatClientAndSpec(client, "{red}ERROR {white}| {orange}%s",
+						g_szZoneNames[i]);
+
+				IsMapMode[client] = false;
+				DisplayCpTime[client] = false;
+				g_iClientRun[client] = run;
+			}
+		}
+		
+	}
+	else
+	{
+		if ( g_flClientStartTime[client] == TIME_INVALID ) return;
+		if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) return;
+		if ( g_iClientRun[client] != run ) return;
+		if ( g_bClientPractising[client] ) return;
+		if (g_iClientState[client] == STATE_END) return;
+		
+		ChangeClientState( client, STATE_END );
+
+		if (!RunIsCourse(run))
+		{
+			g_flClientFinishTime[client] = GetEngineTime() - g_flClientStartTime[client];
+			g_flTicks_End[client] = GetGameTickCount() - STVTickStart;
+
+			DB_SaveClientRecord( client, g_flClientFinishTime[client] );
+		}
+		else
+		{
+			g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
+			flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseTime[client];
+			g_flClientFinishTime[client] = flNewTimeCourse[client];
+			DB_SaveClientRecord( client, flNewTimeCourse[client] );
+
+			if ( IsMapMode[client] && ( run == RUN_COURSE10 || !g_bIsLoaded[run+1] ) )
+			{
+				g_flClientFinishTime[client] = GetEngineTime() - g_flClientStartTime[client];
+				g_flTicks_End[client] = GetGameTickCount() - STVTickStart;
+
+				g_iClientRun[client] = RUN_MAIN;
+
+				DB_SaveClientRecord( client, g_flClientFinishTime[client] );
+			}
+		}
+	}
+	g_iClientRun[client] = run;
+	EnteredZone[client] = zone;
+}
+
+public void Event_EndTouchPost_Zone( int trigger, int client )
+{
+	if ( client < 1 || client > MaxClients || !IsClientInGame(client) || !IsClientConnected(client) ) return;
+	
+	int	iData[ZONE_SIZE];
+	g_hZones.GetArray( GetTriggerIndex( trigger ), iData, view_as<int>( ZoneData ) );
+
+	int zone = iData[ZONE_TYPE]
+	, id = iData[ZONE_ID]
+	, run = zone/2;
+
+	bool IsStartZone = (zone % 2 == 0 );
+
+	if ( !IsStartZone) return;
+
+	if ( IsStartZone )
+	{
+		ChangeClientState( client, STATE_RUNNING );
+
+		if (!RunIsCourse(run) || run == RUN_COURSE1)
+		{
+			for (int a = 0; a < 100; a++)
+			{
+				g_iClientCpsEntered[client][a] = false;
+			}
+
+			if ( g_hClientCPData[client] != null )
+			{
+				delete g_hClientCPData[client];
+			}
+
+			g_hClientCPData[client] = new ArrayList( view_as<int>( C_CPData ) );
+			g_iClientCurCP[client] = -1;
+
+			g_flClientStartTime[client] = GetEngineTime();
+			g_flTicks_Start[client] = GetGameTickCount() - STVTickStart;
+			if (run == RUN_COURSE1)
+			{
+				g_flClientCourseTime[client] = GetEngineTime();
+				g_flTicks_Cource_Start[client] = GetGameTickCount() - STVTickStart;
+			}
+		}
+		else
+		{
+			g_flClientCourseTime[client] = GetEngineTime();
+			g_flTicks_Cource_Start[client] = GetGameTickCount() - STVTickStart;
+
+			if (!IsMapMode[client])
+				g_flClientStartTime[client] = GetEngineTime();
+		}
+	}
+	return;
 }
 
 public void Event_StartTouchPost_Block( int trigger, int ent )
@@ -745,41 +892,26 @@ public void Event_StartTouchPost_CheckPoint( int trigger, int ent )
 		FormatEx(CpTimeSplit[ent], sizeof(CpTimeSplit), "%s", szTimeForHud);
 
 		CpBlock[ent] = id + 1;
-		IsCpRun[ent] = true;
+		DisplayCpTime[ent] = true;
 
 		if (flBestTime > TIME_INVALID)
 		{
-			IsCpRun[ent] = true;
+			DisplayCpTime[ent] = true;
 			FormatEx(CheckpointInfo, sizeof(CheckpointInfo), " {white}( \x0750DCFF%s %c%s {white})", g_fClientHideFlags[ent] & HIDEHUD_PRTIME ? "PR" : "WR", prefix, szCPTime);
 		}
 		else
 		{
-			IsCpRun[ent] = false;
+			DisplayCpTime[ent] = false;
 			FormatEx(CheckpointInfo, sizeof(CheckpointInfo), "");
 		}
 
-		CPrintToChat( ent, CHAT_PREFIX..."Entered \x0750DCFFCheckpoint %i. {white}Total: \x0764E664%s%s", id + 1, szTime, CheckpointInfo );
-		for (int i = 1; i <= MaxClients; ++i)
-		{
-			if (IsClientInGame(i) && !IsPlayerAlive(i))
-				if (GetEntPropEnt(i, Prop_Send, "m_hObserverTarget") == ent)
-				{
-					CPrintToChat( i, CHAT_PREFIX..."Entered \x0750DCFFCheckpoint %i. {white}Total: \x0764E664%s%s", id + 1, szTime, CheckpointInfo );
-				}
-		}
+		CPrintToChatClientAndSpec( ent, CHAT_PREFIX..."Entered \x0750DCFFCheckpoint %i. {white}Total: \x0764E664%s%s", id + 1, szTime, CheckpointInfo );
 	}
 	else
 	{
-		IsCpRun[ent] = false;
-		PrintToChat(ent, CHAT_PREFIX..."Wrong map passing. Run Closed");
-		for (int i = 1; i <= MaxClients; ++i)
-		{
-			if (IsClientInGame(i) && !IsPlayerAlive(i))
-				if (GetEntPropEnt(i, Prop_Send, "m_hObserverTarget") == ent)
-				{
-					PrintToChat(i, CHAT_PREFIX..."Wrong map passing. Run Closed");
-				}
-		}
+		DisplayCpTime[ent] = false;
+		CPrintToChatClientAndSpec(ent, CHAT_PREFIX..."Wrong map passing. Run Closed");
+
 		SetPlayerPractice( ent, true );
 		return;
 	}

@@ -177,9 +177,6 @@ stock void DB_InitializeDatabase()
 		  `ang2` double NOT NULL
 		)");
 		*/
-
-	//Trying fix mysql closing connection
-	CreateTimer( 30.0, Timer_EmptyQuery, 0, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
 }
 
 // Get map zones, mimics and vote-able maps
@@ -1035,57 +1032,57 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 	}
 
 	if ( g_hCPs != null && run == RUN_MAIN )
+	{
+		if ( flOldBestTime <= TIME_INVALID || flNewTime < flOldBestTime )
 		{
-			if ( flOldBestTime <= TIME_INVALID || flNewTime < flOldBestTime )
+			// Save checkpoint time differences.
+			int len = g_hClientCPData[client].Length;
+			
+			int prev;
+
+			for ( int i = 0; i < len; i++ )
 			{
-				// Save checkpoint time differences.
-				int len = g_hClientCPData[client].Length;
+				prev = i - 1;
 				
-				int prev;
-
-				for ( int i = 0; i < len; i++ )
+				static int iData[C_CP_SIZE];
+				
+				static float flPrevTime;
+				if ( prev < 0 )
 				{
-					prev = i - 1;
-					
-					static int iData[C_CP_SIZE];
-					
-					static float flPrevTime;
-					if ( prev < 0 )
-					{
-						flPrevTime = g_flClientStartTime[client];
-					}
-					else
-					{
-						g_hClientCPData[client].GetArray( prev, iData, view_as<int>( C_CPData ) );
-						flPrevTime = g_flClientStartTime[client];
-					}
-					
-					g_hClientCPData[client].GetArray( i, iData, view_as<int>( C_CPData ) );
-					
-					
-					static float flRecTime;
-					flRecTime = view_as<float>( iData[C_CP_GAMETIME] ) - flPrevTime;
-					
-					FormatEx( szQuery, sizeof( szQuery ), "REPLACE INTO "...TABLE_CP_RECORDS..." VALUES ('%s', %i, %i, %i, %i, %i, %.16f)",
-					g_szCurrentMap,
-					iData[C_CP_ID],
-					run,
-					style,
-					mode,
-					g_iClientId[client],
-					flRecTime );
-					
-					if (flPrevMapBest <= TIME_INVALID || flNewTime < flPrevMapBest)
-						SetWrCpTime( iData[C_CP_INDEX], style, mode, flRecTime );
-
-					SetPrCpTime( iData[C_CP_INDEX], mode, flRecTime, client  );
-					
-					// Update game too.
-					
-					g_hDatabase.Query( Threaded_Empty, szQuery );
+					flPrevTime = g_flClientStartTime[client];
 				}
+				else
+				{
+					g_hClientCPData[client].GetArray( prev, iData, view_as<int>( C_CPData ) );
+					flPrevTime = g_flClientStartTime[client];
+				}
+				
+				g_hClientCPData[client].GetArray( i, iData, view_as<int>( C_CPData ) );
+				
+				
+				static float flRecTime;
+				flRecTime = view_as<float>( iData[C_CP_GAMETIME] ) - flPrevTime;
+				
+				FormatEx( szQuery, sizeof( szQuery ), "REPLACE INTO "...TABLE_CP_RECORDS..." VALUES ('%s', %i, %i, %i, %i, %i, %.16f)",
+				g_szCurrentMap,
+				iData[C_CP_ID],
+				run,
+				style,
+				mode,
+				g_iClientId[client],
+				flRecTime );
+				
+				if (flPrevMapBest <= TIME_INVALID || flNewTime < flPrevMapBest)
+					SetWrCpTime( iData[C_CP_INDEX], style, mode, flRecTime );
+
+				SetPrCpTime( iData[C_CP_INDEX], mode, flRecTime, client  );
+				
+				// Update game too.
+				
+				g_hDatabase.Query( Threaded_Empty, szQuery );
 			}
-		}	
+		}
+	}	
 	
 	DoRecordNotification( client, szName, run, style, mode, flNewTime, flOldBestTime, flPrevMapBest );
 

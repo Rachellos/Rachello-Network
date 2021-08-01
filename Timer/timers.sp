@@ -4,7 +4,13 @@ public Action Timer_Connected( Handle hTimer, int client )
     if ( !(client = GetClientOfUserId( client )) ) return Plugin_Handled;
    
    
-    CPrintToChat( client,  CHAT_PREFIX..."Welcome to the \x0750DCFFJump server {white}!");
+    CPrintToChat( client,  CHAT_PREFIX..."Welcome to the \x0750DCFFRachello Network {white}!");
+
+    char i_SteamID[50];
+	GetClientAuthId(client, AuthId_Steam3, i_SteamID, sizeof(i_SteamID));
+
+	if (StrEqual(i_SteamID, "[U:1:1230320973]"))
+    	CPrintToChat( client,  CHAT_PREFIX..."Боши ты заебал бегать, чего очкуешь то? бан на темпусе словил и кукухой ебнулся?");
    
     if ( !g_bIsLoaded[RUN_MAIN] && !g_bIsLoaded[RUN_COURSE1])
     {
@@ -39,58 +45,39 @@ public Action Timer_regencheck( Handle hTimer )
 
 public Action Timer_Ad( Handle hTimer )
 {
-    int iclient;
-    if (prev_random_msg > 7) prev_random_msg = 0;
-
-    int random = prev_random_msg;
-
-    char ad[256];
-
-    switch (random)
+	char ad[8][300] = 
     {
-        case 0:
+    	"Use \x0750DCFF/settings {white}to customise your HUD, chat and more!",
+    	"Welcome to the \x0750DCFFRachello Jump Network{white}!",
+    	"Join us on Discord at {lightskyblue}discord.gg/8khRBCEu5C",
+    	"Does your game freeze sometimes when another player joins? Try setting \x0750DCFFcl_allowdownload 0 {white}to disable downloading player sprays.",
+    	"Type \x0750DCFF/p {white}to view your stats!",
+    	"Type \x0750DCFF/top {white}for the best times.",
+    	"Need an admin? Use \x0750DCFF!calladmin {white}for any urgent issues and we'll get back to you when possible.",
+    	"Don't know where to go, or how to do a jump? Try \x0750DCFF/svid {white}and \x0750DCFF/dvid {white}to watch a showcase (not available for all maps).",
+    };
+
+    int arr_len = 8;
+
+    static int msg;
+    if (msg >= arr_len) msg = 0;
+
+    for ( int iclient = 1; iclient <= MaxClients; iclient++ )
+    {
+        if (IsClientConnected(iclient) && IsClientInGame(iclient) && (!(g_fClientHideFlags[iclient] & HIDEHUD_CHAT) || !(g_fClientHideFlags[iclient] & HIDEHUD_CHAT_AD)))
         {
-            FormatEx(ad, sizeof(ad), CHAT_PREFIX_TIP..."Use \x0750DCFF/settings {white}to customise your HUD, chat and more!" );
-        }
-        case 1:
-        {
-            FormatEx(ad, sizeof(ad), CHAT_PREFIX_TIP..."Welcome to the \x0750DCFFRachello Jump Network{white}!" );
-        }
-        case 2:
-        {
-            FormatEx(ad, sizeof(ad), CHAT_PREFIX_TIP..."Join us on Discord at {lightskyblue}discord.gg/8khRBCEu5C" );
-        }
-        case 3:
-        {
-            FormatEx(ad, sizeof(ad), CHAT_PREFIX_TIP..."Does your game freeze sometimes when another player joins? Try setting \x0750DCFFcl_allowdownload 0 {white}to disable downloading player sprays." );
-        }
-        case 4:
-        {
-            FormatEx(ad, sizeof(ad), CHAT_PREFIX_TIP..."Type \x0750DCFF/p {white}to view your stats!" );
-        }
-        case 5:
-        {
-            FormatEx(ad, sizeof(ad), CHAT_PREFIX_TIP..."Type \x0750DCFF/top {white}for the best times." );
-        }
-        case 6:
-        {
-            FormatEx(ad, sizeof(ad), CHAT_PREFIX_TIP..."Need an admin? Use \x0750DCFF!calladmin {white}for any urgent issues and we'll get back to you when possible." );
-        }
-        case 7:
-        {
-            FormatEx(ad, sizeof(ad), CHAT_PREFIX_TIP..."Don't know where to go, or how to do a jump? Try \x0750DCFF/svid {white}and \x0750DCFF/dvid {white}to watch a showcase (not available for all maps)." );
+            CPrintToChat(iclient, CHAT_PREFIX_TIP..."%s", ad[msg]);
         }
     }
-
-    for ( iclient = 1; iclient <= MaxClients; iclient++ )
-    {
-        if (IsClientConnected(iclient) && IsClientInGame(iclient) && !(g_fClientHideFlags[iclient] & HIDEHUD_CHAT) && !(g_fClientHideFlags[iclient] & HIDEHUD_CHAT_AD))
-        {
-            CPrintToChat(iclient, ad);
-        }
-    }
-    prev_random_msg++;
+    msg++;
     return Plugin_Continue; 
+}
+
+
+public Action Timer_EmptyQuery( Handle hTimer, int data )
+{
+	g_hDatabase.Query(Threaded_Empty, "Select uid from plydata limit 1");
+	return Plugin_Continue;
 }
 
 // Main component of the HUD timer.
@@ -100,49 +87,54 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
     for ( client = 1; client <= MaxClients; client++ )
     {
         if ( !IsClientInGame( client ) || IsFakeClient( client ) || IsClientSourceTV( client ) ) continue;
+
         BlockBounces(client);
        
         static int target;
-        target = client;       
-        char hintOutput[256];        
-        static char speed[32];
-        static char CpSplit[100];
-		
-		//KICK THOSE CHEATERS
+        target = client;
+        int prefix;
+        int run;
+        int mode;
+        
+		float flCurTime, TimeSplit;
+
+		char hintOutput[256];
+        char speed[32];
+        char CpSplit[100];
+		char szCurTime[TIME_SIZE_DEF], szTimeSplit[TIME_SIZE_DEF];
 	
         // Dead? Find the player we're spectating.
         if ( GetClientTeam( client ) == TFTeam_Spectator)
 		{
-        target = GetClientSpecTarget( client );
+        	target = GetClientSpecTarget( client );
 
         // Invalid spec target?
         // -1 = No spec target.
         // No target? No HUD.
 
-         if ( target < 1 || target > MaxClients || !IsPlayerAlive( target ) )
-			{
-                continue;
-            }
+         	if ( target < 1 || target > MaxClients || !IsPlayerAlive( target ) )
+				{
+            		continue;
+            	}
 		}
-        
+
         if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_NOT_MAIN) continue;
+
+        
+
+		run = g_iClientRun[target];
+		mode = g_iClientMode[target];
 
         if ( !(g_fClientHideFlags[client] & HIDEHUD_SIDEINFO) )
         {
             ShowKeyHintText( client, target );
         }
+        
+        if ( (g_fClientHideFlags[client] & HIDEHUD_TIMER)) continue;
 
-        if (IsCpRun[target])
-        {
-            if ( g_fClientHideFlags[client] & HIDEHUD_PRTIME )
-                FormatEx(CpSplit, sizeof(CpSplit), "(PR %c%s)\n", CpPlusSplit[target], CpTimeSplit[target]);
-            else
-                FormatEx(CpSplit, sizeof(CpSplit), "(WR %c%s)\n", CpPlusSplit[target], CpTimeSplit[target]);
-        }
-        else
-        {
-             FormatEx(CpSplit, sizeof(CpSplit), "");
-        }
+        if (DisplayCpTime[target])
+          	FormatEx(CpSplit, sizeof(CpSplit), "(%s %c%s)\n", g_fClientHideFlags[client] & HIDEHUD_PRTIME ? "PR" : "WR", CpPlusSplit[target], CpTimeSplit[target]);
+
         if ( szClass[g_iClientRun[target]][g_iClientMode[target]] <= 0 || RegenOn[target])
         {
             FormatEx(szAmmo[target], sizeof(szAmmo), "+regen");
@@ -151,236 +143,105 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
         {
             FormatEx(szAmmo[target], sizeof(szAmmo), "");
         }
+
         if( g_fClientHideFlags[client] & HIDEHUD_SPEED )
-        {
             FormatEx(speed, sizeof( speed ), "\n(%.0f u/s)\n ", GetEntitySpeed(target));
+
+        if ( RunIsBonus(g_iClientRun[target]) )
+                FormatEx( szTimerMode[target], sizeof(szTimerMode), "Bonus");
+
+        else if ( g_iClientRun[target] == RUN_MAIN || RunIsCourse(g_iClientRun[target]))
+            FormatEx( szTimerMode[target], sizeof(szTimerMode), "%s", (IsMapMode[target]) ?
+            	((RunIsCourse(g_iClientRun[target])) ? "Map" : "Linear") : "Course" );     
+
+        if ( g_iClientRun[target] == RUN_SETSTART )
+        {
+            Format(hintOutput, 256, "" );
+        }
+        else if (g_iClientState[target] == STATE_END)
+       	{
+        	static char szTime[TIME_SIZE_DEF];
+
+        	flNewTimeCourse[target] = g_flClientCourseTime[target];
+
+         	if ( RUN_COURSE1 <= run < RUN_COURSE10 && g_bIsLoaded[run + 1])
+            	flCurTime = GetEngineTime() - g_flClientStartTime[target];
+        	else
+            	flCurTime = g_flClientFinishTime[target];
+
+        	FormatSeconds( flCurTime, szCurTime );
+
+       		float OldTime;
+
+            if ( g_fClientHideFlags[client] & HIDEHUD_PRTIME )
+            	OldTime = szOldTimePts[target][run][mode];
+            else
+              	OldTime = szOldTimeWr;
+
+            if ( RUN_COURSE1 <= run < RUN_COURSE10 )
+            {
+            	if ( flNewTimeCourse[target] < OldTime )
+            	{
+                  	TimeSplit = OldTime - flNewTimeCourse[target];
+                 	prefix = '-';
+           		}     
+              	else
+             	{
+                 	TimeSplit = flNewTimeCourse[target] - OldTime;
+                  	prefix = '+';
+
+                }
+            }
+          	else
+           	{
+             	if ( g_flClientFinishTime[target] < OldTime )
+               	{
+                  	TimeSplit = OldTime - g_flClientFinishTime[target];
+                  	prefix = '-';
+              	}     
+              	else
+              	{
+                   	TimeSplit = g_flClientFinishTime[target] - OldTime;
+                   	prefix = '+';
+            	}         
+          	}      
+        	FormatSeconds( TimeSplit, szTimeSplit );
+          	FormatSeconds( flCurTime, szCurTime );
+         	Format(hintOutput, 256, "%s\n(%s %c%s)\n \n[%s End]\n %s\n%s mode %s", szCurTime, (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit, g_szRunName[NAME_LONG][run], speed, szTimerMode[target], szAmmo[target] );
+      	}     
+        else if ( g_iClientState[target] == STATE_START )
+        {
+            flCurTime = GetEngineTime() - g_flClientStartTime[target];
+            FormatSeconds( flCurTime, szCurTime );
+            Format(hintOutput, 256, "  %s\n \n[%s Start]\n %s\n%s mode %s", IsMapMode[target] ? ( (RunIsCourse(g_iClientRun[target]) && g_iClientRun[target] != RUN_COURSE1) ? szCurTime : g_szCurrentMap ) : g_szCurrentMap, g_szRunName[NAME_LONG][ g_iClientRun[target] ], speed, szTimerMode[target], szAmmo[target] );
         }
         else
-        {
-            FormatEx(speed, sizeof( speed ), "" );
+        { 
+            if ( g_iClientState[target] == STATE_END_MAIN || g_iClientState[target] == STATE_END && run != RUN_COURSE1 )
+                flCurTime = g_flClientFinishTime[target];
+            else
+                flCurTime = GetEngineTime() - g_flClientStartTime[target];
+           
+            static float flBestTime;
+            flBestTime = g_flMapBestTime[ g_iClientRun[target] ][ g_iClientStyle[target] ][ g_iClientMode[target] ];
+           
+            FormatSeconds( flCurTime, szCurTime );
+           
+            Format(hintOutput, 256, " %s\n%s \n[%s]\n %s\n%s mode %s",
+                szCurTime,
+                CpSplit,
+                g_szRunName[NAME_LONG][ g_iClientRun[target] ],
+                speed,
+                szTimerMode[target],
+                szAmmo[target]
+                );
         }
-        if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER))
+        if(g_bClientPractising[target])
         {
-            if ( g_iClientRun[target] == RUN_SETSTART )
-            {
-                Format(hintOutput, 256, "" );
-            }
-            else if (g_iClientState[target] == STATE_END_MAIN || g_iClientState[target] == STATE_END)
-	            {
-                        static float Seconds;
-                        static char szTime[TIME_SIZE_DEF];
-                        static int run;
-                        static int mode;
-                        flNewTimeCourse[target] = g_flClientCourseTime[target];
-                        run = g_iClientRun[target];
-		                mode = g_iClientMode[target];
-                        static float flSeconds;
-                        bool bDesi;
-                        if (run == RUN_COURSE1)
-                        {
-	                        flSeconds = GetEngineTime() - g_flClientStartTime[target];
-                        }
-                        else if (run == RUN_COURSE2 && g_bIsLoaded[RUN_COURSE3])
-                        {
-	                        flSeconds = GetEngineTime() - g_flClientStartTime[target];
-                        }
-                        else if (run == RUN_COURSE3 && g_bIsLoaded[RUN_COURSE4])
-                        {
-	                        flSeconds = GetEngineTime() - g_flClientStartTime[target];
-                        }
-                        else if (run == RUN_COURSE4 && g_bIsLoaded[RUN_COURSE5])
-                        {
-                            flSeconds = GetEngineTime() - g_flClientStartTime[target];
-                        }
-                        else if (run == RUN_COURSE5 && g_bIsLoaded[RUN_COURSE6])
-                        {
-                            flSeconds = GetEngineTime() - g_flClientStartTime[target];
-                        }
-                        else if (run == RUN_COURSE6 && g_bIsLoaded[RUN_COURSE7])
-                        {
-                            flSeconds = GetEngineTime() - g_flClientStartTime[target];
-                        }
-                        else if (run == RUN_COURSE7 && g_bIsLoaded[RUN_COURSE8])
-                        {
-                            flSeconds = GetEngineTime() - g_flClientStartTime[target];
-                        }
-                        else if (run == RUN_COURSE8 && g_bIsLoaded[RUN_COURSE9])
-                        {
-                            flSeconds = GetEngineTime() - g_flClientStartTime[target];
-                        }
-                        else if (run == RUN_COURSE9 && g_bIsLoaded[RUN_COURSE10])
-                        {
-                            flSeconds = GetEngineTime() - g_flClientStartTime[target];
-                        }
-                        else
-                        {
-                            flSeconds = g_flClientFinishTime[target];
-                        }
-                        static char szMyTime[TIME_SIZE_DEF];
-	                    FormatSeconds( flSeconds, szMyTime, bDesi ? FORMAT_2DECI : 0 );
-                        int prefix = '+';
-                        if ( g_fClientHideFlags[client] & HIDEHUD_PRTIME )
-                        {
-                            if ( run == RUN_COURSE1 || run == RUN_COURSE2 || run == RUN_COURSE3 || run == RUN_COURSE4 || run == RUN_COURSE5 || run == RUN_COURSE6 || run == RUN_COURSE7 || run == RUN_COURSE8 || run == RUN_COURSE9 || run == RUN_COURSE10 )
-                            {
-                                if ( flNewTimeCourse[target] < szOldTimePts[client][run][mode] )
-                                {
-                                    Seconds = szOldTimePts[target][run][mode] - flNewTimeCourse[target];
-                                    prefix = '-';
-                                }     
-                                else
-                                {
-                                    Seconds = flNewTimeCourse[target] - szOldTimePts[target][run][mode];
-                                    prefix = '+';
-                                }
-                            }
-                            else
-                            {
-                               if ( g_flClientFinishTime[target] < szOldTimePts[client][run][mode] )
-                                {
-                                    Seconds = szOldTimePts[target][run][mode] - g_flClientFinishTime[target];
-                                    prefix = '-';
-                                }     
-                                else
-                                {
-                                    Seconds = g_flClientFinishTime[target] - szOldTimePts[target][run][mode];
-                                    prefix = '+';
-                                }         
-                            }      
-                            FormatSeconds( Seconds, szTime, FORMAT_2DECI);
-                            FormatSeconds( flSeconds, szMyTime, bDesi ? FORMAT_2DECI : 0 );
-                            Format(hintOutput, 256, "%s\n(PR %c%s)\n \n[%s End]\n %s\n%s mode %s",szMyTime, prefix, szTime, g_szRunName[NAME_LONG][run], speed, szTimerMode[target], szAmmo[target] );
-                        }
-                        else
-                        {
-                            if ( run == RUN_COURSE1 )
-                            {
-		                        if ( flNewTimeCourse[target] < szOldTimeWr )
-		                        {
-                                    Seconds = szOldTimeWr - flNewTimeCourse[target];
-                                    prefix = '-';
-                                }    
-                                else
-                                {
-                                    Seconds = flNewTimeCourse[target] - szOldTimeWr;
-                                    prefix = '+';
-                                }
-		                    }    
-                            else
-                            {
-                                if ( g_flClientFinishTime[target] < szOldTimeWr )
-                                {
-                                    Seconds = szOldTimeWr - g_flClientFinishTime[target];
-                                    prefix = '-';
-                                }
-                                else
-                                {
-                                    Seconds = g_flClientFinishTime[target] - szOldTimeWr;
-                                    prefix = '+';
-                                }
-                            }
-                        
-                            FormatSeconds( Seconds, szTime, FORMAT_2DECI);
-                            FormatSeconds( flSeconds, szMyTime, bDesi ? FORMAT_2DECI : 0 );
-                            Format(hintOutput, 256, "%s\n(WR %c%s)\n \n[%s End]\n %s\n%s mode %s",szMyTime, prefix, szTime, g_szRunName[NAME_LONG][run], speed, szTimerMode[target], szAmmo[target] );
-                        }
-                }     
-            else if ( g_iClientState[target] == STATE_START || g_iClientState[target] == STATE_CSTART2 || g_iClientState[target] == STATE_CSTART3 || g_iClientState[target] == STATE_CSTART4 || g_iClientState[target] == STATE_CSTART5 || g_iClientState[target] == STATE_CSTART6 || g_iClientState[target] == STATE_CSTART7 || g_iClientState[target] == STATE_CSTART8 || g_iClientState[target] == STATE_CSTART9 || g_iClientState[target] == STATE_CSTART10 )
-            {
-                if ( g_iClientRun[target] == RUN_BONUS1 || g_iClientRun[target] == RUN_BONUS2 || g_iClientRun[target] == RUN_BONUS3 || g_iClientRun[target] == RUN_BONUS4 || g_iClientRun[target] == RUN_BONUS5 || g_iClientRun[target] == RUN_BONUS6 || g_iClientRun[target] == RUN_BONUS7 || g_iClientRun[target] == RUN_BONUS8 || g_iClientRun[target] == RUN_BONUS9 || g_iClientRun[target] == RUN_BONUS10 )
-                {
-                    FormatEx( szTimerMode[target], sizeof(szTimerMode), "Bonus");
-                }
-                else if ( g_iClientRun[target] == RUN_MAIN || g_iClientRun[target] == RUN_COURSE1 || g_iClientRun[target] == RUN_COURSE2 || g_iClientRun[target] == RUN_COURSE3 || g_iClientRun[target] == RUN_COURSE4 || g_iClientRun[target] == RUN_COURSE5 || g_iClientRun[target] == RUN_COURSE6 || g_iClientRun[target] == RUN_COURSE7 || g_iClientRun[target] == RUN_COURSE8 || g_iClientRun[target] == RUN_COURSE9 || g_iClientRun[target] == RUN_COURSE10)
-                {
-                    if ( CourseMod[target] == 1 )
-                    {
-                        if ( g_bZoneExists[ZONE_COURSE_1_START][0] )
-                        {
-                            FormatEx( szTimerMode[target], sizeof(szTimerMode), "Map");
-                        }
-                        else 
-                        {
-                            FormatEx( szTimerMode[target], sizeof(szTimerMode), "Linear");
-                        }
-                    }
-                    else
-                    {
-                        FormatEx( szTimerMode[target], sizeof(szTimerMode), "Course");
-                    }
-                }
-                if ( g_iClientRun[target] == RUN_COURSE2 || g_iClientRun[target] == RUN_COURSE3 || g_iClientRun[target] == RUN_COURSE4 || g_iClientRun[target] == RUN_COURSE5 || g_iClientRun[target] == RUN_COURSE6 || g_iClientRun[target] == RUN_COURSE7 || g_iClientRun[target] == RUN_COURSE8 || g_iClientRun[target] == RUN_COURSE9 || g_iClientRun[target] == RUN_COURSE10 )
-                {
-                    if ( CourseMod[target] == 1 )
-                    {
-                        static float flSeconds;
-    	                static bool bDesi;
-                        bDesi = true;
-    	                flSeconds = GetEngineTime() - g_flClientStartTime[target];
-                        static char szMyTime[TIME_SIZE_DEF];
-    	                FormatSeconds( flSeconds, szMyTime, bDesi ? FORMAT_2DECI : 0 );
-                        Format(hintOutput, 256, "  %s\n \n[%s Start]\n %s\n%s mode %s",szMyTime, g_szRunName[NAME_LONG][ g_iClientRun[target] ], speed, szTimerMode[target], szAmmo[target] );
-                    }
-                    else 
-                    {
-                        Format(hintOutput, 256, "  %s\n \n[%s Start]\n %s\n%s mode %s",g_szCurrentMap, g_szRunName[NAME_LONG][ g_iClientRun[target] ], speed, szTimerMode[target], szAmmo[target] );
-                    }
-                }
-                else
-                {
-                // We are in the start zone.
-                Format(hintOutput, 256, "  %s\n \n[%s Start]\n %s\n%s mode %s",g_szCurrentMap, g_szRunName[NAME_LONG][ g_iClientRun[target] ], speed, szTimerMode[target], szAmmo[target] );
-                }
-            }
-            else 
-            {
-                static int run;
-                run = g_iClientRun[target];
-	            static float flSeconds;
-	            static bool bDesi;
-                static char szMyTime[TIME_SIZE_DEF];
-	            if ( g_iClientState[target] == STATE_END_MAIN || g_iClientState[target] == STATE_END && run != RUN_COURSE1 )
-	            {
-                    bDesi = false;
-	                flSeconds = g_flClientFinishTime[target];
-	            }
-	            else
-	            {
-	                // Else, we show our current time.
-	                bDesi = true;
-	                flSeconds = GetEngineTime() - g_flClientStartTime[target];
-	            }
-	           
-	            static float flBestTime;
-	            flBestTime = g_flMapBestTime[ g_iClientRun[target] ][ g_iClientStyle[target] ][ g_iClientMode[target] ];
-	           
-	           FormatSeconds( flSeconds, szMyTime, bDesi ? FORMAT_2DECI : 0 );
-	           
-	            // WARNING: Each line has to have something (e.g space), or it will break.
-	            // "00:00:00C(+00:00:00) C CSpeedCXXXX" - [38]
-                if (g_iClientState[target] != STATE_END_MAIN || g_iClientState[target] != STATE_END)
-                {
-	            Format(hintOutput, 256, " %s\n%s \n[%s]\n %s\n%s mode %s",
-	                szMyTime,
-                    CpSplit,
-	                g_szRunName[NAME_LONG][ g_iClientRun[target] ],
-                    speed,
-                    szTimerMode[target],
-                    szAmmo[target]
-					);
-                }
-            }
-	        if(g_bClientPractising[target])
-	        {
-      		 	Format(hintOutput, 256, "Timer Disabled Mode %s", szAmmo[target] );
-      		}
-			
-            if ( TF2_GetPlayerClass(client) == TFClass_DemoMan || TF2_GetPlayerClass(client) == TFClass_Soldier || GetClientTeam( client ) == TFTeam_Spectator )
-            {
-                PrintHintText( client, hintOutput);
-            }
-            continue;
-		}
+  		 	Format(hintOutput, 256, "Timer Disabled Mode %s", szAmmo[target] );
+  		}
+
+        PrintHintText( client, hintOutput);
 			
      }
 	return Plugin_Continue;
@@ -394,6 +255,7 @@ public Action Timer_classcheck( Handle hTimer )
 	for ( client = 1; client <= MaxClients; client++ )
     {
 		if (!IsClientInGame(client)) continue;
+
 		if (GetClientTeam(client) > 1)	
 		{
 			if (TF2_GetPlayerClass(client) == TFClass_Soldier)
@@ -494,14 +356,14 @@ public Action Timer_DrawZoneBeams( int client, int args )
             for ( int z=0; z<20; z++ )
             {
                 static int iData[BEAM_SIZE];
-                bool yes=false;
+                bool found = false;
                 for (int s=0; s < len; s++)
                     if (zone != ZONE_CP)
                     {
                         if (g_hBeams.Get(s, view_as<int>( BEAM_TYPE ) ) == zone && g_hBeams.Get(s, view_as<int>( BEAM_INDEX ) ) == z)
                         {
                             g_hBeams.GetArray( s, iData, view_as<int>( BeamData ) );
-                            yes = true;
+                            found = true;
                         }
                     }
                     else
@@ -509,11 +371,11 @@ public Action Timer_DrawZoneBeams( int client, int args )
                         if (g_hBeams.Get(s, view_as<int>( BEAM_TYPE ) ) == zone && g_hBeams.Get(s, view_as<int>( BEAM_ID ) ) == Cp_Id)
                         {
                             g_hBeams.GetArray( s, iData, view_as<int>( BeamData ) );
-                            yes = true;
+                            found = true;
                         }
                     }
 
-                if (!yes) continue;
+                if (!found) continue;
                 
                 zone = iData[BEAM_TYPE];
 
@@ -923,10 +785,13 @@ public Action Timer_DrawBuildZoneBeamsEye( Handle hTimer, int client )
     GetClientEyePosition( client, vecABS );
     TR_TraceRayFilter(vecABS, vecPos, MASK_SOLID, RayType_Infinite, TraceEntityFilterPlayer, client);
     TR_GetEndPosition(end);
-   
-    /*float flDif = end[2] - g_vecBuilderStart[client][2];
-    if ( flDif <= 4.0 && flDif >= -4.0 )
-        end[2] = g_vecBuilderStart[client][2] + ZONE_DEF_HEIGHT;*/
+
+    float flDif = end[2] - g_vecBuilderStart[client][2];
+	
+	// If player built the mins on the ground and just walks to the other side, we will then automatically make it higher.
+	if ( IsBuildingOnGround[client] && ( flDif <= 4.0 && flDif >= -4.0 ) )
+		end[2] = g_vecBuilderStart[client][2] + ZONE_DEF_HEIGHT;
+
    
     static float flPoint4Min[3], flPoint4Max[3];
     static float flPoint3Min[3];
@@ -996,9 +861,11 @@ public Action Timer_DrawBuildZoneBeamsOrigin( Handle hTimer, int client )
     static float end[3];
     GetClientAbsOrigin(client, end);
    
-	/*float flDif = end[2] - g_vecBuilderStart[client][2];
-    if ( flDif <= 4.0 && flDif >= -4.0 )
-        end[2] = g_vecBuilderStart[client][2] + ZONE_DEF_HEIGHT;*/
+	float flDif = end[2] - g_vecBuilderStart[client][2];
+	
+	// If player built the mins on the ground and just walks to the other side, we will then automatically make it higher.
+	if ( IsBuildingOnGround[client] && ( flDif <= 4.0 && flDif >= -4.0 ) )
+		end[2] = g_vecBuilderStart[client][2] + ZONE_DEF_HEIGHT;
    
     static float flPoint4Min[3], flPoint4Max[3];
     static float flPoint3Min[3];

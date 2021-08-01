@@ -59,12 +59,9 @@
 #define PRINTCHATV(%0,%1,%2) ( PrintColorChat( %0, %1, %2 ) )
 #define PRINTCHAT(%0,%1) ( PrintColorChat( %0, %1 ) )
 
-
-// This has to be AFTER include files because not all natives are translated to 1.7!!!
 #pragma semicolon 1
 //#pragma newdecls required
-#pragma dynamic 64522100
-
+#pragma dynamic 645221
 
 // -----------------
 // All globals here.
@@ -268,8 +265,6 @@ enum C_CPData
 #define C_CP_SIZE		3
 
 
-#define PLUGIN_AUTHOR 	"Arkarr"
-#define PLUGIN_VERSION 	"1.00"
 #define PLUGIN_TAG		"{blue}[Cross Server Chat]{default}"
 #define PLAYER_GAGED 	1
 #define PLAYER_UNGAGED 	0
@@ -354,6 +349,8 @@ int ZoneIndex[MAXPLAYERS+1];
 Handle TimerEye[MAXPLAYERS+1] = null;
 
 // Misc player stuff.
+int EnteredZone[MAXPLAYERS+1];
+bool IsBuildingOnGround[MAXPLAYERS+1];
 int menu_page[MAXPLAYERS+1];
 int ZoneType[MAXPLAYERS+1];
 char profile_map[MAXPLAYERS+1][70];
@@ -410,13 +407,13 @@ bool secure = false;
 int iClass;
 int CpPlusSplit[MAXPLAYERS+1];
 char CpTimeSplit[MAXPLAYERS+1][TIME_SIZE_DEF];
-bool IsCpRun[MAXPLAYERS+1] = false;
+bool DisplayCpTime[MAXPLAYERS+1] = false;
 bool requestedByMenu = false;
 char DBS_Name[32][MAXPLAYERS+1];
 float szOldTime[MAXPLAYERS+1];
 float szOldTimePts[MAXPLAYERS+1][NUM_RUNS][NUM_MODES];
 float szOldTimeWr;
-int CourseMod[MAXPLAYERS+1];
+bool IsMapMode[MAXPLAYERS+1];
 char szAmmo[MAXPLAYERS+1][32];
 char szTimerMode[MAXPLAYERS+1][32];
 char			szCPTime[TIME_SIZE_DEF];
@@ -460,6 +457,179 @@ char server_name[NUM_NAMES][4][120] =
 
 Handle hPlugin = INVALID_HANDLE;
 int server_id=0;
+
+enum { COMMAND, COMMAND_DESC };
+char command_list[2][81][180] = 
+{
+    //commands
+    {
+     "!msg <text>",
+     "!goto <player>", 
+     "!respawn",
+     "!reset", 
+     "!restart",
+     "!r", 
+     "!re",
+     "!start", 
+     "!setstart",
+     "!set", 
+     "!clearstart",
+     "!clear", 
+     "!spectate",
+     "!spec", 
+     "!hud",
+     "!settings", 
+     "!mt <map>",
+     "!m <map>", 
+     "!mi <map>",
+     "!mapinfo <map>", 
+     "!maplist",
+     "!ml", 
+     "!maps",
+     "!ttop <map>", 
+     "!top <map>",
+     "!ptop",
+     "!pointstop",
+     "!toppoints",
+     "!ammo",
+     "!dz",
+     "!dzl",
+     "!dzlist",
+     "!over",
+     "!time <player>",
+     "!rr",
+     "!resentrecords",
+     "!rrb",
+     "!rcc",
+     "!rb",
+     "!resentbroken",
+	 "!broken",
+     "!bonus",
+     "!b <number>",
+     "!c <number>",
+     "!course <number>",
+     "!courses <number>",
+     "!timer",
+     "!stime",
+     "!dtime",
+     "!swr",
+     "!dwr",
+     "!srank",
+     "!drank",
+     "!rank",
+     "!orank",
+     "!profile",
+     "!p",
+     "!ranks",
+     "!pr",
+     "!personalrecords",
+     "!pts",
+     "!points",
+     "!saveloc",
+     "!save",
+     "!s",
+     "!hidechat",
+     "!l",
+     "!lvl",
+     "!level",
+     "!levels",
+     "!t",
+     "!tp",
+     "!tele",
+     "!teleport",
+     "!noclip",
+     "!fly",
+     "!commands",
+     "!help",
+     "!version",
+     "!incomplete",
+     "!calladmin",
+ 	},
+    //DESCRIPTION
+    {
+     "Send a message to all server",
+     "Teleport to player",
+     "Teleport to start position",
+     "Teleport to start position",
+     "Teleport to start position",
+     "Teleport to start position",
+     "Teleport to start position",
+     "Teleport to start position",
+     "Set your custom start position",
+     "Set your custom start position",
+     "Remove your custom start position",
+     "Remove your custom start position",
+     "Go to spectate mode",
+     "Go to spectate mode",
+     "Open HUD settings menu",
+     "Open HUD settings menu",
+     "Show map info",
+     "Show map info",
+     "Show map info menu",
+     "Show map info menu",
+     "Show the map list",
+     "Show the map list",
+     "Show Tempus map Top Times",
+     "Show map Top Times",
+     "Open top players by overall points menu",
+     "Open top players by overall points menu",
+     "Open top players by overall points menu",
+     "Toggle ammo regen",
+     "Draw zone",
+     "Open the zone list",
+     "Open the zone list",
+     "Show all overall points",
+     "Show your map run time",
+     "Open Recent map records menu",
+     "Open Recent map records menu",
+     "Open Recent bonus records menu",
+     "Open Recent course records menu",
+     "Open your recently lost records menu",
+     "Open your recenlty lost records menu",
+	 "Open your recenlty lost records menu",
+     "Open bonus menu",
+     "Open bonus menu",
+     "Open courses menu",
+     "Open courses menu",
+     "Toggle timer",
+     "Show yours or other player's Solly run time",
+     "Show yours or other player's Demoman run time",
+     "Show Solly WR",
+     "Show Demoman WR",
+     "Show yours or other player's Solly rank",
+     "Show yours or other player's Demoman rank",
+     "Show yours or other player's overall rank",
+     "Show yours or other player's Profile",
+     "Show yours or other player's Profile",
+     "Open ranks menu",
+     "Show your personal map record",
+     "Show your personal map record",
+     "Open map points menu",
+     "Open map points menu",
+     "Saving your current location",
+     "Saving your current location",
+     "Saving your current location",
+     "Show/Hide chat",
+     "Open level menu\n!level <number> - Teleport to level",
+     "Open level menu\n!level <number> - Teleport to level",
+     "Open level menu\n!level <number> - Teleport to level",
+     "Open level menu\n!level <number> - Teleport to level",
+     "Teleports you to saved location",
+     "Teleports you to saved location",
+     "Teleports you to saved location",
+     "Teleports you to saved location",
+     "Toggle noclip",
+     "Toggle noclip",
+     "[YOU ARE HERE]",
+     "Help",
+     "Show current server plugin version",
+     "Show info about the server",
+     "Show Solly map video",
+     "Show Demoman map video",
+     "Open yours or other player's incomplete maps menu",
+     "Call Admin",
+ 	}
+};
 
 int clrBeam[NUM_ZONE_COLORS][4] =
 {
@@ -569,7 +739,6 @@ Handle g_hForward_Timer_OnStateChanged;
 // ------------------------
 
 #include "Timer/stocks.sp"
-
 #include "Timer/usermsg.sp"
 #include "Timer/database.sp"
 #include "Timer/database_thread.sp"
@@ -584,8 +753,6 @@ Handle g_hForward_Timer_OnStateChanged;
 #include "Timer/CapsLockFix.sp"
 #include "Timer/CrossServerChat.sp"
 #include "Timer/autodemo_recorder.sp"
-
-#pragma dynamic 65535
 
 
 public Plugin myinfo = // Note: must be 'myinfo'. Compiler accepts everything but only that works.
@@ -643,7 +810,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 		   SetPlayerStyle( client, STYLE_DEMOMAN );
 		}
 	}
-	CourseMod[client] = 0;
+	IsMapMode[client] = false;
 	RespawnPlayerRun( client );
 	return Plugin_Continue;
 }
@@ -879,7 +1046,7 @@ public void OnPluginStart()
 	RegConsoleCmd( "sm_noclip", Command_Practise_Noclip );
 	RegConsoleCmd( "sm_fly", Command_Practise_Noclip );
 
-	//RegConsoleCmd( "sm_commands", Command_AllCommands );
+	RegConsoleCmd( "sm_commands", Command_AllCommands );
 
 	RegConsoleCmd( "sm_help", Command_Help );
 
@@ -1583,11 +1750,25 @@ public void OnMapEnd()
 	//IRC_MsgFlaggedChannels("relay", "%t", "Map Changing")
 
 	if ( g_hBeams != null ) { delete g_hBeams; g_hBeams = null; }
+
+	if (g_hZones != null)
+	{
+		for (int i; i < g_hZones.Length; i++)
+		{
+			if (g_hZones.Get( i, view_as<int>( ZONE_TYPE ) ) )
+			{
+				SDKUnhook( i, SDKHook_TouchPost, Event_Touch_Zone );
+				SDKUnhook( i, SDKHook_EndTouch, Event_EndTouchPost_Zone );
+				PrintToServer("UNHOOKED %s", g_szRunName[NAME_LONG][i/2]);
+			}
+		}
+		delete g_hZones; g_hZones = null;
+	}
 }
 
 public void OnClientPutInServer( int client )
 {
-	CourseMod[client] = 1;
+	IsMapMode[client] = true;
 	LastUsage[client] = 0;
 	
 	char szSteam[100];
@@ -1648,7 +1829,6 @@ public void OnClientPutInServer( int client )
 
 
 	// These are right below us.
-	SDKHook( client, SDKHook_PostThinkPost, Event_PostThinkPost_Client );
 }
 
 public void IdleSys_OnClientIdle(int client) 
@@ -1789,7 +1969,6 @@ public void OnClientDisconnect( int client )
 	SDKUnhook( client, SDKHook_SetTransmit, Event_SetTransmit_Client );
 	SDKUnhook( client, SDKHook_WeaponDropPost, Event_WeaponDropPost );
 	SDKUnhook( client, SDKHook_GetMaxHealth, OnGetMaxHealth);
-	SDKUnhook( client, SDKHook_PostThinkPost, Event_PostThinkPost_Client );
 
 	char name[99];
 		
@@ -1865,49 +2044,32 @@ public void DB_TopTimes( int client, int style )
 	mMenu = new Menu( Handler_TopTimes );
 	mMenu.SetTitle("Top Times :: %s\nPlayer: %s\n ", g_szStyleName[NAME_LONG][style], DBS_Name[client] );
 
-	FormatEx( szQuery, sizeof( szQuery ), "SELECT map, style, run, rank FROM "...TABLE_RECORDS..." WHERE uid = %i AND style = %i AND rank > 1 AND rank < 11",
+	FormatEx( szQuery, sizeof( szQuery ), "SELECT map, style, run, `rank` FROM "...TABLE_RECORDS..." WHERE uid = %i AND style = %i AND `rank` > 1 AND `rank` < 11",
 	db_id[client],
 	style );
 	DBResultSet base = SQL_Query( g_hDatabase, szQuery );
 	char map[32], info[50];
-	int run, rank, count=0;
-	if (base.RowCount)
+	int run, rank, count=0, num=0;
+
+	while (base.FetchRow())
 	{
-		while (base.FetchRow())
+		num++;
+		count++;
+		base.FetchString( 0, map, sizeof(map));
+		run = base.FetchInt(2);
+		rank = base.FetchInt(3);
+		if (count != 6)
 		{
-			count++;
-			base.FetchString( 0, map, sizeof(map));
-			run = base.FetchInt(2);
-			rank = base.FetchInt(3);
-			if (count != 6)
-			{
-				FormatEx(info, sizeof(info), "%s [#%i] [%s]", map, rank, g_szRunName[NAME_SHORT][run]);
-				mMenu.AddItem("", info, ITEMDRAW_DISABLED);
-			}
-
-			if (count == 6)
-			{
-						
-				FormatEx(info, sizeof(info), "%s [#%i] [%s]\n ", map, rank, g_szRunName[NAME_SHORT][run]);
-				mMenu.AddItem("", info, ITEMDRAW_DISABLED);
-
-				if (style == STYLE_SOLLY)
-				{
-					mMenu.AddItem("a", "[Soldier]", ITEMDRAW_CONTROL);
-				}
-				else
-				{
-					mMenu.AddItem("b", "[Demoman]", ITEMDRAW_CONTROL);
-				}
-				count = 0;
-			}
+			FormatEx(info, sizeof(info), "%s [#%i] [%s]", map, rank, g_szRunName[NAME_SHORT][run]);
+			mMenu.AddItem("", info, ITEMDRAW_DISABLED);
 		}
-		if (0 < count < 6)
+
+		if (count == 6)
 		{
-			for (int i = 1; i <= (6 - count); i++)
-			{
-				mMenu.AddItem("","", ITEMDRAW_SPACER);
-			}
+					
+			FormatEx(info, sizeof(info), "%s [#%i] [%s]\n ", map, rank, g_szRunName[NAME_SHORT][run]);
+			mMenu.AddItem("", info, ITEMDRAW_DISABLED);
+
 			if (style == STYLE_SOLLY)
 			{
 				mMenu.AddItem("a", "[Soldier]", ITEMDRAW_CONTROL);
@@ -1916,9 +2078,26 @@ public void DB_TopTimes( int client, int style )
 			{
 				mMenu.AddItem("b", "[Demoman]", ITEMDRAW_CONTROL);
 			}
+			count = 0;
 		}
 	}
-	else
+	if (0 < count < 6)
+	{
+		for (int i = 1; i <= (6 - count); i++)
+		{
+			mMenu.AddItem("","", ITEMDRAW_SPACER);
+		}
+		if (style == STYLE_SOLLY)
+		{
+			mMenu.AddItem("a", "[Soldier]", ITEMDRAW_CONTROL);
+		}
+		else
+		{
+			mMenu.AddItem("b", "[Demoman]", ITEMDRAW_CONTROL);
+		}
+	}
+
+	if (num == 0)
 	{
 		for (int i = 1; i < 7; i++)
 		{
@@ -1935,7 +2114,7 @@ public void DB_TopTimes( int client, int style )
 	}	
 	mMenu.ExitBackButton = true;
 	mMenu.Display( client, MENU_TIME_FOREVER );
-
+	delete base;
 }
 
 public int Handler_TopTimes( Menu mMenu, MenuAction action, int client, int item )
@@ -1975,7 +2154,7 @@ public void DB_RecTimes( int client, int style )
 	mMenu = new Menu( Handler_RecTimes );
 	mMenu.SetTitle("World Records :: %s\nPlayer: %s\n ", g_szStyleName[NAME_LONG][style], DBS_Name[client] );
 
-	FormatEx( szQuery, sizeof( szQuery ), "SELECT map, style, run FROM "...TABLE_RECORDS..." WHERE uid = %i AND style = %i AND rank = 1",
+	FormatEx( szQuery, sizeof( szQuery ), "SELECT map, style, run FROM "...TABLE_RECORDS..." WHERE uid = %i AND style = %i AND `rank` = 1",
 	db_id[client],
 	style );
 	DBResultSet base = SQL_Query( g_hDatabase, szQuery );
@@ -2076,876 +2255,6 @@ public int Handler_RecTimes( Menu mMenu, MenuAction action, int client, int item
 	return 0;
 }
 
-public void Event_PostThinkPost_Client( int client )
-{
-	if ( !IsPlayerAlive( client ) || !client || client > MaxClients) return;
-
-	static int StateNow[MAXPLAYERS+1];
-
-	// First we find out if our player is in his/her current zone areas.
-	switch ( g_iClientRun[client] )
-	{
-		case RUN_BONUS1 :
-		{	
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_BONUS_1_END][i])
-					bInsideZone[client][INSIDE_END][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_1_END][i], g_vecZoneMaxs[ZONE_BONUS_1_END][i] );
-		}
-		case RUN_BONUS2 :
-		{	
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_BONUS_2_END][i])
-					bInsideZone[client][INSIDE_END][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_2_END][i], g_vecZoneMaxs[ZONE_BONUS_2_END][i] );
-		}
-		case RUN_BONUS3 :
-		{	
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_BONUS_3_END][i])
-					bInsideZone[client][INSIDE_END][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_3_END][i], g_vecZoneMaxs[ZONE_BONUS_3_END][i] );	
-		}
-		case RUN_BONUS4 :
-		{	
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_BONUS_4_END][i])
-					bInsideZone[client][INSIDE_END][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_4_END][i], g_vecZoneMaxs[ZONE_BONUS_4_END][i] );
-		}
-		case RUN_BONUS5 :
-		{	
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_BONUS_5_END][i])
-					bInsideZone[client][INSIDE_END][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_5_END][i], g_vecZoneMaxs[ZONE_BONUS_5_END][i] );
-		}
-		case RUN_BONUS6 :
-		{	
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_BONUS_6_END][i])
-					bInsideZone[client][INSIDE_END][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_6_END][i], g_vecZoneMaxs[ZONE_BONUS_6_END][i] );
-		}
-		case RUN_BONUS7 :
-		{	
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_BONUS_7_END][i])
-					bInsideZone[client][INSIDE_END][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_7_END][i], g_vecZoneMaxs[ZONE_BONUS_7_END][i] );
-		}
-		case RUN_BONUS8 :
-		{	
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_BONUS_8_END][i])
-					bInsideZone[client][INSIDE_END][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_8_END][i], g_vecZoneMaxs[ZONE_BONUS_8_END][i] );
-		}
-		case RUN_BONUS9 :
-		{	
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_BONUS_9_END][i])
-					bInsideZone[client][INSIDE_END][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_9_END][i], g_vecZoneMaxs[ZONE_BONUS_9_END][i] );
-		}
-		case RUN_BONUS10 :
-		{	
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_BONUS_10_END][i])
-					bInsideZone[client][INSIDE_END][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_10_END][i], g_vecZoneMaxs[ZONE_BONUS_10_END][i] );
-		}
-		case RUN_COURSE1 :
-		{	
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_COURSE_1_END][i])
-					bInsideZone[client][INSIDE_END1][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_1_END][i], g_vecZoneMaxs[ZONE_COURSE_1_END][i] );
-		}
-		case RUN_COURSE2 :
-		{
-				
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_COURSE_2_END][i])
-					bInsideZone[client][INSIDE_END2][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_2_END][i], g_vecZoneMaxs[ZONE_COURSE_2_END][i] );
-		}
-		case RUN_COURSE3 :
-		{
-				
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_COURSE_3_END][i])		
-					bInsideZone[client][INSIDE_END3][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_3_END][i], g_vecZoneMaxs[ZONE_COURSE_3_END][i] );
-		}
-		case RUN_COURSE4 :
-		{
-			
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_COURSE_4_END][i])		
-					bInsideZone[client][INSIDE_END4][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_4_END][i], g_vecZoneMaxs[ZONE_COURSE_4_END][i] );
-		}
-		case RUN_COURSE5 :
-		{
-			
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_COURSE_5_END][i])		
-					bInsideZone[client][INSIDE_END5][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_5_END][i], g_vecZoneMaxs[ZONE_COURSE_5_END][i] );
-		}
-		case RUN_COURSE6 :
-		{	
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_COURSE_6_END][i])
-					bInsideZone[client][INSIDE_END6][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_6_END][i], g_vecZoneMaxs[ZONE_COURSE_6_END][i] );
-		}
-		case RUN_COURSE7 :
-		{
-				
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_COURSE_7_END][i])
-					bInsideZone[client][INSIDE_END7][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_7_END][i], g_vecZoneMaxs[ZONE_COURSE_7_END][i] );
-		}
-		case RUN_COURSE8 :
-		{
-				
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_COURSE_8_END][i])		
-					bInsideZone[client][INSIDE_END8][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_8_END][i], g_vecZoneMaxs[ZONE_COURSE_8_END][i] );
-		}
-		case RUN_COURSE9 :
-		{
-			
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_COURSE_9_END][i])		
-					bInsideZone[client][INSIDE_END9][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_9_END][i], g_vecZoneMaxs[ZONE_COURSE_9_END][i] );
-		}
-		case RUN_COURSE10 :
-		{
-			
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_COURSE_10_END][i])		
-					bInsideZone[client][INSIDE_END10][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_10_END][i], g_vecZoneMaxs[ZONE_COURSE_10_END][i] );
-		}
-		default :
-		{
-			for (int i=0; i < 10; i++ )
-				if (g_bZoneExists[ZONE_END][i])		
-					bInsideZone[client][INSIDE_END_MAIN][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_END][i], g_vecZoneMaxs[ZONE_END][i] );
-		}
-	}
-
-		for (int i = 0; i < 10; i++)
-		{
-			if ((bInsideZone[client][INSIDE_START][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_START][i], g_vecZoneMaxs[ZONE_START][i] ) && g_bIsLoaded[RUN_MAIN]  ))
-			{
-				if (!g_bZoneExists[ZONE_START][i]) continue;
-				g_iClientRun[client] = RUN_MAIN;
-				ChangeClientState( client, STATE_START );
-				if ( g_iClientRun[client] == RUN_COURSE1 || g_iClientRun[client] == RUN_MAIN )
-				{
-					CourseMod[client] = 1;
-				}
-				CourseMod[client] = 1;
-				IsCpRun[client] = false;
-				StateNow[client] = INSIDE_START;
-			}
-			else if ( (bInsideZone[client][INSIDE_START][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_1_START][i], g_vecZoneMaxs[ZONE_BONUS_1_START][i] ) && g_bIsLoaded[RUN_BONUS1]) )
-			{ 
-				if (!g_bZoneExists[ZONE_BONUS_1_START][i]) continue;
-				g_iClientRun[client] = RUN_BONUS1;
-				ChangeClientState( client, STATE_START );
-				IsCpRun[client] = false;
-				StateNow[client] = INSIDE_START;
-			}
-			else if ((bInsideZone[client][INSIDE_START][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_2_START][i], g_vecZoneMaxs[ZONE_BONUS_2_START][i] ) && g_bIsLoaded[RUN_BONUS2]))
-			{
-				if (!g_bZoneExists[ZONE_BONUS_2_START][i]) continue;
-				g_iClientRun[client] = RUN_BONUS2;
-				ChangeClientState( client, STATE_START );
-				IsCpRun[client] = false;
-				StateNow[client] = INSIDE_START;
-			}
-			else if ( (bInsideZone[client][INSIDE_START][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_3_START][i], g_vecZoneMaxs[ZONE_BONUS_3_START][i] ) && g_bIsLoaded[RUN_BONUS3]))
-			{
-				if (!g_bZoneExists[ZONE_BONUS_3_START][i]) continue;
-				g_iClientRun[client] = RUN_BONUS3;
-				ChangeClientState( client, STATE_START );
-				IsCpRun[client] = false;
-				StateNow[client] = INSIDE_START;
-			}
-			else if ( (bInsideZone[client][INSIDE_START][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_4_START][i], g_vecZoneMaxs[ZONE_BONUS_4_START][i] ) && g_bIsLoaded[RUN_BONUS4]))
-			{
-				if (!g_bZoneExists[ZONE_BONUS_4_START][i]) continue;
-				g_iClientRun[client] = RUN_BONUS4;
-				ChangeClientState( client, STATE_START );
-				IsCpRun[client] = false;
-				StateNow[client] = INSIDE_START;
-			}
-			else if ( (bInsideZone[client][INSIDE_START][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_5_START][i], g_vecZoneMaxs[ZONE_BONUS_5_START][i] ) && g_bIsLoaded[RUN_BONUS5]))
-			{
-				if (!g_bZoneExists[ZONE_BONUS_5_START][i]) continue;
-				g_iClientRun[client] = RUN_BONUS5;
-				ChangeClientState( client, STATE_START );
-				IsCpRun[client] = false;
-				StateNow[client] = INSIDE_START;
-			}
-			else if ( (bInsideZone[client][INSIDE_START][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_6_START][i], g_vecZoneMaxs[ZONE_BONUS_6_START][i] ) && g_bIsLoaded[RUN_BONUS6]))
-			{
-				if (!g_bZoneExists[ZONE_BONUS_6_START][i]) continue;
-				g_iClientRun[client] = RUN_BONUS6;
-				ChangeClientState( client, STATE_START );
-				IsCpRun[client] = false;
-				StateNow[client] = INSIDE_START;
-			}
-			else if ( (bInsideZone[client][INSIDE_START][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_7_START][i], g_vecZoneMaxs[ZONE_BONUS_7_START][i] ) && g_bIsLoaded[RUN_BONUS7]))
-			{
-				if (!g_bZoneExists[ZONE_BONUS_7_START][i]) continue;
-				g_iClientRun[client] = RUN_BONUS7;
-				ChangeClientState( client, STATE_START );
-				IsCpRun[client] = false;
-				StateNow[client] = INSIDE_START;
-			}
-			else if ( (bInsideZone[client][INSIDE_START][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_8_START][i], g_vecZoneMaxs[ZONE_BONUS_8_START][i] ) && g_bIsLoaded[RUN_BONUS8]))
-			{
-				if (!g_bZoneExists[ZONE_BONUS_8_START][i]) continue;
-				g_iClientRun[client] = RUN_BONUS8;
-				ChangeClientState( client, STATE_START );
-				IsCpRun[client] = false;
-				StateNow[client] = INSIDE_START;
-			}
-			else if ( (bInsideZone[client][INSIDE_START][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_9_START][i], g_vecZoneMaxs[ZONE_BONUS_9_START][i] ) && g_bIsLoaded[RUN_BONUS9]))
-			{
-				if (!g_bZoneExists[ZONE_BONUS_9_START][i]) continue;
-				g_iClientRun[client] = RUN_BONUS9;
-				ChangeClientState( client, STATE_START );
-				IsCpRun[client] = false;
-				StateNow[client] = INSIDE_START;
-			}
-			else if ( (bInsideZone[client][INSIDE_START][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_BONUS_10_START][i], g_vecZoneMaxs[ZONE_BONUS_10_START][i] ) && g_bIsLoaded[RUN_BONUS10]))
-			{
-				if (!g_bZoneExists[ZONE_BONUS_10_START][i]) continue;
-				g_iClientRun[client] = RUN_BONUS10;
-				ChangeClientState( client, STATE_START );
-				IsCpRun[client] = false;
-				StateNow[client] = INSIDE_START;
-			}
-			else if ((bInsideZone[client][INSIDE_CSTART][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_1_START][i], g_vecZoneMaxs[ZONE_COURSE_1_START][i] ) && g_bIsLoaded[RUN_COURSE1]))
-			{
-				if (!g_bZoneExists[ZONE_COURSE_1_START][i]) continue;
-				g_iClientRun[client] = RUN_COURSE1;
-				ChangeClientState( client, STATE_START );
-				CourseMod[client] = 1;
-				IsCpRun[client] = false;
-				StateNow[client] = INSIDE_CSTART;
-			}	
-			else if ((bInsideZone[client][INSIDE_CSTART_2][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_2_START][i], g_vecZoneMaxs[ZONE_COURSE_2_START][i] ) && g_bIsLoaded[RUN_COURSE2]))
-			{
-				if (!g_bZoneExists[ZONE_COURSE_2_START][i]) continue;
-				if ( g_iClientState[client] == STATE_RUNNING && g_iClientRun[client] != RUN_COURSE2 || g_iClientState[client] == STATE_END_MAIN || g_iClientState[client] == STATE_END && g_iClientRun[client] != RUN_COURSE1 || g_iClientState[client] == STATE_NOT_MAIN)
-				{
-					if ( CourseMod[client] == 1 )
-					{
-						if (!g_bClientPractising[client])
-							PrintToChat(client, CHAT_PREFIX..."Wrong map passing. Run Closed");
-						
-						CourseMod[client] = 0;
-						IsCpRun[client] = false;
-					}
-				}
-				g_iClientRun[client] = RUN_COURSE2;
-				ChangeClientState( client, STATE_CSTART2 );
-				StateNow[client] = INSIDE_CSTART_2;
-			}
-			else if ((bInsideZone[client][INSIDE_CSTART][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_3_START][i], g_vecZoneMaxs[ZONE_COURSE_3_START][i] ) && g_bIsLoaded[RUN_COURSE3]))
-			{
-				if (!g_bZoneExists[ZONE_COURSE_3_START][i]) continue;
-				if ( g_iClientState[client] == STATE_RUNNING && g_iClientRun[client] != RUN_COURSE3 || g_iClientState[client] == STATE_END && g_iClientRun[client] != RUN_COURSE2 || g_iClientState[client] == STATE_END_MAIN || g_iClientState[client] == STATE_NOT_MAIN)
-				{
-					if ( CourseMod[client] == 1 )
-					{
-						if (!g_bClientPractising[client])
-							PrintToChat(client, CHAT_PREFIX..."Wrong map passing. Run Closed");
-
-						CourseMod[client] = 0;
-						IsCpRun[client] = false;
-					}
-				}
-				g_iClientRun[client] = RUN_COURSE3;
-				ChangeClientState( client, STATE_CSTART3 );
-				StateNow[client] = INSIDE_CSTART;
-			}	
-			else if ((bInsideZone[client][INSIDE_CSTART][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_4_START][i], g_vecZoneMaxs[ZONE_COURSE_4_START][i] ) && g_bIsLoaded[RUN_COURSE4]))
-			{
-				if (!g_bZoneExists[ZONE_COURSE_4_START][i]) continue;
-				if ( g_iClientState[client] == STATE_RUNNING && g_iClientRun[client] != RUN_COURSE4 || g_iClientState[client] == STATE_END && g_iClientRun[client] != RUN_COURSE3 || g_iClientState[client] == STATE_END_MAIN || g_iClientState[client] == STATE_NOT_MAIN)
-				{
-					if ( CourseMod[client] == 1 )
-					{
-						if (!g_bClientPractising[client])
-							PrintToChat(client, CHAT_PREFIX..."Wrong map passing. Run Closed");
-
-						CourseMod[client] = 0;
-						IsCpRun[client] = false;
-					}
-				}
-				g_iClientRun[client] = RUN_COURSE4;
-				ChangeClientState( client, STATE_CSTART4 );
-				StateNow[client] = INSIDE_CSTART;
-			}	
-			else if ((bInsideZone[client][INSIDE_CSTART][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_5_START][i], g_vecZoneMaxs[ZONE_COURSE_5_START][i] ) && g_bIsLoaded[RUN_COURSE5]))
-			{
-				if (!g_bZoneExists[ZONE_COURSE_5_START][i]) continue;
-				if ( g_iClientState[client] == STATE_RUNNING && g_iClientRun[client] != RUN_COURSE5 || g_iClientState[client] == STATE_END && g_iClientRun[client] != RUN_COURSE4 || g_iClientState[client] == STATE_END_MAIN || g_iClientState[client] == STATE_NOT_MAIN)
-				{
-					if ( CourseMod[client] == 1 )
-					{
-						if (!g_bClientPractising[client])
-							PrintToChat(client, CHAT_PREFIX..."Wrong map passing. Run Closed");
-							
-						CourseMod[client] = 0;
-						IsCpRun[client] = false;
-					}
-				}
-				g_iClientRun[client] = RUN_COURSE5;
-				ChangeClientState( client, STATE_CSTART5 );
-				StateNow[client] = INSIDE_CSTART;
-			}
-			else if ((bInsideZone[client][INSIDE_CSTART][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_6_START][i], g_vecZoneMaxs[ZONE_COURSE_6_START][i] ) && g_bIsLoaded[RUN_COURSE6]))
-			{
-				if (!g_bZoneExists[ZONE_COURSE_6_START][i]) continue;
-				if ( g_iClientState[client] == STATE_RUNNING && g_iClientRun[client] != RUN_COURSE6 || g_iClientState[client] == STATE_END && g_iClientRun[client] != RUN_COURSE5 || g_iClientState[client] == STATE_END_MAIN || g_iClientState[client] == STATE_NOT_MAIN)
-				{
-					if ( CourseMod[client] == 1 )
-					{
-						if (!g_bClientPractising[client])
-							PrintToChat(client, CHAT_PREFIX..."Wrong map passing. Run Closed");
-							
-						CourseMod[client] = 0;
-						IsCpRun[client] = false;
-					}
-				}
-				g_iClientRun[client] = RUN_COURSE6;
-				ChangeClientState( client, STATE_CSTART6 );
-				StateNow[client] = INSIDE_CSTART;
-			}
-			else if ((bInsideZone[client][INSIDE_CSTART][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_7_START][i], g_vecZoneMaxs[ZONE_COURSE_7_START][i] ) && g_bIsLoaded[RUN_COURSE7]))
-			{
-				if (!g_bZoneExists[ZONE_COURSE_7_START][i]) continue;
-				if ( g_iClientState[client] == STATE_RUNNING && g_iClientRun[client] != RUN_COURSE7 || g_iClientState[client] == STATE_END && g_iClientRun[client] != RUN_COURSE6 || g_iClientState[client] == STATE_END_MAIN || g_iClientState[client] == STATE_NOT_MAIN)
-				{
-					if ( CourseMod[client] == 1 )
-					{
-						if (!g_bClientPractising[client])
-							PrintToChat(client, CHAT_PREFIX..."Wrong map passing. Run Closed");
-							
-						CourseMod[client] = 0;
-						IsCpRun[client] = false;
-					}
-				}
-				g_iClientRun[client] = RUN_COURSE7;
-				ChangeClientState( client, STATE_CSTART7 );
-				StateNow[client] = INSIDE_CSTART;
-			}
-			else if ((bInsideZone[client][INSIDE_CSTART][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_8_START][i], g_vecZoneMaxs[ZONE_COURSE_8_START][i] ) && g_bIsLoaded[RUN_COURSE8]))
-			{
-				if (!g_bZoneExists[ZONE_COURSE_8_START][i]) continue;
-				if ( g_iClientState[client] == STATE_RUNNING && g_iClientRun[client] != RUN_COURSE8 || g_iClientState[client] == STATE_END && g_iClientRun[client] != RUN_COURSE7 || g_iClientState[client] == STATE_END_MAIN || g_iClientState[client] == STATE_NOT_MAIN)
-				{
-					if ( CourseMod[client] == 1 )
-					{
-						if (!g_bClientPractising[client])
-							PrintToChat(client, CHAT_PREFIX..."Wrong map passing. Run Closed");
-							
-						CourseMod[client] = 0;
-						IsCpRun[client] = false;
-					}
-				}
-				g_iClientRun[client] = RUN_COURSE8;
-				ChangeClientState( client, STATE_CSTART8 );
-				StateNow[client] = INSIDE_CSTART;
-			}
-			else if ((bInsideZone[client][INSIDE_CSTART][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_9_START][i], g_vecZoneMaxs[ZONE_COURSE_9_START][i] ) && g_bIsLoaded[RUN_COURSE9]))
-			{
-				if (!g_bZoneExists[ZONE_COURSE_9_START][i]) continue;
-				if ( g_iClientState[client] == STATE_RUNNING && g_iClientRun[client] != RUN_COURSE9 || g_iClientState[client] == STATE_END && g_iClientRun[client] != RUN_COURSE8 || g_iClientState[client] == STATE_END_MAIN || g_iClientState[client] == STATE_NOT_MAIN)
-				{
-					if ( CourseMod[client] == 1 )
-					{
-						if (!g_bClientPractising[client])
-							PrintToChat(client, CHAT_PREFIX..."Wrong map passing. Run Closed");
-							
-						CourseMod[client] = 0;
-						IsCpRun[client] = false;
-					}
-				}
-				g_iClientRun[client] = RUN_COURSE9;
-				ChangeClientState( client, STATE_CSTART9 );
-				StateNow[client] = INSIDE_CSTART;
-			}
-			else if ((bInsideZone[client][INSIDE_CSTART][i] = IsInsideBoundsPlayer( client, g_vecZoneMins[ZONE_COURSE_10_START][i], g_vecZoneMaxs[ZONE_COURSE_10_START][i] ) && g_bIsLoaded[RUN_COURSE10]))
-			{
-				if (!g_bZoneExists[ZONE_COURSE_10_START][i]) continue;
-				if ( g_iClientState[client] == STATE_RUNNING && g_iClientRun[client] != RUN_COURSE10 || g_iClientState[client] == STATE_END && g_iClientRun[client] != RUN_COURSE9 || g_iClientState[client] == STATE_END_MAIN || g_iClientState[client] == STATE_NOT_MAIN)
-				{
-					if ( CourseMod[client] == 1 )
-					{
-						if (!g_bClientPractising[client])
-							PrintToChat(client, CHAT_PREFIX..."Wrong map passing. Run Closed");
-							
-						CourseMod[client] = 0;
-						IsCpRun[client] = false;
-					}
-				}
-				g_iClientRun[client] = RUN_COURSE10;
-				ChangeClientState( client, STATE_CSTART10 );
-				StateNow[client] = INSIDE_CSTART;
-			}
-			else if ( (g_iClientState[client] == STATE_START || g_iClientState[client] == STATE_CSTART2 || g_iClientState[client] == STATE_CSTART3 || g_iClientState[client] == STATE_CSTART4 || g_iClientState[client] == STATE_CSTART5 || g_iClientState[client] == STATE_CSTART6 || g_iClientState[client] == STATE_CSTART7 || g_iClientState[client] == STATE_CSTART8 || g_iClientState[client] == STATE_CSTART9 || g_iClientState[client] == STATE_CSTART10) && (!bInsideZone[client][StateNow[client]][0] && !bInsideZone[client][StateNow[client]][1] && !bInsideZone[client][StateNow[client]][2] && !bInsideZone[client][StateNow[client]][3] && !bInsideZone[client][StateNow[client]][4] && !bInsideZone[client][StateNow[client]][5] && !bInsideZone[client][StateNow[client]][6] && !bInsideZone[client][StateNow[client]][7] && !bInsideZone[client][StateNow[client]][8]))
-			{
-				if (g_iClientState[client] == STATE_START)
-				{
-					for (int a = 0; a < 100; a++)
-					{
-						g_iClientCpsEntered[client][a] = false;
-					}
-
-					if ( g_hClientCPData[client] != null )
-					{
-						delete g_hClientCPData[client];
-					}
-
-					g_hClientCPData[client] = new ArrayList( view_as<int>( C_CPData ) );
-					g_iClientCurCP[client] = -1;
-				}
-
-				if ( !g_bClientPractising[client] && GetEntityMoveType( client ) == MOVETYPE_NOCLIP )
-				{
-					SetPlayerPractice( client, true );
-				}
-				
-				ChangeClientState( client, STATE_RUNNING );
-				if ( g_iClientRun[client] == RUN_COURSE1 )
-				{
-					g_flClientStartTime[client] = GetEngineTime();
-					g_flClientCourseTime[client] = GetEngineTime();
-					g_flTicks_Start[client] = GetGameTickCount() - STVTickStart;
-					g_flTicks_Cource_Start[client] = GetGameTickCount() - STVTickStart; 
-					
-				}
-				else if (g_iClientRun[client] != RUN_COURSE2 && g_iClientRun[client] != RUN_COURSE3 && g_iClientRun[client] != RUN_COURSE4 && g_iClientRun[client] != RUN_COURSE5 && g_iClientRun[client] != RUN_COURSE6 && g_iClientRun[client] != RUN_COURSE7 && g_iClientRun[client] != RUN_COURSE8 && g_iClientRun[client] != RUN_COURSE9 && g_iClientRun[client] != RUN_COURSE10 )
-				{
-					g_flClientStartTime[client] = GetEngineTime();
-					g_flTicks_Start[client] = GetGameTickCount() - STVTickStart;
-				}
-				else if ( g_iClientRun[client] == RUN_COURSE2 || g_iClientRun[client] == RUN_COURSE3 || g_iClientRun[client] == RUN_COURSE4 || g_iClientRun[client] == RUN_COURSE5 || g_iClientRun[client] == RUN_COURSE6 || g_iClientRun[client] == RUN_COURSE7 || g_iClientRun[client] == RUN_COURSE8 || g_iClientRun[client] == RUN_COURSE9 || g_iClientRun[client] == RUN_COURSE10 )
-				{
-					if (CourseMod[client] == 1)
-					{
-						g_flClientCourseTime[client] = GetEngineTime();
-						g_flTicks_Cource_Start[client] = GetGameTickCount() - STVTickStart;
-					}
-					else 
-					{
-						g_flClientCourseTime[client] = GetEngineTime();
-						g_flClientStartTime[client] = GetEngineTime();
-						g_flTicks_Cource_Start[client] = GetGameTickCount() - STVTickStart;
-					}
-				}
-			}
-			else if ( g_iClientState[client] == STATE_RUNNING && bInsideZone[client][INSIDE_END][i] && g_iClientRun[client] != RUN_MAIN && g_iClientRun[client] != RUN_COURSE1 && g_iClientRun[client] != RUN_COURSE2 && g_iClientRun[client] != RUN_COURSE3 && g_iClientRun[client] != RUN_COURSE4 && g_iClientRun[client] != RUN_COURSE5 && g_iClientRun[client] != RUN_COURSE6 && g_iClientRun[client] != RUN_COURSE7 && g_iClientRun[client] != RUN_COURSE8 && g_iClientRun[client] != RUN_COURSE9 && g_iClientRun[client] != RUN_COURSE10 )
-			{
-				if ( g_flClientStartTime[client] == TIME_INVALID ) return;
-
-				if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) return;
-
-				
-
-				float flNewTime = GetEngineTime() - g_flClientStartTime[client];
-
-				g_flClientFinishTime[client] = flNewTime;
-
-				g_flTicks_End[client] = GetGameTickCount() - STVTickStart;
-
-				// Save the time if we're not practising and our time is valid.
-				if (	!g_bClientPractising[client]
-					&&	flNewTime > TIME_INVALID
-					&&	flNewTime > 0.0	 )
-				{
-					g_flClientWarning[client] = GetEngineTime() + WARNING_INTERVAL;
-					if (g_iClientState[client] != STATE_SETSTART)
-					{
-						ChangeClientState( client, STATE_END );
-						DB_SaveClientRecord( client, flNewTime );
-					}
-				}
-			}
-			else if ( g_iClientState[client] == STATE_RUNNING && bInsideZone[client][INSIDE_END1][i] && g_iClientRun[client] == RUN_COURSE1 )
-			{
-				flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseTime[client];
-
-				if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP || g_iClientState[client] == STATE_SETSTART || flNewTimeCourse[client] <= TIME_INVALID ) return;
-
-
-				ChangeClientState( client, STATE_END );
-
-				if (	!g_bClientPractising[client]
-					&&	flNewTimeCourse[client] > TIME_INVALID
-					&&	flNewTimeCourse[client] > 0.0	 )
-				{
-
-					g_flClientCourseTime[client] = flNewTimeCourse[client];
-					g_flClientWarning[client] = GetEngineTime() + WARNING_INTERVAL;
-					g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
-
-					DB_SaveClientRecord( client, flNewTimeCourse[client] );
-				}
-			}
-			else if ( g_iClientState[client] == STATE_RUNNING && bInsideZone[client][INSIDE_END2][i] && g_iClientRun[client] == RUN_COURSE2 )
-			{
-				if ( g_flClientStartTime[client] == TIME_INVALID || g_iClientState[client] == STATE_SETSTART ) return;
-
-				if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) return;
-
-
-				ChangeClientState( client, STATE_END );
-
-				float flNewTime = GetEngineTime() - g_flClientStartTime[client];
-				flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseTime[client];
-
-				// Save the time if we're not practising, our time is valid and our fps is legit.
-				//&&	!( HasScroll( client ) && !g_bClientValidFPS[client] )
-				if (	!g_bClientPractising[client]
-					&&	flNewTime > TIME_INVALID
-					&&	flNewTime > 0.0	 )
-				{
-					g_flClientWarning[client] = GetEngineTime() + WARNING_INTERVAL;
-					g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
-					DB_SaveClientRecord( client, flNewTimeCourse[client] );
-					if ( CourseMod[client] == 1 && !g_bIsLoaded[RUN_COURSE3])
-					{
-						g_flClientFinishTime[client] = flNewTime;	
-						g_flTicks_End[client] = GetGameTickCount() - STVTickStart;
-						
-						g_iClientRun[client] = RUN_MAIN;
-						if (g_iClientState[client] != STATE_SETSTART)
-						{
-							ChangeClientState( client, STATE_END_MAIN );
-							DB_SaveClientRecord( client, flNewTime );
-						}
-					}
-				}
-			}
-			else if ( g_iClientState[client] == STATE_RUNNING && bInsideZone[client][INSIDE_END3][i] && g_iClientRun[client] == RUN_COURSE3 )
-			{
-				if ( g_flClientStartTime[client] == TIME_INVALID ) return;
-
-				if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) return;
-
-
-				ChangeClientState( client, STATE_END );
-
-				float flNewTime = GetEngineTime() - g_flClientStartTime[client];
-				flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseTime[client];
-
-				// Save the time if we're not practising, our time is valid and our fps is legit.
-				//&&	!( HasScroll( client ) && !g_bClientValidFPS[client] )
-				if (	!g_bClientPractising[client]
-					&&	flNewTime > TIME_INVALID
-					&&	flNewTime > 0.0	 )
-				{
-
-					g_flClientWarning[client] = GetEngineTime() + WARNING_INTERVAL;
-					g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
-
-					if (g_iClientState[client] != STATE_SETSTART)
-						DB_SaveClientRecord( client, flNewTimeCourse[client] );
-
-					g_flClientFinishTime[client] = flNewTimeCourse[client];
-					if ( CourseMod[client] == 1 && !g_bIsLoaded[RUN_COURSE4])
-					{
-						g_flClientFinishTime[client] = flNewTime;
-						g_flTicks_End[client] = GetGameTickCount() - STVTickStart;	
-						g_iClientRun[client] = RUN_MAIN;
-
-						if (g_iClientState[client] != STATE_SETSTART) {
-							ChangeClientState( client, STATE_END_MAIN );
-							DB_SaveClientRecord( client, flNewTime );
-						}
-					}
-				}
-			}
-			else if ( g_iClientState[client] == STATE_RUNNING && bInsideZone[client][INSIDE_END4][i] && g_iClientRun[client] == RUN_COURSE4 )
-			{
-				if ( g_flClientStartTime[client] == TIME_INVALID ) return;
-
-				if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) return;
-
-
-				ChangeClientState( client, STATE_END );
-
-				float flNewTime = GetEngineTime() - g_flClientStartTime[client];
-				flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseTime[client];
-				g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
-
-				if (	!g_bClientPractising[client]
-					&&	flNewTime > TIME_INVALID
-					&&	flNewTime > 0.0	 )
-				{
-
-					g_flClientWarning[client] = GetEngineTime() + WARNING_INTERVAL;
-					g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
-					DB_SaveClientRecord( client, flNewTimeCourse[client] );
-					g_flClientFinishTime[client] = flNewTimeCourse[client];
-					if ( CourseMod[client] == 1 && !g_bIsLoaded[RUN_COURSE5])
-					{
-						g_flClientFinishTime[client] = flNewTime;
-						g_flTicks_End[client] = GetGameTickCount() - STVTickStart;	
-						
-						g_iClientRun[client] = RUN_MAIN;
-
-						if (g_iClientState[client] != STATE_SETSTART) {
-							ChangeClientState( client, STATE_END_MAIN );
-							DB_SaveClientRecord( client, flNewTime );
-						}
-					}
-				}
-			}
-			else if ( g_iClientState[client] == STATE_RUNNING && bInsideZone[client][INSIDE_END5][i] && g_iClientRun[client] == RUN_COURSE5 )
-			{
-				if ( g_flClientStartTime[client] == TIME_INVALID ) return;
-
-				if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) return;
-
-
-				ChangeClientState( client, STATE_END );
-
-				float flNewTime = GetEngineTime() - g_flClientStartTime[client];
-				flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseTime[client];
-
-				if (	!g_bClientPractising[client]
-					&&	flNewTime > TIME_INVALID
-					&&	flNewTime > 0.0	 )
-				{
-
-					g_flClientWarning[client] = GetEngineTime() + WARNING_INTERVAL;
-					g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
-					DB_SaveClientRecord( client, flNewTimeCourse[client] );
-					g_flClientFinishTime[client] = flNewTimeCourse[client];
-					if ( CourseMod[client] == 1 && !g_bIsLoaded[RUN_COURSE6] )
-					{
-						g_flClientFinishTime[client] = flNewTime;	
-						g_flTicks_End[client] = GetGameTickCount() - STVTickStart;
-						
-						g_iClientRun[client] = RUN_MAIN;
-
-						if (g_iClientState[client] != STATE_SETSTART)
-						{
-							ChangeClientState( client, STATE_END_MAIN );
-							DB_SaveClientRecord( client, flNewTime );
-						}
-					}
-				}
-			}
-			else if ( g_iClientState[client] == STATE_RUNNING && bInsideZone[client][INSIDE_END6][i] && g_iClientRun[client] == RUN_COURSE6 )
-			{
-				if ( g_flClientStartTime[client] == TIME_INVALID ) return;
-
-				if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) return;
-
-
-				ChangeClientState( client, STATE_END );
-
-				float flNewTime = GetEngineTime() - g_flClientStartTime[client];
-				flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseTime[client];
-
-				if (	!g_bClientPractising[client]
-					&&	flNewTime > TIME_INVALID
-					&&	flNewTime > 0.0	 )
-				{
-
-					g_flClientWarning[client] = GetEngineTime() + WARNING_INTERVAL;
-					g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
-					DB_SaveClientRecord( client, flNewTimeCourse[client] );
-					g_flClientFinishTime[client] = flNewTimeCourse[client];
-					if ( CourseMod[client] == 1 && !g_bIsLoaded[RUN_COURSE7] )
-					{
-						g_flClientFinishTime[client] = flNewTime;	
-						g_flTicks_End[client] = GetGameTickCount() - STVTickStart;
-						
-						g_iClientRun[client] = RUN_MAIN;
-
-						if (g_iClientState[client] != STATE_SETSTART)
-						{
-							ChangeClientState( client, STATE_END_MAIN );
-							DB_SaveClientRecord( client, flNewTime );
-						}
-					}
-				}
-			}
-			else if ( g_iClientState[client] == STATE_RUNNING && bInsideZone[client][INSIDE_END7][i] && g_iClientRun[client] == RUN_COURSE7 )
-			{
-				if ( g_flClientStartTime[client] == TIME_INVALID ) return;
-
-				if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) return;
-
-
-				ChangeClientState( client, STATE_END );
-
-				float flNewTime = GetEngineTime() - g_flClientStartTime[client];
-				flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseTime[client];
-
-				if (	!g_bClientPractising[client]
-					&&	flNewTime > TIME_INVALID
-					&&	flNewTime > 0.0	 )
-				{
-					g_flClientWarning[client] = GetEngineTime() + WARNING_INTERVAL;
-					g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
-					DB_SaveClientRecord( client, flNewTimeCourse[client] );
-					g_flClientFinishTime[client] = flNewTimeCourse[client];
-					if ( CourseMod[client] == 1 && !g_bIsLoaded[RUN_COURSE8] )
-					{
-						g_flClientFinishTime[client] = flNewTime;	
-						g_flTicks_End[client] = GetGameTickCount() - STVTickStart;
-						
-						g_iClientRun[client] = RUN_MAIN;
-
-						if (g_iClientState[client] != STATE_SETSTART)
-						{
-							ChangeClientState( client, STATE_END_MAIN );
-							DB_SaveClientRecord( client, flNewTime );
-						}
-					}
-				}
-			}
-			else if ( g_iClientState[client] == STATE_RUNNING && bInsideZone[client][INSIDE_END8][i] && g_iClientRun[client] == RUN_COURSE8 )
-			{
-				if ( g_flClientStartTime[client] == TIME_INVALID ) return;
-
-				if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) return;
-
-
-				ChangeClientState( client, STATE_END );
-
-				float flNewTime = GetEngineTime() - g_flClientStartTime[client];
-				flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseTime[client];
-
-				if (	!g_bClientPractising[client]
-					&&	flNewTime > TIME_INVALID
-					&&	flNewTime > 0.0	 )
-				{
-
-					g_flClientWarning[client] = GetEngineTime() + WARNING_INTERVAL;
-					g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
-					DB_SaveClientRecord( client, flNewTimeCourse[client] );
-					g_flClientFinishTime[client] = flNewTimeCourse[client];
-					if ( CourseMod[client] == 1 && !g_bIsLoaded[RUN_COURSE9] )
-					{
-						g_flClientFinishTime[client] = flNewTime;	
-						g_flTicks_End[client] = GetGameTickCount() - STVTickStart;
-						
-						g_iClientRun[client] = RUN_MAIN;
-
-						if (g_iClientState[client] != STATE_SETSTART)
-						{
-							ChangeClientState( client, STATE_END_MAIN );
-							DB_SaveClientRecord( client, flNewTime );
-						}
-					}
-				}
-			}
-			else if ( g_iClientState[client] == STATE_RUNNING && bInsideZone[client][INSIDE_END9][i] && g_iClientRun[client] == RUN_COURSE9 )
-			{
-				if ( g_flClientStartTime[client] == TIME_INVALID ) return;
-
-				if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) return;
-
-
-				ChangeClientState( client, STATE_END );
-
-				float flNewTime = GetEngineTime() - g_flClientStartTime[client];
-				flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseTime[client];
-
-				if (	!g_bClientPractising[client]
-					&&	flNewTime > TIME_INVALID
-					&&	flNewTime > 0.0	 )
-				{
-
-					g_flClientWarning[client] = GetEngineTime() + WARNING_INTERVAL;
-					g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
-					DB_SaveClientRecord( client, flNewTimeCourse[client] );
-					g_flClientFinishTime[client] = flNewTimeCourse[client];
-					if ( CourseMod[client] == 1 && !g_bIsLoaded[RUN_COURSE10] )
-					{
-						g_flClientFinishTime[client] = flNewTime;	
-						g_flTicks_End[client] = GetGameTickCount() - STVTickStart;
-						
-						g_iClientRun[client] = RUN_MAIN;
-
-						if (g_iClientState[client] != STATE_SETSTART)
-						{
-							ChangeClientState( client, STATE_END_MAIN );
-							DB_SaveClientRecord( client, flNewTime );
-						}
-					}
-				}
-			}
-			else if ( g_iClientState[client] == STATE_RUNNING && bInsideZone[client][INSIDE_END10][i] && g_iClientRun[client] == RUN_COURSE10 )
-			{
-				if ( g_flClientStartTime[client] == TIME_INVALID ) return;
-
-				if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) return;
-
-
-				ChangeClientState( client, STATE_END );
-
-				float flNewTime = GetEngineTime() - g_flClientStartTime[client];
-				flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseTime[client];
-
-				if (	!g_bClientPractising[client]
-					&&	flNewTime > TIME_INVALID
-					&&	flNewTime > 0.0	 )
-				{
-
-					g_flClientWarning[client] = GetEngineTime() + WARNING_INTERVAL;
-					g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
-					DB_SaveClientRecord( client, flNewTimeCourse[client] );
-					g_flClientFinishTime[client] = flNewTimeCourse[client];
-					if ( CourseMod[client] == 1 )
-					{
-						g_flClientFinishTime[client] = flNewTime;	
-						g_flTicks_End[client] = GetGameTickCount() - STVTickStart;
-						
-						g_iClientRun[client] = RUN_MAIN;
-
-						if (g_iClientState[client] != STATE_SETSTART)
-						{
-							ChangeClientState( client, STATE_END_MAIN );
-							DB_SaveClientRecord( client, flNewTime );
-						}
-					}
-				}
-			}
-			else if ( g_iClientState[client] == STATE_RUNNING && bInsideZone[client][INSIDE_END_MAIN][i] )
-			{
-				if ( g_flClientStartTime[client] <= TIME_INVALID ) return;
-
-				if ( GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) return;
-
-				IsCpRun[client] = false;
-
-				
-
-				float flNewTime = GetEngineTime() - g_flClientStartTime[client];
-
-				g_flClientFinishTime[client] = flNewTime;
-
-				g_flTicks_End[client] = GetGameTickCount() - STVTickStart;
-
-				if ( !g_bClientPractising[client] )
-				{
-					g_flClientWarning[client] = GetEngineTime() + WARNING_INTERVAL;
-
-					if ( TF2_GetPlayerClass(client) == TFClass_DemoMan || TF2_GetPlayerClass(client) == TFClass_Soldier  )
-		            {
-			            if (g_iClientState[client] != STATE_SETSTART)
-			            {
-			            	ChangeClientState( client, STATE_END_MAIN );
-							DB_SaveClientRecord( client, flNewTime );
-						}
-					}
-				}
-			}
-
-	}
-}
-
 stock void ChangeClientState( int client, PlayerState state )
 {
 	if ( g_iClientState[client] != state )
@@ -2967,12 +2276,11 @@ stock void TeleportPlayerToStart( int client )
 {
 
 	g_flClientStartTime[client] = TIME_INVALID;
-	ChangeClientState( client, STATE_START );
+	ChangeClientState( client, STATE_SETSTART );
 
 
 	if(g_fClientRespawnPosition[client][0] != 0){
 		TeleportEntity(client, g_fClientRespawnPosition[client], g_fClientRespawnAngles[client], g_vecNull);
-		g_iClientRun[client] = RUN_SETSTART;
 		//SetPlayerPractice(client, true);
 		return;
 	}
@@ -3022,8 +2330,9 @@ stock void RespawnPlayerRun( int client)
 			SetEntityGravity(client, 1.0);
 		    DestroyProjectilesSoldier(client);
 		}
+
 		TeleportEntity(client, g_fClientRespawnPosition[client], g_fClientRespawnEyes[client], g_vecNull );
-		g_iClientRun[client] = RUN_SETSTART;
+		
 		//SetPlayerPractice(client, true);
 		return;
 	}
@@ -3049,6 +2358,19 @@ stock void RespawnPlayerRun( int client)
 		SetPlayerRun(client, RUN_COURSE1);
 		return;
 	}
+	if ( g_bIsLoaded[RUN_MAIN] )
+	{
+		if (TF2_GetPlayerClass(client) == TFClass_DemoMan) {
+			SetEntityGravity(client, 1.0);
+			SetEntityHealth(client, 175);
+		   	DestroyProjectilesDemo(client);
+		} else if (TF2_GetPlayerClass(client) == TFClass_Soldier) {
+			SetEntityGravity(client, 1.0);
+		    DestroyProjectilesSoldier(client);
+		}
+		SetPlayerRun(client, RUN_MAIN);
+		return;
+	}
 	if (TF2_GetPlayerClass(client) == TFClass_DemoMan) {
 		SetEntityGravity(client, 1.0);
 		SetEntityHealth(client, 175);
@@ -3057,7 +2379,6 @@ stock void RespawnPlayerRun( int client)
 		SetEntityGravity(client, 1.0);
 		DestroyProjectilesSoldier(client);
 	}
-	SetPlayerRun(client, RUN_MAIN);
 }
 
 stock void SetPlayerRun( int client, int reqrun )
@@ -3376,24 +2697,15 @@ stock void CreateZoneEntity( int zone )
 
 	int ent;
 	if ( !(ent = CreateTrigger( vecMins, vecMaxs )) )
+	{
+		LogError("Cant create trigger");
 		return;
+	}
 
 	SetTriggerIndex( ent, zone );
 
 	switch ( iData[ZONE_TYPE] )
 	{
-		/*
-		case ZONE_START :
-		{
-			SDKHook( ent, SDKHook_StartTouchPost, Event_StartTouchPost_Start );
-			SDKHook( ent, SDKHook_EndTouchPost, Event_EndTouchPost_Start );
-		}
-		case ZONE_END :
-		{
-			SDKHook( ent, SDKHook_StartTouchPost, Event_StartTouchPost_End );
-			SDKHook( ent, SDKHook_EndTouchPost, Event_EndTouchPost_End );
-		}
-		*/
 		case ZONE_BLOCKS :
 		{
 			SDKHook( ent, SDKHook_StartTouchPost, Event_StartTouchPost_Block );
@@ -3406,9 +2718,14 @@ stock void CreateZoneEntity( int zone )
 		{
 			SDKHook( ent, SDKHook_StartTouchPost, Event_StartTouchPost_Skip );
 		}
+		default :
+		{
+			SDKHook( ent, SDKHook_TouchPost, Event_Touch_Zone );
+			SDKHook( ent, SDKHook_EndTouch, Event_EndTouchPost_Zone );
+		}
 	}
 
-	g_hZones.Set( zone, EntIndexToEntRef( ent ), view_as<int>( ZONE_ENTREF ) );
+	g_hZones.Set( zone, EntIndexToEntRef( iData[ZONE_ID] ), view_as<int>( ZONE_ENTREF ) );
 }
 
 stock void CreateCheckPoint( int cp )
@@ -3594,7 +2911,7 @@ stock void StartToBuild( int client, int zone, bool eye )
 	if ( zone < NUM_REALZONES )
 	{
 		if (g_bZoneExists[zone][0])
-			CPrintToChat( client, CHAT_PREFIX..."You started "...CLR_TEAM..."%s "...CLR_TEXT..." zone! {white}::index {orange}%i{white}::", g_szZoneNames[zone], ZoneIndex[client]+1 );
+			CPrintToChat( client, CHAT_PREFIX..."You started "...CLR_TEAM..."%s "...CLR_TEXT..." zone! {white} :: index {orange}%i{white}::", g_szZoneNames[zone], ZoneIndex[client]+1 );
 		else
 			CPrintToChat( client, CHAT_PREFIX..."You started "...CLR_TEAM..."%s "...CLR_TEXT..." zone!", g_szZoneNames[zone] );	
 	}
@@ -3637,12 +2954,10 @@ stock void CheckZones()
 	if ( g_hZones != null )
 	{
 		len = g_hZones.Length;
+		int zone;
 		for ( i = 0; i < len; i++ )
 		{
-			if ( EntRefToEntIndex( g_hZones.Get( i, view_as<int>( ZONE_ENTREF ) ) ) < 1 )
-			{
-				CreateZoneEntity( i );
-			}
+			CreateZoneEntity( i );
 		}
 	}
 }
@@ -3756,7 +3071,7 @@ stock void DoRecordNotification( int client, char szName[MAX_NAME_LENGTH], int r
 			hook.Send();
 
 			GetConVarString(CVAR_MessageKey, socket_key, sizeof(socket_key));
-			Format(wr_notify, sizeof(wr_notify), "%swrnotifycode| {lightskyblue}(%s) {white}:: (%s)\x0764E664%N {white}broke the \x0750DCFF%s {white}:: \x0764E664%s {white}(\x0750DCFFWR -%s{white})!", socket_key, server_name[NAME_SHORT][server_id], g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime, wr_improve);
+			Format(wr_notify, sizeof(wr_notify), "%swrnotifycode| {lightskyblue}(%s) {white}:: (%s) \x0764E664%N {white}broke the \x0750DCFF%s {white}:: \x0764E664%s {white}(\x0750DCFFWR -%s{white})!", socket_key, server_name[NAME_SHORT][server_id], g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime, wr_improve);
 	
 			if(isMasterServer)
 				SendToAllClients(wr_notify, sizeof(wr_notify), INVALID_HANDLE);

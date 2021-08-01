@@ -680,9 +680,8 @@ public void Threaded_Over( Database hOwner, DBResultSet hQuery, const char[] szE
 	
 	if ( hQuery.FetchRow() )
 	{
-		
-		float a = hQuery.FetchFloat(  0 );
-		PrintToChatAll("all overall points: %.1f", a);
+		float pts = hQuery.FetchFloat(  0 );
+		CPrintToChatAll(CHAT_PREFIX... "Sum of {green}all points {white}:: {lightskyblue}%.1f", pts);
 	}
 	
 }
@@ -792,7 +791,7 @@ public void Threaded_DisplayRank( Database hOwner, DBResultSet hQuery, const cha
 			int style = hData.Get( 0, 2 );
 			int mode = hData.Get( 0, 3 );
 
-			FormatEx( szQuery, sizeof( szQuery ), "SELECT rank FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND mode = %i AND uid = %i",
+			FormatEx( szQuery, sizeof( szQuery ), "SELECT `rank` FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND mode = %i AND uid = %i",
 				g_szCurrentMap,
 				run,
 				mode,
@@ -1211,7 +1210,7 @@ public void Threaded_DisplayRank_End( Database hOwner, DBResultSet hQuery, const
  
 				Transaction transaction = new Transaction();
 				g_hDatabase.Format(szT4, sizeof(szT4), "(SELECT @curRank := 0);");
-				g_hDatabase.Format(szT5, sizeof(szT5), "update maprecs SET rank = (@curRank := @curRank + 1) WHERE map = '%s' AND run = %i AND mode = %i ORDER BY time ASC;", g_szCurrentMap, run, mode );
+				g_hDatabase.Format(szT5, sizeof(szT5), "update maprecs SET `rank` = (@curRank := @curRank + 1) WHERE map = '%s' AND run = %i AND mode = %i ORDER BY time ASC;", g_szCurrentMap, run, mode );
 
 				g_hDatabase.Format(szT6, sizeof(szT6), "(SELECT @curClassRank := 0);");
 				g_hDatabase.Format(szT7, sizeof(szT7), "UPDATE "...TABLE_PLYDATA..." SET %s = (@curClassRank := @curClassRank + 1) where %s > 0.0 ORDER BY %s DESC;", (style == STYLE_SOLLY) ? "srank" : "drank", (style == STYLE_SOLLY) ? "solly" : "demo" , (style == STYLE_SOLLY) ? "solly" : "demo" );
@@ -1219,7 +1218,7 @@ public void Threaded_DisplayRank_End( Database hOwner, DBResultSet hQuery, const
 				g_hDatabase.Format(szT8, sizeof(szT8), "(SELECT @curOverRank := 0);");
 				g_hDatabase.Format(szT9, sizeof(szT9), "UPDATE "...TABLE_PLYDATA..." SET orank = (@curOverRank := @curOverRank + 1) where solly > 0.0 or demo > 0.0 ORDER BY overall DESC;" );
 
-				g_hDatabase.Format(szT10, sizeof(szT10), "(SELECT @curAllRank := (select max(rank) from maprecs where `map` = '%s' and `run` = %i and `mode` = %i));", g_szCurrentMap, run, mode );
+				g_hDatabase.Format(szT10, sizeof(szT10), "(SELECT @curAllRank := (select max(`rank`) from maprecs where `map` = '%s' and `run` = %i and `mode` = %i));", g_szCurrentMap, run, mode );
 				g_hDatabase.Format(szT11, sizeof(szT11), "update maprecs set allranks = @curAllRank where map = '%s' and run = %i and mode = %i", g_szCurrentMap, run, mode );
 
 				
@@ -1239,7 +1238,7 @@ public void Threaded_DisplayRank_End( Database hOwner, DBResultSet hQuery, const
 
 				for (int i = 1; i < 11; i++)
 				{
-					g_hDatabase.Format(szT12, sizeof(szT12), "UPDATE "...TABLE_RECORDS..." SET pts = ((SELECT r%i from points where tier = %i and run = '%s') + %.1f) WHERE %i <= %i AND %i <= 10 AND rank = %i AND map = '%s' AND run = %i AND mode = %i", i, g_Tiers[run][mode], db_run, pointss, i, outof, i, i, g_szCurrentMap, run, mode);
+					g_hDatabase.Format(szT12, sizeof(szT12), "UPDATE "...TABLE_RECORDS..." SET pts = ((SELECT r%i from points where tier = %i and run = '%s') + %.1f) WHERE %i <= %i AND %i <= 10 AND `rank` = %i AND map = '%s' AND run = %i AND mode = %i", i, g_Tiers[run][mode], db_run, pointss, i, outof, i, i, g_szCurrentMap, run, mode);
 					
 					g_hDatabase.Query(Threaded_Empty, szT12);
 				}
@@ -1252,7 +1251,7 @@ public void Threaded_DisplayRank_End( Database hOwner, DBResultSet hQuery, const
 
 				if (rank == 1 && outof > 1)
 				{
-					g_hDatabase.Format(szT12, sizeof(szT12), "UPDATE "...TABLE_RECORDS..." SET beaten = 1 WHERE rank = 2 AND map = '%s' AND run = %i AND mode = %i", g_szCurrentMap, run, mode);
+					g_hDatabase.Format(szT12, sizeof(szT12), "UPDATE "...TABLE_RECORDS..." SET beaten = 1 WHERE `rank` = 2 AND map = '%s' AND run = %i AND mode = %i", g_szCurrentMap, run, mode);
 					
 					g_hDatabase.Query(Threaded_Empty, szT12);
 				}
@@ -1468,19 +1467,24 @@ public void Threaded_Init_Zones( Database hOwner, DBResultSet hQuery, const char
 		}
 		else
 		{
-			iData[ZONE_ID] = 0;
+			iData[ZONE_TYPE] = zone;
+			iData[ZONE_ID] = index;
 			
 			g_bZoneExists[zone][index] = true;
 			
+			ArrayCopy( vecMins, iData[ZONE_MINS], 3 );
+			ArrayCopy( vecMaxs, iData[ZONE_MAXS], 3 );
 			ArrayCopy( vecMins, g_vecZoneMins[zone][index], 3 );
 			ArrayCopy( vecMaxs, g_vecZoneMaxs[zone][index], 3 );
+
+			g_hZones.PushArray( iData, view_as<int>( ZoneData ) );
 		}
 		CreateZoneBeams( zone, vecMins, vecMaxs, iData[ZONE_ID], index );
 		zones++;
 	}
 	PrintToChatAll(CHAT_PREFIX..."Loaded \x0750DCFF%i zone(s)", zones );
 	
-	if ( !g_bZoneExists[ZONE_START][0] && !g_bZoneExists[ZONE_END][0] && !g_bZoneExists[ZONE_COURSE_1_START][0] )
+	if ( !g_bZoneExists[ZONE_START][0] && !g_bZoneExists[ZONE_END][0] && !g_bZoneExists[ZONE_COURSE_1_START][0] && !g_bZoneExists[ZONE_COURSE_1_END][0] )
 	{
 		PrintToServer( CONSOLE_PREFIX..."Map is lacking zones..." );
 		g_bIsLoaded[RUN_MAIN] = false;
@@ -1491,10 +1495,9 @@ public void Threaded_Init_Zones( Database hOwner, DBResultSet hQuery, const char
 	{
 		g_bIsLoaded[i/2] = ( g_bZoneExists[i][0] && g_bZoneExists[i+1][0] );
 	}
-
 	
 	
-	if ( g_bIsLoaded[RUN_MAIN] || g_bIsLoaded[RUN_COURSE1] || g_bIsLoaded[RUN_COURSE2] || g_bIsLoaded[RUN_COURSE3] || g_bIsLoaded[RUN_COURSE4] || g_bIsLoaded[RUN_COURSE5] || g_bIsLoaded[RUN_COURSE6] || g_bIsLoaded[RUN_COURSE7] || g_bIsLoaded[RUN_COURSE8] || g_bIsLoaded[RUN_COURSE9] || g_bIsLoaded[RUN_COURSE10] || g_bIsLoaded[RUN_BONUS1] || g_bIsLoaded[RUN_BONUS2] || g_bIsLoaded[RUN_BONUS3] || g_bIsLoaded[RUN_BONUS4] || g_bIsLoaded[RUN_BONUS5] || g_bIsLoaded[RUN_BONUS6] || g_bIsLoaded[RUN_BONUS7] || g_bIsLoaded[RUN_BONUS8] || g_bIsLoaded[RUN_BONUS9] || g_bIsLoaded[RUN_BONUS10] )
+	if ( g_bIsLoaded[RUN_MAIN] || g_bIsLoaded[RUN_COURSE1] )
 	{
 		SetupZoneSpawns();
 		

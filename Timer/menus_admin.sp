@@ -37,12 +37,16 @@ public Action Command_Admin_ZoneMenu( int client, int args )
 	
 	
 	Menu mMenu = new Menu( Handler_ZoneMain );
-	mMenu.SetTitle( "Zone Menu\n " );
+	mMenu.SetTitle( "Zone Menu%s\n ", ( g_iBuilderZone[client] != ZONE_INVALID ) ? " :: Building mode" : "" );
 	
 	if ( g_iBuilderZone[client] != ZONE_INVALID )
 	{
+		char AutoHeight[100];
+		FormatEx( AutoHeight, sizeof(AutoHeight), "%s", (IsBuildingOnGround[client]) ? "Auto Height [ON]" : "Auto Height [OFF]" );
+
 		mMenu.AddItem("", "New Zone", ITEMDRAW_DISABLED );
 		mMenu.AddItem( "", "Levels", ITEMDRAW_DISABLED );
+		mMenu.AddItem( "", AutoHeight );
 		mMenu.AddItem( "", "End Zone" );
 		mMenu.AddItem( "", "Cancel Zone" );
 		
@@ -73,14 +77,33 @@ public int Handler_ZoneMain( Menu mMenu, MenuAction action, int client, int inde
 	
 	
 	// We got an item!
-	switch ( index )
+	if ( g_iBuilderZone[client] != ZONE_INVALID )
 	{
-		case 0 : ChooseZoneType(client);
-		case 1 : FakeClientCommand( client, "sm_startlevels" );
-		case 2 : FakeClientCommand( client, "sm_endzone" );
-		case 3 : FakeClientCommand( client, "sm_cancelzone" );
+		switch ( index )
+		{
+			case 0 : ChooseZoneType(client);
+			case 1 : FakeClientCommand( client, "sm_startlevels" );
+			case 2 : { 
+				IsBuildingOnGround[client] = !IsBuildingOnGround[client];
+				FakeClientCommand( client, "sm_zone" );
+			}
+			case 3 : FakeClientCommand( client, "sm_endzone" );
+			case 4 : FakeClientCommand( client, "sm_cancelzone" );
 
-		case 4 : FakeClientCommand( client, "sm_deletezone" );
+			case 5 : FakeClientCommand( client, "sm_deletezone" );
+		}
+	}
+	else
+	{
+		switch ( index )
+		{
+			case 0 : ChooseZoneType(client);
+			case 1 : FakeClientCommand( client, "sm_startlevels" );
+			case 2 : FakeClientCommand( client, "sm_endzone" );
+			case 3 : FakeClientCommand( client, "sm_cancelzone" );
+
+			case 4 : FakeClientCommand( client, "sm_deletezone" );
+		}
 	}
 	
 	return 0;
@@ -1096,12 +1119,14 @@ public Action Command_Admin_ZoneDelete_CP( int client, int args )
 	}
 	
 	char szItem[32];
+	char szId[5];
 	for ( int i = 0; i < len; i++ )
 	{
+		IntToString(i, szId, sizeof(szId));
 		FormatEx( szItem, sizeof( szItem ), "CP #%i",
 			g_hCPs.Get( i, view_as<int>( CP_ID ) ) + 1);
 			
-		mMenu.AddItem( "", szItem );
+		mMenu.AddItem( szId, szItem );
 	}
 	
 	mMenu.DisplayAt( client, menu_page[client], MENU_TIME_FOREVER );
@@ -1109,15 +1134,18 @@ public Action Command_Admin_ZoneDelete_CP( int client, int args )
 	return Plugin_Handled;
 }
 
-public int Handler_ZoneDelete_CP( Menu mMenu, MenuAction action, int client, int index )
+public int Handler_ZoneDelete_CP( Menu mMenu, MenuAction action, int client, int item )
 {
 	if ( action == MenuAction_End ) { delete mMenu; return 0; }
 	if ( action != MenuAction_Select ) return 0;
 	
-	
+	char szItem[10];
+	GetMenuItem( mMenu, item, szItem, sizeof( szItem ) );
+
+	int index = StringToInt(szItem);
+
 	if ( index < 0 || index >= g_hCPs.Length ) return 0;
-	
-	
+
 	int ent = EntRefToEntIndex( g_hCPs.Get( index, view_as<int>( CP_ENTREF ) ) );
 	int id = g_hCPs.Get( index, view_as<int>( CP_ID ) );
 	
@@ -1335,13 +1363,9 @@ public int Handler_RecordDelete_Confirmation( Menu mMenu, MenuAction action, int
 						bool have_cp_records;
 						for (int j = 0; j < g_hCPs.Length; j++)
 						{
-							
-							SetPrCpTime( j, mode, TIME_INVALID, id );
+							SetPrCpTime( j, mode, TIME_INVALID, i );
 						}
-
-
 					}
-
 					break;
 				}
 			}

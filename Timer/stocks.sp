@@ -218,6 +218,22 @@ stock int GetActivePlayers( int ignore = 0 )
 	return clients;
 }
 
+public bool RunIsBonus(int run)
+{
+	if (RUN_BONUS1 <= run <= RUN_BONUS10)
+		return true;
+
+	return false;
+}
+
+public bool RunIsCourse(int run)
+{
+	if (RUN_COURSE1 <= run <= RUN_COURSE10)
+		return true;
+
+	return false;
+}
+
 // Used for players and other entities.
 stock bool IsInsideBounds( int ent, float vecMins[3], float vecMaxs[3] )
 {
@@ -277,26 +293,6 @@ public int NumberIsInbetween(float x, float w, float c1, float c2) {
 		}
 	}
 	return 0;
-}
-
-// IM GOING TO ASUME THAT THE WALLS IM SEEING IN THE FIGURE ARE INSIDE THE PLANE Y/Z, IF THEY ARE IN THE PLANE X/Z CHANGE Y FOR X
-bool IsMyPlayerInsideThatTrapezoid(int client, float vec1, float vec2, float vec3, float vec4)
-// SPLIT TRAPEZOID INTO TRIANGLE+CUBE
-// vec1 & vec2 are the mins and max of the triangle section, vec 3 and vec4 are the ones for that cubic section
-{
-    float playerpos = GetEntPropVector( client, Prop_Send, "m_vecOrigin", vecPos );
-    float slope = (vec2[2] - vec1[2]) / (vec2[1] - vec1[1]);
-// First lets see if player is inside that "curved zone but imagine a cube that contain that zone to exclude further calculations"
-    if    (vec1[0] < playerpos[0] < vec2[0] && vec1[1] < playerpos[1] < vec2[1] && vec1[2] < playerpos[2] vec2[2])
-    {
-        if (playerpos[2]/playerpos[1] < slope)    // Now really lets see if player is really under that curve and inside the triangle
-            return true;
-    }
-// Hes not in "curved" maybe its inside that cubic area?        
-    else if (vec3[0] < playerpos < vec4[0] && vec3[1] < playerpos[1] < vec4[1] && vec3[2] < playerpos[2] < vec4[2])
-        return true;
-        
-    return false;    // NO? Badluck Brian
 }
 
 stock int CreateTrigger( float vecMins[3], float vecMaxs[3] )
@@ -361,33 +357,4 @@ stock int NumberOfActivePlayers(int mode, int style){
 	for ( int i = 1; i <= MaxClients; i++ )
 		if (IsClientConnected(i) && !IsFakeClient(i) && !(TF2_GetClientTeam(i) == TFTeam_Spectator) && g_iClientMode[i] == mode && g_iClientStyle[i] == style) count++;
 	return count;
-}
-
-stock void SetBhopStatus(int client){
-
-	switch ( g_iClientStyle[client] )
-	{
-		case STYLE_DEMOMAN :
-		{
-			if (!FC_BhopStatus(client))
-			{
-				FC_SetBhop(client, false, false, 0.0, 0.0);
-			}
-		}
-		case STYLE_CROUCHED :
-		{
-			if (FC_BhopStatus(client))
-			{
-				FC_SetBhop(client, false, false, 0.0, 0.0);
-			}
-		}
-		case STYLE_SOLLY :
-		{
-			if (FC_BhopStatus(client))
-			{
-				FC_SetBhop(client, false, false, 0.0, 0.0);
-			}
-		}
-	}
-
 }
