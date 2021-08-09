@@ -864,8 +864,15 @@ public Action Command_Admin_ZoneDelete( int client, int args )
 		// Whether we draw it as disabled or not.
 		if ( i == ZONE_BLOCKS || i == ZONE_COURCE || i == ZONE_SKIP )
 		{
-			if ( g_hZones == null || !g_hZones.Length )
+			for (int j=0; j < g_hZones.Length; j++)
+			{
+				if (g_hZones.Get( j, view_as<int>( ZONE_TYPE )) == i)
+				{
+					bDraw = true;
+					break;
+				}
 				bDraw = false;
+			}
 		}
 		else if ( i == ZONE_CP )
 		{
@@ -974,7 +981,7 @@ public int Handler_ZoneDelete( Menu mMenu, MenuAction action, int client, int zo
 	{
 		if ( zone < 0 || zone >= NUM_ZONES_W_CP ) return 0;
 		
-		if ( zone == ZONE_BLOCKS || zone == ZONE_COURCE )
+		if ( zone == ZONE_BLOCKS || zone == ZONE_COURCE || zone == ZONE_SKIP )
 		{
 			menu_page[client] = 0;
 			FakeClientCommand( client, "sm_deletezone2" );
@@ -1039,22 +1046,21 @@ public Action Command_Admin_ZoneDelete2( int client, int args )
 	}
 	
 	char szItem[24];
+	char szIndex[10];
+
 	for ( int i = 0; i < len; i++ )
 	{
-		if ( g_hZones.Get( i, view_as<int>( ZONE_TYPE ) ) == ZONE_COURCE )
+		if (g_hZones.Get( i, view_as<int>( ZONE_TYPE )) <= NUM_REALZONES) continue;
+
+		switch (g_hZones.Get( i, view_as<int>( ZONE_TYPE )))
 		{
-			FormatEx( szItem, sizeof( szItem ), "Cource teleport #%i", g_hZones.Get( i, view_as<int>( ZONE_ID ) ) + 1 );
-		}
-		else if ( g_hZones.Get( i, view_as<int>( ZONE_TYPE ) ) == ZONE_SKIP )
-		{
-			FormatEx( szItem, sizeof( szItem ), "Skip level #%i", g_hZones.Get( i, view_as<int>( ZONE_ID ) ) + 1 );
-		}
-		else
-		{
-			FormatEx( szItem, sizeof( szItem ), "Block #%i", g_hZones.Get( i, view_as<int>( ZONE_ID ) ) + 1 );
+			case ZONE_COURCE : FormatEx( szItem, sizeof( szItem ), "Cource teleport #%i", g_hZones.Get( i, view_as<int>( ZONE_ID ) ) + 1 );
+			case ZONE_SKIP : FormatEx( szItem, sizeof( szItem ), "Skip level #%i", g_hZones.Get( i, view_as<int>( ZONE_ID ) ) + 1 );
+			case ZONE_BLOCKS : FormatEx( szItem, sizeof( szItem ), "Block #%i", g_hZones.Get( i, view_as<int>( ZONE_ID ) ) + 1 );
 		}
 		
-		mMenu.AddItem( "", szItem );
+		IntToString(i, szIndex, sizeof(szIndex));
+		mMenu.AddItem( szIndex, szItem );
 	}
 	
 	mMenu.DisplayAt( client, menu_page[client], MENU_TIME_FOREVER );
@@ -1062,16 +1068,16 @@ public Action Command_Admin_ZoneDelete2( int client, int args )
 	return Plugin_Handled;
 }
 
-public int Handler_ZoneDelete_S( Menu mMenu, MenuAction action, int client, int index )
+public int Handler_ZoneDelete_S( Menu mMenu, MenuAction action, int client, int item )
 {
 	if ( action == MenuAction_End ) { delete mMenu; return 0; }
 	if ( action != MenuAction_Select ) return 0;
 	
-	
-	if ( index < 0 || index >= g_hZones.Length ) return 0;
-	
-	
-	int ent = EntRefToEntIndex( g_hZones.Get( index, view_as<int>( ZONE_ENTREF ) ) );
+	char szIndex[10];
+	GetMenuItem(mMenu, item, szIndex, sizeof(szIndex));
+	int index = StringToInt(szIndex);
+
+	int ent = g_hZones.Get( index, view_as<int>( ZONE_ENT ) );
 	int zone = g_hZones.Get( index, view_as<int>( ZONE_TYPE ) );
 	
 	int id = g_hZones.Get( index, view_as<int>( ZONE_ID ) );

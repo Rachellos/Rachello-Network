@@ -119,6 +119,7 @@ public void Threaded_ProfileInfo( Database hOwner, DBResultSet hQuery, const cha
 	char first[100];
 	char item[192];
 	char name[40];
+	char cur_date[100];
 
 	if ( hQuery.RowCount )
 	{
@@ -128,12 +129,13 @@ public void Threaded_ProfileInfo( Database hOwner, DBResultSet hQuery, const cha
 		hQuery.FetchString( 2, first, sizeof( first ) );
 		id = hQuery.FetchInt( 3 );
 		hQuery.FetchString( 4, name, sizeof( name ) );
+		hQuery.FetchString( 5, cur_date, sizeof( cur_date ) );
 
 		char time_ago_last[40], time_ago_first[40]; 
-		FormatTimeDuration(time_ago_last, sizeof(time_ago_last), GetTime() + 55755 - DateTimeToTimestamp(last));
+		FormatTimeDuration(time_ago_last, sizeof(time_ago_last), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(last));
 
 		if (!hQuery.IsFieldNull(2))
-			FormatTimeDuration(time_ago_first, sizeof(time_ago_first), (GetTime() + 55755) - DateTimeToTimestamp(first));
+			FormatTimeDuration(time_ago_first, sizeof(time_ago_first), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(first));
 
 		FormatEx( item, sizeof( item ), "Details:\n Country: %s \n User id: %i \n Last seen: %s \n First seen: %s \n ", country, id, time_ago_last, time_ago_first );
 		mMenu.AddItem("", item );
@@ -513,7 +515,6 @@ public void Threaded_RetrieveClientData( Database hOwner, DBResultSet hQuery, co
 	char szName[32];
 	GetClientName(client, szName, sizeof( szName ) );
 	
-	
 	char szQuery[500];
 	
 	int num;
@@ -666,7 +667,7 @@ public void Threaded_Completions( Database hOwner, DBResultSet hQuery, const cha
 
 }		
 
-public void Threaded_Over( Database hOwner, DBResultSet hQuery, const char[] szError, int client )
+public void Threaded_Overall( Database hOwner, DBResultSet hQuery, const char[] szError, int client )
 {
 	if ( !(client = GetClientOfUserId( client )) ) return;
 	
@@ -1380,9 +1381,7 @@ public void Threaded_NewID_Final( Database hOwner, DBResultSet hQuery, const cha
 			Country = "None";
 		}	
 	FormatTime(sTime, sizeof(sTime), "%Y-%m-%d %H:%M:%S", GetTime() ); 
-	g_hDatabase.Format( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET lastseen = '%s', firstseen = '%s', country = '%s', link = '%s', ip = '%s' WHERE steamid = '%s'",
-	sTime,
-	sTime,
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET lastseen = CURRENT_TIMESTAMP, firstseen = CURRENT_TIMESTAMP, country = '%s', link = '%s', ip = '%s' WHERE steamid = '%s'",
 	Country,
 	szLink,
 	IP,

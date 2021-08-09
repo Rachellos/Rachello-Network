@@ -1,5 +1,6 @@
 #include <morecolors>
 #include <sourcemod>
+#include <mapchooser>
 #include <nextmap>
 #include <tf2>
 #include <ripext>
@@ -211,13 +212,14 @@ enum ZoneData
 	ZONE_ID = 0,
 	ZONE_TYPE,
 	ZONE_ENTREF,
+	ZONE_ENT,
 
 	Float:ZONE_MINS[3],
 	Float:ZONE_MAXS[3]
 };
 
 
-#define ZONE_SIZE			50
+#define ZONE_SIZE			60
 
 enum BeamData
 {
@@ -248,6 +250,12 @@ enum CPData
 
 	Float:CP_MINS[3],
 	Float:CP_MAXS[3]
+};
+
+enum MapData
+{
+	STIER,
+	DTIER
 };
 
 #define CP_SIZE				40 + ( NUM_STYLES * NUM_MODES )
@@ -304,6 +312,7 @@ float g_vecZoneMaxs[NUM_REALZONES][30][3];
 ArrayList g_hBeams;
 ArrayList g_hZones;
 ArrayList g_hCPs;
+ArrayList g_hMaps;
 
 HTTPClient http;
 
@@ -335,7 +344,7 @@ int g_flTicks_Start[MAXPLAYERS+1];
 int g_flTicks_End[MAXPLAYERS+1];
 int g_flTicks_Cource_Start[MAXPLAYERS+1];
 int g_flTicks_Cource_End[MAXPLAYERS+1];
-float g_flClientCourseTime[MAXPLAYERS+1]; // When we started our Course? Engine time.
+float g_flClientCourseStartTime[MAXPLAYERS+1]; // When we started our Course? Engine time.
 float flNewTimeCourse[MAXPLAYERS+1];
 float g_flClientFinishTime[MAXPLAYERS+1]; // This is to tell the client's finish time in the end.
 float g_flClientBestTime[MAXPLAYERS+1][NUM_RUNS][NUM_MODES];
@@ -363,6 +372,8 @@ int tier_block[MAXPLAYERS+1];
 int tier_run[MAXPLAYERS+1];
 int oldrank[MAXPLAYERS+1];
 int db_style[MAXPLAYERS+1];
+
+int g_iClientIdle[MAXPLAYERS+1];
 
 int ranksolly[MAXPLAYERS+1];
 int rankdemo[MAXPLAYERS+1];
@@ -402,6 +413,8 @@ ConVar srv_id = null;
 
 //To prevent spam
 int LastUsage[MAXPLAYERS + 1];
+
+Handle g_VoteTimer = null;
 
 bool secure = false;
 int iClass;
@@ -750,16 +763,16 @@ Handle g_hForward_Timer_OnStateChanged;
 #include "Timer/menus_admin.sp"
 #include "Timer/MapInfo.sp"
 #include "Timer/tempuslite.sp"
-#include "Timer/CapsLockFix.sp"
 #include "Timer/CrossServerChat.sp"
 #include "Timer/autodemo_recorder.sp"
+#include "Timer/custom_mapchooser.sp"
 
 
 public Plugin myinfo = // Note: must be 'myinfo'. Compiler accepts everything but only that works.
 {
 	author = PLUGIN_AUTHOR_CORE,
 	name = PLUGIN_NAME_CORE,
-	description = "Timer & ranks and more for tf2",
+	description = "Timer & ranks and more for Rachello Network",
 	url = PLUGIN_URL_CORE,
 	version = PLUGIN_VERSION_CORE
 };
@@ -774,15 +787,14 @@ public void OnPluginEnd() {
 		CloseHandle(serverSocket);
 		serverSocket = INVALID_HANDLE;
 	}
+
 	if (secure)
 	{
 		PrintToServer("Ending recording of %s", currentDemoFilename);
 		ServerCommand("tv_stoprecord");
-		if(4 != 0) {
-			new Handle:pack = CreateDataPack();
-			WritePackString(pack, currentDemoFilename);
-			CreateTimer(1.0, Timer_CompressDemo, pack);
-		}
+		Handle pack = CreateDataPack();
+		WritePackString(pack, currentDemoFilename);
+		CreateTimer(1.0, Timer_CompressDemo, pack);
 	}
 }
 
@@ -987,7 +999,7 @@ public void OnPluginStart()
 
 	RegConsoleCmd( "sm_msg", SendDiscordMessage );
 
-	RegConsoleCmd( "sm_over", Command_Over );	
+	RegConsoleCmd( "sm_overall", Command_Overall );	
 	RegConsoleCmd( "sm_time", Command_Time );
 
 	RegConsoleCmd( "sm_rr", Command_ResentRecords );	
@@ -1188,7 +1200,7 @@ public void OnConfigsExecuted()
         }
     }
     isMasterServer = GetConVarBool(CVAR_MasterChatServer);
-	
+	//SetupTimeleftTimer();
 	if(isMasterServer)
 		CreateServer();	//This server is actually the MCS
 	else
@@ -1256,36 +1268,22 @@ while ((iCP = FindEntityByClassname(iCP, "trigger_capture_area")) != -1)
 	{
 		PrecacheSound( g_szWinningSounds[i] );
 		PrefetchSound( g_szWinningSounds[i] );
-	}
-	
-	for ( i = 0; i < sizeof( g_szWrSounds ); i++ )
-	{
+
 		PrecacheSound( g_szWrSounds[i] );
 		PrefetchSound( g_szWrSounds[i] );
-	}
 
-	for ( i = 0; i < sizeof( g_szWrSoundsNo ); i++ )
-	{
 		PrecacheSound( g_szWrSoundsNo[i] );
 		PrefetchSound( g_szWrSoundsNo[i] );
-	}
-	for ( i = 0; i < sizeof( g_szWrSoundsBonus ); i++ )
-	{
+
 		PrecacheSound( g_szWrSoundsBonus[i] );
 		PrefetchSound( g_szWrSoundsBonus[i] );
-	}
-	for ( i = 0; i < sizeof( g_szSoundsCourse ); i++ )
-	{
+
 		PrecacheSound( g_szSoundsCourse[i] );
 		PrefetchSound( g_szSoundsCourse[i] );
-	}
-	for ( i = 0; i < sizeof( g_szSoundsCourseWr ); i++ )
-	{
+
 		PrecacheSound( g_szSoundsCourseWr[i] );
 		PrefetchSound( g_szSoundsCourseWr[i] );
-	}
-	for ( i = 0; i < sizeof( g_szSoundsMissCp ); i++ )
-	{
+
 		PrecacheSound( g_szSoundsMissCp[i] );
 		PrefetchSound( g_szSoundsMissCp[i] );
 	}
@@ -1356,7 +1354,10 @@ while ((iCP = FindEntityByClassname(iCP, "trigger_capture_area")) != -1)
 	if ( g_hCPs != null ) delete g_hCPs;
 	if ( g_hZones != null ) delete g_hZones;
 	if ( g_hBeams != null ) delete g_hBeams;
+	if ( g_hMaps != null ) delete g_hMaps;
 
+
+	g_hMaps = new ArrayList( view_as<int>( MapData ) );
 	g_hCPs = new ArrayList( view_as<int>( CPData ) );
 	g_hZones = new ArrayList( view_as<int>( ZoneData ) );
 	g_hBeams = new ArrayList( view_as<int>( BeamData ) );
@@ -1742,6 +1743,8 @@ public void OnMapEnd()
 		}
 	}
 
+	g_VoteTimer = null;
+
 	DisconnectFromMasterServer();
 
 	deleteMapInfo(g_hMapInfo);
@@ -1749,17 +1752,20 @@ public void OnMapEnd()
 	//g_bLateLoad = false;
 	//IRC_MsgFlaggedChannels("relay", "%t", "Map Changing")
 
+	if ( g_hMaps != null ) delete g_hMaps; g_hMaps = null;
 	if ( g_hBeams != null ) { delete g_hBeams; g_hBeams = null; }
 
 	if (g_hZones != null)
 	{
-		for (int i; i < g_hZones.Length; i++)
+		int ent = 0;
+		int len = g_hZones.Length;
+		for (int i=0; i < len; i++)
 		{
-			if (g_hZones.Get( i, view_as<int>( ZONE_TYPE ) ) )
+			if ( g_hZones.Get( i, view_as<int>( ZONE_ENT ) ) )
 			{
-				SDKUnhook( i, SDKHook_TouchPost, Event_Touch_Zone );
-				SDKUnhook( i, SDKHook_EndTouch, Event_EndTouchPost_Zone );
-				PrintToServer("UNHOOKED %s", g_szRunName[NAME_LONG][i/2]);
+				ent = g_hZones.Get( i, view_as<int>( ZONE_ENT ) );
+				SDKUnhook( ent, SDKHook_TouchPost, Event_Touch_Zone );
+				SDKUnhook( ent, SDKHook_EndTouch, Event_EndTouchPost_Zone );
 			}
 		}
 		delete g_hZones; g_hZones = null;
@@ -1776,7 +1782,7 @@ public void OnClientPutInServer( int client )
 	GetClientSteam(client, szSteam, sizeof( szSteam )	);
 	char szLink[192];
     GetClientAuthId( client, AuthId_SteamID64, szLink, sizeof(szLink) );
-	char sTime[32], IP[99], Country[99], vadim[100];
+	char IP[99], Country[99], vadim[100];
 	FormatEx(vadim, sizeof( vadim ), "[U:1:46265336]");
 	if (StrEqual(szSteam, vadim) )
 	{
@@ -1787,16 +1793,14 @@ public void OnClientPutInServer( int client )
 	{
 		Country = "None";
 	}
-	FormatTime(sTime, sizeof(sTime), "%Y-%m-%d %H:%M:%S", GetTime() - 1845 ); 
-	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET lastseen = '%s', country = '%s', link = '%s', ip = '%s' WHERE steamid = '%s'",
-	sTime,
+	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET lastseen = CURRENT_TIMESTAMP, country = '%s', link = '%s', ip = '%s' WHERE steamid = '%s'",
 	Country,
 	szLink,
 	IP,
 	szSteam );
 	g_hDatabase.Query( Threaded_Empty, szQuery, _, DBPrio_High );
 	g_flClientStartTime[client] = TIME_INVALID;
-	g_flClientCourseTime[client] = TIME_INVALID;
+	g_flClientCourseStartTime[client] = TIME_INVALID;
 
 	g_iClientRun[client] = RUN_SETSTART;
 	GetClientUserId(client);
@@ -1834,11 +1838,13 @@ public void OnClientPutInServer( int client )
 public void IdleSys_OnClientIdle(int client) 
 {
 	PrintToChat(client, CHAT_PREFIX... "You have been marked as idle");
+	g_iClientIdle[client] = true;
 }
 
 public void IdleSys_OnClientReturn(int client, int time) 
 {
 	PrintToChat(client, CHAT_PREFIX... "You are no longer an idle");
+	g_iClientIdle[client] = false;
 }
 /*public Action IRCchat(int client, int args)
 {
@@ -2003,8 +2009,7 @@ public void OnClientDisconnect( int client )
 	char sTime[32];
 	FormatTime(sTime, sizeof(sTime), "%Y-%m-%d %H:%M:%S", GetTime() );
 
-	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET lastseen = '%s', online = 0 WHERE steamid = '%s'",
-	sTime,
+	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET lastseen = CURRENT_TIMESTAMP, online = 0 WHERE steamid = '%s'",
 	szSteam );
 	g_hDatabase.Query( Threaded_Empty, szQuery );
 
@@ -2726,6 +2731,7 @@ stock void CreateZoneEntity( int zone )
 	}
 
 	g_hZones.Set( zone, EntIndexToEntRef( iData[ZONE_ID] ), view_as<int>( ZONE_ENTREF ) );
+	g_hZones.Set( zone, ent, view_as<int>( ZONE_ENT ) );
 }
 
 stock void CreateCheckPoint( int cp )

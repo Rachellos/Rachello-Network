@@ -474,7 +474,7 @@ public int Handler_Prifile( Menu mMenu, MenuAction action, int client, int item 
 	if ( item == 6 )
 	{
 		char szQuery[192];
-		FormatEx( szQuery, sizeof( szQuery ), "SELECT country, lastseen, firstseen, uid, name FROM "...TABLE_PLYDATA..." WHERE uid = %i", db_id[client] );
+		FormatEx( szQuery, sizeof( szQuery ), "SELECT country, lastseen, firstseen, uid, name, CURRENT_TIMESTAMP FROM "...TABLE_PLYDATA..." WHERE uid = %i", db_id[client] );
 		g_hDatabase.Query( Threaded_ProfileInfo, szQuery, GetClientUserId( client ), DBPrio_Normal );
 	}
 	if ( item == 7 )

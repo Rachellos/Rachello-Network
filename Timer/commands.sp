@@ -40,7 +40,7 @@ public Action Command_Time( int client, int args )
 	return Plugin_Handled;
 }
 
-public Action Command_Over( int client, int args )
+public Action Command_Overall( int client, int args )
 {
 	if ( !client ) return Plugin_Handled;
 	
@@ -50,7 +50,7 @@ public Action Command_Over( int client, int args )
 	char szQuery[162];
 
 	FormatEx( szQuery, sizeof( szQuery ), "SELECT SUM(pts) FROM "...TABLE_RECORDS..."" );
-	g_hDatabase.Query( Threaded_Over, szQuery, GetClientUserId( client ), DBPrio_Normal );
+	g_hDatabase.Query( Threaded_Overall, szQuery, GetClientUserId( client ), DBPrio_Normal );
 	
 	return Plugin_Handled;
 }
@@ -128,14 +128,13 @@ public int Handler_BonusMenu( Menu mMenu, MenuAction action, int client, int ite
 	if (g_bIsLoaded[run])
 	{
 		if (TF2_GetPlayerClass(client) == TFClass_DemoMan) {
-	       	SDKUnhook(client, SDKHook_GetMaxHealth, OnGetMaxHealth);	
-			SDKHook(client, SDKHook_GetMaxHealth, OnGetMaxHealth);
 			SetEntityGravity(client, 1.0);
-SetEntityHealth(client, 175);
+			SetEntityHealth(client, 175);
 	       	DestroyProjectilesDemo(client);
-		   } else if (TF2_GetPlayerClass(client) == TFClass_Soldier) {
+		} 
+		else if (TF2_GetPlayerClass(client) == TFClass_Soldier) {
 		       DestroyProjectilesSoldier(client);
-		   }
+		}
 
 		TeleportEntity( client, g_vecSpawnPos[run], g_vecSpawnAngles[run], g_vecNull );
 
@@ -956,32 +955,32 @@ public int Recent_records_handler( Menu mMenu, MenuAction action, int client, in
 
 	if (item == 0)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, (select name from plydata where uid = maprecs.uid) FROM maprecs where `rank` = 1 and run = 0 order by date desc limit 100");
+		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` = 1 and run = 0 order by date desc limit 100");
 		g_hDatabase.Query(RecentRecords_Map_Wr_Callback, query, GetClientUserId( client ));
 	}
 	if (item == 1)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, (select name from plydata where uid = maprecs.uid) FROM maprecs where `rank` > 1 and `rank` <= 10 and run = 0 order by date desc limit 100");
+		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` > 1 and `rank` <= 10 and run = 0 order by date desc limit 100");
 		g_hDatabase.Query(RecentRecords_Map_Tt_Callback, query, GetClientUserId( client ));
 	}
 	if (item == 2)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, run, (select name from plydata where uid = maprecs.uid) FROM maprecs where `rank` = 1 and run >= %i and run <= %i order by date desc limit 100", RUN_COURSE1, RUN_COURSE10);
+		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` = 1 and run >= %i and run <= %i order by date desc limit 100", RUN_COURSE1, RUN_COURSE10);
 		g_hDatabase.Query(RecentRecords_Course_Wr_Callback, query, GetClientUserId( client ));
 	}
 	if (item == 3)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, run, (select name from plydata where uid = maprecs.uid) FROM maprecs where `rank` > 1 and `rank` <= 10 and run >= %i and run <= %i order by date desc limit 100", RUN_COURSE1, RUN_COURSE10);
+		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` > 1 and `rank` <= 10 and run >= %i and run <= %i order by date desc limit 100", RUN_COURSE1, RUN_COURSE10);
 		g_hDatabase.Query(RecentRecords_Course_Tt_Callback, query, GetClientUserId( client ));
 	}
 	if (item == 4)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, run, (select name from plydata where uid = maprecs.uid) FROM maprecs where `rank` = 1 and run >= %i and run <= %i order by date desc limit 100", RUN_BONUS1, RUN_BONUS10);
+		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` = 1 and run >= %i and run <= %i order by date desc limit 100", RUN_BONUS1, RUN_BONUS10);
 		g_hDatabase.Query(RecentRecords_Bonus_Wr_Callback, query, GetClientUserId( client ));
 	}
 	if (item == 5)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, run, (select name from plydata where uid = maprecs.uid) FROM maprecs where `rank` > 1 and `rank` <= 10 and run >= %i and run <= %i order by date desc limit 100", RUN_BONUS1, RUN_BONUS10);
+		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` > 1 and `rank` <= 10 and run >= %i and run <= %i order by date desc limit 100", RUN_BONUS1, RUN_BONUS10);
 		g_hDatabase.Query(RecentRecords_Bonus_Tt_Callback, query, GetClientUserId( client ));
 	}
 	return 0;
@@ -1005,7 +1004,7 @@ public void RecentRecords_Map_Wr_Callback( Database hOwner, DBResultSet hQuery, 
 
 		char recordid[6];
 		int mode;
-		char map[60], date[40], name[25], buffer[100];
+		char map[60], date[40], name[25], buffer[100], cur_date[100];
 		while (hQuery.FetchRow())
 		{
 			IntToString( hQuery.FetchInt(0), recordid, sizeof(recordid));
@@ -1013,12 +1012,13 @@ public void RecentRecords_Map_Wr_Callback( Database hOwner, DBResultSet hQuery, 
 			mode = hQuery.FetchInt(2);
 			hQuery.FetchString( 3, date, sizeof( date ) );
 			hQuery.FetchString( 4, name, sizeof( name ) );
+			hQuery.FetchString( 5, cur_date, sizeof( cur_date ) );
 
 			ReplaceString(map, sizeof(map), "jump_", "");
 			ReplaceString(map, sizeof(map), "sj_", "");
 			ReplaceString(map, sizeof(map), "rj_", "");
 
-			FormatTimeDuration(date, sizeof(date), GetTime() + 57605 - DateTimeToTimestamp(date));
+			FormatTimeDuration(date, sizeof(date), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(date));
 
 			FormatEx(buffer, sizeof(buffer), "(%s) <%s> - %s - %s", g_szModeName[NAME_SHORT][mode][0], map, name, date);
 			mMenu.AddItem(recordid, buffer);
@@ -1047,7 +1047,7 @@ public void RecentRecords_Map_Tt_Callback( Database hOwner, DBResultSet hQuery, 
 
 		char recordid[6];
 		int mode, rank;
-		char map[60], date[40], name[25], buffer[100];
+		char map[60], date[40], name[25], buffer[100], cur_date[100];
 		while (hQuery.FetchRow())
 		{
 			IntToString( hQuery.FetchInt(0), recordid, sizeof(recordid));
@@ -1056,12 +1056,13 @@ public void RecentRecords_Map_Tt_Callback( Database hOwner, DBResultSet hQuery, 
 			hQuery.FetchString( 3, date, sizeof( date ) );
 			rank = hQuery.FetchInt(4);
 			hQuery.FetchString( 5, name, sizeof( name ) );
+			hQuery.FetchString( 6, cur_date, sizeof( cur_date ) );
 
 			ReplaceString(map, sizeof(map), "jump_", "");
 			ReplaceString(map, sizeof(map), "sj_", "");
 			ReplaceString(map, sizeof(map), "rj_", "");
 
-			FormatTimeDuration(date, sizeof(date), GetTime() + (55755 + 1850) - DateTimeToTimestamp(date));
+			FormatTimeDuration(date, sizeof(date), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(date));
 
 			FormatEx(buffer, sizeof(buffer), "(%s) <%s> (#%i) - %s - %s", g_szModeName[NAME_SHORT][mode][0], map, rank, name, date);
 			mMenu.AddItem(recordid, buffer);
@@ -1090,7 +1091,7 @@ public void RecentRecords_Course_Wr_Callback( Database hOwner, DBResultSet hQuer
 
 		char recordid[6];
 		int mode, run;
-		char map[60], date[40], name[25], buffer[100];
+		char map[60], date[40], name[25], buffer[100], cur_date[100];
 		while (hQuery.FetchRow())
 		{
 			IntToString( hQuery.FetchInt(0), recordid, sizeof(recordid));
@@ -1099,12 +1100,13 @@ public void RecentRecords_Course_Wr_Callback( Database hOwner, DBResultSet hQuer
 			hQuery.FetchString( 3, date, sizeof( date ) );
 			run = hQuery.FetchInt(4);
 			hQuery.FetchString( 5, name, sizeof( name ) );
+			hQuery.FetchString( 6, cur_date, sizeof( cur_date ) );
 
 			ReplaceString(map, sizeof(map), "jump_", "");
 			ReplaceString(map, sizeof(map), "sj_", "");
 			ReplaceString(map, sizeof(map), "rj_", "");
 
-			FormatTimeDuration(date, sizeof(date), GetTime() + (55755 + 1850) - DateTimeToTimestamp(date));
+			FormatTimeDuration(date, sizeof(date), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(date));
 
 			FormatEx(buffer, sizeof(buffer), "(%s) <%s [%s]> - %s - %s", g_szModeName[NAME_SHORT][mode][0], map, g_szRunName[NAME_SHORT][run], name, date);
 			mMenu.AddItem(recordid, buffer);
@@ -1133,7 +1135,7 @@ public void RecentRecords_Course_Tt_Callback( Database hOwner, DBResultSet hQuer
 
 		char recordid[6];
 		int mode, rank, run;
-		char map[60], date[40], name[25], buffer[100];
+		char map[60], date[40], name[25], buffer[100], cur_date[100];
 		while (hQuery.FetchRow())
 		{
 			IntToString( hQuery.FetchInt(0), recordid, sizeof(recordid));
@@ -1143,12 +1145,13 @@ public void RecentRecords_Course_Tt_Callback( Database hOwner, DBResultSet hQuer
 			rank = hQuery.FetchInt(4);
 			run = hQuery.FetchInt(5);
 			hQuery.FetchString( 6, name, sizeof( name ) );
+			hQuery.FetchString( 7, cur_date, sizeof( cur_date ) );
 
 			ReplaceString(map, sizeof(map), "jump_", "");
 			ReplaceString(map, sizeof(map), "sj_", "");
 			ReplaceString(map, sizeof(map), "rj_", "");
 
-			FormatTimeDuration(date, sizeof(date), GetTime() + (55755 + 1850) - DateTimeToTimestamp(date));
+			FormatTimeDuration(date, sizeof(date), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(date));
 
 			FormatEx(buffer, sizeof(buffer), "(%s) <%s [%s]> (#%i) - %s - %s", g_szModeName[NAME_SHORT][mode][0], map, g_szRunName[NAME_SHORT][run], rank, name, date);
 			mMenu.AddItem(recordid, buffer);
@@ -1177,7 +1180,7 @@ public void RecentRecords_Bonus_Wr_Callback( Database hOwner, DBResultSet hQuery
 
 		char recordid[6];
 		int mode, rank, run;
-		char map[60], date[40], name[25], buffer[100];
+		char map[60], date[40], name[25], buffer[100], cur_date[100];
 		while (hQuery.FetchRow())
 		{
 			IntToString( hQuery.FetchInt(0), recordid, sizeof(recordid));
@@ -1186,12 +1189,13 @@ public void RecentRecords_Bonus_Wr_Callback( Database hOwner, DBResultSet hQuery
 			hQuery.FetchString( 3, date, sizeof( date ) );
 			run = hQuery.FetchInt(4);
 			hQuery.FetchString( 5, name, sizeof( name ) );
+			hQuery.FetchString( 6, cur_date, sizeof( cur_date ) );
 
 			ReplaceString(map, sizeof(map), "jump_", "");
 			ReplaceString(map, sizeof(map), "sj_", "");
 			ReplaceString(map, sizeof(map), "rj_", "");
 
-			FormatTimeDuration(date, sizeof(date), GetTime() + (55755 + 1850) - DateTimeToTimestamp(date));
+			FormatTimeDuration(date, sizeof(date), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(date));
 
 			FormatEx(buffer, sizeof(buffer), "(%s) <%s [%s]> - %s - %s", g_szModeName[NAME_SHORT][mode][0], map, g_szRunName[NAME_SHORT][run], name, date);
 			mMenu.AddItem(recordid, buffer);
@@ -1220,7 +1224,7 @@ public void RecentRecords_Bonus_Tt_Callback( Database hOwner, DBResultSet hQuery
 
 		char recordid[6];
 		int mode, rank, run;
-		char map[60], date[40], name[25], buffer[100];
+		char map[60], date[40], name[25], buffer[100], cur_date[100];
 		while (hQuery.FetchRow())
 		{
 			IntToString( hQuery.FetchInt(0), recordid, sizeof(recordid));
@@ -1230,12 +1234,13 @@ public void RecentRecords_Bonus_Tt_Callback( Database hOwner, DBResultSet hQuery
 			rank = hQuery.FetchInt(4);
 			run = hQuery.FetchInt(5);
 			hQuery.FetchString( 6, name, sizeof( name ) );
+			hQuery.FetchString( 7, cur_date, sizeof( cur_date ) );
 
 			ReplaceString(map, sizeof(map), "jump_", "");
 			ReplaceString(map, sizeof(map), "sj_", "");
 			ReplaceString(map, sizeof(map), "rj_", "");
 
-			FormatTimeDuration(date, sizeof(date), GetTime() + (55755 + 1850) - DateTimeToTimestamp(date));
+			FormatTimeDuration(date, sizeof(date), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(date));
 
 			FormatEx(buffer, sizeof(buffer), "(%s) <%s [%s]> (#%i) - %s - %s", g_szModeName[NAME_SHORT][mode][0], map, g_szRunName[NAME_SHORT][run], rank, name, date);
 			mMenu.AddItem(recordid, buffer);

@@ -47,7 +47,7 @@ public Action Command_Admin_ZoneEnd( int client, int args )
 	int id = 0;
 	int run = g_iClientRun[client];
 	
-	if ( zone != ZONE_CP )
+	if ( zone == ZONE_BLOCKS || zone == ZONE_COURCE || zone == ZONE_SKIP )
 	{
 		// Find out which id is available.
 		int len = g_hZones.Length;

@@ -501,6 +501,15 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 	return Plugin_Handled;
 }
 
+public void SayText2(int client, int author, const char[] message)
+{
+	Handle hBuffer = StartMessageOne("SayText2", client);
+	BfWriteByte(hBuffer, author);
+	BfWriteByte(hBuffer, true);
+	BfWriteString(hBuffer, "");
+	EndMessage();
+}
+
 public Action Listener_Kill( int client, const char[] szCommand, int argc )
 {
 	if ( client && IsClientInGame( client ) && IsPlayerAlive( client ) )
@@ -516,7 +525,6 @@ public void Event_WeaponDropPost( int client, int weapon )
 		
 }
 
-// Set client ready for the map. Collision groups, bots, transparency, etc.
 public Action Event_ClientSpawn( Handle hEvent, const char[] szEvent, bool bDontBroadcast )
 {
 	int client = GetClientOfUserId( GetEventInt( hEvent, "userid" ) );
@@ -545,7 +553,6 @@ public Action Event_ClientSpawn( Handle hEvent, const char[] szEvent, bool bDont
 
 public void BlockBounces(int client)
 {	
-	//KICK THOSE CHEATERS
 	QueryClientConVar(client, "cl_pitchdown", BlockPitchDown, client);
 	QueryClientConVar(client, "cl_pitchup", BlockPitchUp, client);	
 }
@@ -639,7 +646,6 @@ public void Event_Touch_Zone( int trigger, int client )
 				g_iClientRun[client] = run;
 			}
 		}
-		
 	}
 	else
 	{
@@ -661,7 +667,7 @@ public void Event_Touch_Zone( int trigger, int client )
 		else
 		{
 			g_flTicks_Cource_End[client] = GetGameTickCount() - STVTickStart;
-			flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseTime[client];
+			flNewTimeCourse[client] = GetEngineTime() - g_flClientCourseStartTime[client];
 			g_flClientFinishTime[client] = flNewTimeCourse[client];
 			DB_SaveClientRecord( client, flNewTimeCourse[client] );
 
@@ -718,13 +724,13 @@ public void Event_EndTouchPost_Zone( int trigger, int client )
 			g_flTicks_Start[client] = GetGameTickCount() - STVTickStart;
 			if (run == RUN_COURSE1)
 			{
-				g_flClientCourseTime[client] = GetEngineTime();
+				g_flClientCourseStartTime[client] = GetEngineTime();
 				g_flTicks_Cource_Start[client] = GetGameTickCount() - STVTickStart;
 			}
 		}
 		else
 		{
-			g_flClientCourseTime[client] = GetEngineTime();
+			g_flClientCourseStartTime[client] = GetEngineTime();
 			g_flTicks_Cource_Start[client] = GetGameTickCount() - STVTickStart;
 
 			if (!IsMapMode[client])
@@ -745,12 +751,6 @@ public void Event_StartTouchPost_Block( int trigger, int ent )
 	static int zone;
 	zone = GetTriggerIndex( trigger );
 	
-	if ( trigger != EntRefToEntIndex( g_hZones.Get( zone, view_as<int>( ZONE_ENTREF ) ) ) )
-	{
-		LogError( CONSOLE_PREFIX..."Invalid block zone entity index!" );
-		return;
-	}
-	
 	PRINTCHAT( ent, CHAT_PREFIX..."You are not allowed to go there!" );
 		
 	TeleportPlayerToStart( ent );
@@ -766,12 +766,6 @@ public void Event_StartTouchPost_NextCours( int trigger, int ent )
 	
 	static int zone;
 	zone = GetTriggerIndex( trigger );
-	
-	if ( trigger != EntRefToEntIndex( g_hZones.Get( zone, view_as<int>( ZONE_ENTREF ) ) ) )
-	{
-		LogError( CONSOLE_PREFIX..."Invalid cource teleport zone entity index!" );
-		return;
-	}
 	
 	if (g_iClientRun[ent]+1 < NUM_RUNS && RUN_COURSE1 < g_iClientRun[ent]+1 <= RUN_COURSE10 && g_bIsLoaded[g_iClientRun[ent]+1])
 		TeleportEntity( ent, g_vecSpawnPos[g_iClientRun[ent]+1], g_vecSpawnAngles[g_iClientRun[ent]+1], g_vecNull );
@@ -791,12 +785,6 @@ public void Event_StartTouchPost_Skip( int trigger, int ent )
 	
 	static int zone;
 	zone = GetTriggerIndex( trigger );
-	
-	if ( trigger != EntRefToEntIndex( g_hZones.Get( zone, view_as<int>( ZONE_ENTREF ) ) ) )
-	{
-		LogError( CONSOLE_PREFIX..."Invalid skip zone entity index!" );
-		return;
-	}
 	
 	TeleportEntity( ent, g_vecSkipPos, g_vecSkipAngles, g_vecNull );
 }

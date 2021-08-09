@@ -160,11 +160,7 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
         }
         else if (g_iClientState[target] == STATE_END)
        	{
-        	static char szTime[TIME_SIZE_DEF];
-
-        	flNewTimeCourse[target] = g_flClientCourseTime[target];
-
-         	if ( RUN_COURSE1 <= run < RUN_COURSE10 && g_bIsLoaded[run + 1])
+         	if ( RUN_COURSE1 <= run < RUN_COURSE10 && g_bIsLoaded[run + 1] && IsMapMode[target])
             	flCurTime = GetEngineTime() - g_flClientStartTime[target];
         	else
             	flCurTime = g_flClientFinishTime[target];
@@ -180,31 +176,15 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
 
             if ( RUN_COURSE1 <= run < RUN_COURSE10 )
             {
-            	if ( flNewTimeCourse[target] < OldTime )
-            	{
-                  	TimeSplit = OldTime - flNewTimeCourse[target];
-                 	prefix = '-';
-           		}     
-              	else
-             	{
-                 	TimeSplit = flNewTimeCourse[target] - OldTime;
-                  	prefix = '+';
-
-                }
+                TimeSplit = (flNewTimeCourse[target] < OldTime) ? OldTime - flNewTimeCourse[target] : flNewTimeCourse[target] - OldTime;
+                prefix = (flNewTimeCourse[target] < OldTime) ? '-' : '+';
             }
           	else
            	{
-             	if ( g_flClientFinishTime[target] < OldTime )
-               	{
-                  	TimeSplit = OldTime - g_flClientFinishTime[target];
-                  	prefix = '-';
-              	}     
-              	else
-              	{
-                   	TimeSplit = g_flClientFinishTime[target] - OldTime;
-                   	prefix = '+';
-            	}         
-          	}      
+                TimeSplit = (g_flClientFinishTime[target] < OldTime) ? OldTime - g_flClientFinishTime[target] : g_flClientFinishTime[target] - OldTime;
+                prefix = (g_flClientFinishTime[target] < OldTime) ? '-' : '+';       
+          	}
+
         	FormatSeconds( TimeSplit, szTimeSplit );
           	FormatSeconds( flCurTime, szCurTime );
          	Format(hintOutput, 256, "%s\n(%s %c%s)\n \n[%s End]\n %s\n%s mode %s", szCurTime, (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit, g_szRunName[NAME_LONG][run], speed, szTimerMode[target], szAmmo[target] );
@@ -216,15 +196,12 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
             Format(hintOutput, 256, "  %s\n \n[%s Start]\n %s\n%s mode %s", IsMapMode[target] ? ( (RunIsCourse(g_iClientRun[target]) && g_iClientRun[target] != RUN_COURSE1) ? szCurTime : g_szCurrentMap ) : g_szCurrentMap, g_szRunName[NAME_LONG][ g_iClientRun[target] ], speed, szTimerMode[target], szAmmo[target] );
         }
         else
-        { 
-            if ( g_iClientState[target] == STATE_END_MAIN || g_iClientState[target] == STATE_END && run != RUN_COURSE1 )
-                flCurTime = g_flClientFinishTime[target];
-            else
-                flCurTime = GetEngineTime() - g_flClientStartTime[target];
-           
+        {
+            flCurTime = GetEngineTime() - g_flClientStartTime[target];
+        
             static float flBestTime;
             flBestTime = g_flMapBestTime[ g_iClientRun[target] ][ g_iClientStyle[target] ][ g_iClientMode[target] ];
-           
+        
             FormatSeconds( flCurTime, szCurTime );
            
             Format(hintOutput, 256, " %s\n%s \n[%s]\n %s\n%s mode %s",
@@ -928,14 +905,6 @@ public Action Timer_DrawBuildZoneStartEye( Handle hTimer, int client )
         g_bStartBuilding[client] = false;
         return Plugin_Stop;
     }
-   	if (TF2_GetPlayerClass(client) == TFClass_Soldier)
-		{
-			SetPlayerStyle(client, STYLE_SOLLY );
-		}		
-		if (TF2_GetPlayerClass(client) == TFClass_DemoMan)
-		{
-			SetPlayerStyle(client, STYLE_DEMOMAN );
-		}
 	
     static float vecPos[3];
 	static float vecEye[3];
@@ -959,14 +928,6 @@ public Action Timer_DrawBuildZoneStartOrigin( Handle hTimer, int client )
         g_bStartBuilding[client] = false;
         return Plugin_Stop;
     }
-    if (TF2_GetPlayerClass(client) == TFClass_Soldier)
-        {
-            SetPlayerStyle(client, STYLE_SOLLY );
-        }       
-        if (TF2_GetPlayerClass(client) == TFClass_DemoMan)
-        {
-            SetPlayerStyle(client, STYLE_DEMOMAN );
-        }
     
     static float vecPos[3];
     GetClientAbsOrigin( client, vecPos );
@@ -989,4 +950,4 @@ bool TraceEntityFilterPlayer(int entity, int contentsMask)
         return Plugin_Handled;
     }
 
-    #endif
+#endif
