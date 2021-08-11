@@ -824,7 +824,7 @@ public Action Command_Admin_ZoneDelete( int client, int args )
 	
 	bool bFound;
 	bool bDraw;
-	char szItem[32];
+	char szItem[32], szZone[10];
 	
 	for ( int i = 0; i < NUM_ZONES_W_CP; i++ )
 	{
@@ -883,9 +883,9 @@ public Action Command_Admin_ZoneDelete( int client, int args )
 		if ( bDraw )
 		{
 			bFound = true;
-			mMenu.AddItem( "", szItem, 0 );
+			IntToString(i, szZone, sizeof(szZone));
+			mMenu.AddItem( szZone, szItem, 0 );
 		}
-		else mMenu.AddItem( "", szItem, ITEMDRAW_DISABLED );
 	}
 	
 	if ( !bFound )
@@ -911,7 +911,7 @@ public void DeleteZoneByIndex(int client, int zone)
 	Menu mMenu = new Menu( Handler_ZoneDeleteByIndex );
 	mMenu.SetTitle( "Zone Delete\nZone: %s\n \n", g_szZoneNames[zone] );
 
-	for (int i=0; i < 15; i++)
+	for (int i=0; i < 20; i++)
 	{
 		if (g_bZoneExists[zone][i])
 		{
@@ -964,13 +964,13 @@ public int Handler_ZoneDeleteByIndex( Menu mMenu, MenuAction action, int client,
 	return Plugin_Handled;
 }
 
-public int Handler_ZoneDelete( Menu mMenu, MenuAction action, int client, int zone )
+public int Handler_ZoneDelete( Menu mMenu, MenuAction action, int client, int item )
 {
 	if ( action == MenuAction_End ) { delete mMenu; return 0; }
 	
 	if (action == MenuAction_Cancel)
 	{
-	    if (zone == MenuCancel_ExitBack)
+	    if (item == MenuCancel_ExitBack)
 		{ 
 			FakeClientCommand(client, "sm_zone" );
 			return 0;
@@ -979,6 +979,12 @@ public int Handler_ZoneDelete( Menu mMenu, MenuAction action, int client, int zo
 
 	if ( action == MenuAction_Select )
 	{
+		char szZone[10];
+		int zone;
+
+		GetMenuItem(mMenu, item, szZone, sizeof(szZone));
+		zone = StringToInt(szZone);
+
 		if ( zone < 0 || zone >= NUM_ZONES_W_CP ) return 0;
 		
 		if ( zone == ZONE_BLOCKS || zone == ZONE_COURCE || zone == ZONE_SKIP )
@@ -1050,7 +1056,7 @@ public Action Command_Admin_ZoneDelete2( int client, int args )
 
 	for ( int i = 0; i < len; i++ )
 	{
-		if (g_hZones.Get( i, view_as<int>( ZONE_TYPE )) <= NUM_REALZONES) continue;
+		if (g_hZones.Get( i, view_as<int>( ZONE_TYPE )) < NUM_REALZONES) continue;
 
 		switch (g_hZones.Get( i, view_as<int>( ZONE_TYPE )))
 		{

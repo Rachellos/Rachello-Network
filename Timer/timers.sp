@@ -283,25 +283,53 @@ public Action Timer_DrawZoneBeams( int client, int args )
 {  
     if (!IsClientInGame(client) || !IsPlayerAlive(client)) return Plugin_Handled;
 
-    static int i;
-    static int len;
-    len = ( g_hBeams == null ) ? 0 : g_hBeams.Length;
-    static int zone;
+    int len = ( g_hBeams == null ) ? 0 : g_hBeams.Length;
+    int zone;
     int iCpData[CP_SIZE];
+    int iZData[ZONE_SIZE];
     int indexes=0;
     int Cp_Id;
     bool isinside=false;
 
 	for (int f=0; f < NUM_REALZONES; f++)
+    {
         for (int c=0; c < 20;c++)
+        {
             if (IsInsideBoundsPlayer( client, g_vecZoneMins[f][c], g_vecZoneMaxs[f][c] ))
             {
                 isinside = true;
                 zone = f;
                 break;
             }
+        }
+    }
+
+    for ( int i = 0; i < g_hZones.Length; i++ )
+    {
+        for (int index=0; index < 20; index++)
+        {
+            if (g_hZones.Get( i, view_as<int>( ZONE_ID ) ) == index )
+            {
+                g_hZones.GetArray( i, iZData, view_as<int>( ZoneData ) );
+                
+                float vecMins[3];
+                float vecMaxs[3];
+
+                ArrayCopy( iZData[ZONE_MINS], vecMins, 3 );
+                ArrayCopy( iZData[ZONE_MAXS], vecMaxs, 3 );
+                
+                if (IsInsideBoundsPlayer( client, vecMins, vecMaxs ))
+                {
+                    isinside = true;
+                    zone = iZData[ZONE_TYPE];
+                    break;
+                }
+            }
+        }
+    }
 
     for ( int i = 0; i < g_hCPs.Length; i++ )
+    {
         if (g_hCPs.GetArray( i, iCpData, view_as<int>( CPData ) ) )
         {
             float vecMins[3];
@@ -318,104 +346,101 @@ public Action Timer_DrawZoneBeams( int client, int args )
                 break;
             }
         }
+    }
      
-    if (zone != ZONE_CP)            
+    if (zone != ZONE_CP && zone < NUM_REALZONES)
+    {           
         for (int c=0; c<20; c++)
         {
              if (g_bZoneExists[zone][c])
                 indexes++;
-        }      
+        }
+    }     
 
     if (!isinside) return Plugin_Handled;
 
     if (GetClientTeam(client) > 1)	
     {  
-            for ( int z=0; z<20; z++ )
+        for ( int z=0; z<20; z++ )
+        {
+            int iData[BEAM_SIZE];
+            bool found = false;
+            for (int i=0; i < len; i++)
             {
-                static int iData[BEAM_SIZE];
-                bool found = false;
-                for (int s=0; s < len; s++)
-                    if (zone != ZONE_CP)
+                if (zone != ZONE_CP)
+                {
+                    if (g_hBeams.Get(i, view_as<int>( BEAM_TYPE ) ) == zone && g_hBeams.Get(i, view_as<int>( BEAM_ID ) ) == z)
                     {
-                        if (g_hBeams.Get(s, view_as<int>( BEAM_TYPE ) ) == zone && g_hBeams.Get(s, view_as<int>( BEAM_INDEX ) ) == z)
-                        {
-                            g_hBeams.GetArray( s, iData, view_as<int>( BeamData ) );
-                            found = true;
-                        }
+                        g_hBeams.GetArray( i, iData, view_as<int>( BeamData ) );
+                        found = true;
                     }
-                    else
+                }
+                else
+                {
+                    if (g_hBeams.Get(i, view_as<int>( BEAM_TYPE ) ) == zone && g_hBeams.Get(i, view_as<int>( BEAM_ID ) ) == Cp_Id)
                     {
-                        if (g_hBeams.Get(s, view_as<int>( BEAM_TYPE ) ) == zone && g_hBeams.Get(s, view_as<int>( BEAM_ID ) ) == Cp_Id)
-                        {
-                            g_hBeams.GetArray( s, iData, view_as<int>( BeamData ) );
-                            found = true;
-                        }
+                        g_hBeams.GetArray( i, iData, view_as<int>( BeamData ) );
+                        found = true;
                     }
-
-                if (!found) continue;
-                
-                zone = iData[BEAM_TYPE];
-
-
-                if (!isinside) continue;        
-               
-                
-               
-                // Figure out who we show the zones to.
-                //static int clients[MAXPLAYERS+1]
-               
-                static float vecZonePoints_Bottom[5][3];
-                static float vecZonePoints_Top[5][3];
-               
-                // We'll have to use the zone mins to check if they are close enough.
-                ArrayCopy( iData[BEAM_POS_BOTTOM1], vecZonePoints_Bottom[0], 3 );
-                ArrayCopy( iData[BEAM_POS_TOP3], vecZonePoints_Top[2], 3 );
-               
-               
-               
-                // Bottom
-                ArrayCopy( iData[BEAM_POS_BOTTOM1], vecZonePoints_Bottom[0], 3 );
-                ArrayCopy( iData[BEAM_POS_BOTTOM2], vecZonePoints_Bottom[1], 3 );
-                ArrayCopy( iData[BEAM_POS_BOTTOM3], vecZonePoints_Bottom[2], 3 );
-                ArrayCopy( iData[BEAM_POS_BOTTOM4], vecZonePoints_Bottom[3], 3 );
-               
-                // Top
-                ArrayCopy( iData[BEAM_POS_TOP1], vecZonePoints_Top[0], 3 );
-                ArrayCopy( iData[BEAM_POS_TOP2], vecZonePoints_Top[1], 3 );
-                ArrayCopy( iData[BEAM_POS_TOP3], vecZonePoints_Top[2], 3 );
-                ArrayCopy( iData[BEAM_POS_TOP4], vecZonePoints_Top[3], 3 );
-               
-                // For people with high ping.
-                #define ZONE_BEAM_ALIVE         10.0
-                // Bottom
-                for (int i = 0; i < 4; i++)
-                {
-	                TE_SetupBeamPoints( vecZonePoints_Bottom[i], vecZonePoints_Bottom[(i == 3) ? 0 : i+1], g_iBeam, 0, 0, 0, ZONE_BEAM_ALIVE, ZONE_WIDTH, ZONE_WIDTH, 0, 0.0, clrBeam[GREEN_ZONE], 0 );
-	                TE_SendToClient(client);
-                }
-                // Top
-                for (int i = 0; i < 4; i++)
-                {
-                	TE_SetupBeamPoints( vecZonePoints_Top[i], vecZonePoints_Top[(i == 3) ? 0 : i+1], g_iBeam, 0, 0, 0, ZONE_BEAM_ALIVE, ZONE_WIDTH, ZONE_WIDTH, 0, 0.0, clrBeam[GREEN_ZONE], 0 );
-                	TE_SendToClient(client);
-                }
-                // From bottom to top.
-                for (int i = 0; i < 4; i++)
-                {
-                	TE_SetupBeamPoints( vecZonePoints_Bottom[i], vecZonePoints_Top[i], g_iBeam, 0, 0, 0, ZONE_BEAM_ALIVE, ZONE_WIDTH, ZONE_WIDTH, 0, 0.0, clrBeam[GREEN_ZONE], 0 );
-                	TE_SendToClient(client);
                 }
             }
 
-            if (zone != ZONE_CP)
+            if (!found) continue;
+            
+            zone = iData[BEAM_TYPE];
+
+            if (!isinside) continue;        
+            
+            float vecZonePoints_Bottom[5][3];
+            float vecZonePoints_Top[5][3];
+            
+            // We'll have to use the zone mins to check if they are close enough.
+            ArrayCopy( iData[BEAM_POS_BOTTOM1], vecZonePoints_Bottom[0], 3 );
+            ArrayCopy( iData[BEAM_POS_TOP3], vecZonePoints_Top[2], 3 );
+            
+            
+            
+            // Bottom
+            ArrayCopy( iData[BEAM_POS_BOTTOM1], vecZonePoints_Bottom[0], 3 );
+            ArrayCopy( iData[BEAM_POS_BOTTOM2], vecZonePoints_Bottom[1], 3 );
+            ArrayCopy( iData[BEAM_POS_BOTTOM3], vecZonePoints_Bottom[2], 3 );
+            ArrayCopy( iData[BEAM_POS_BOTTOM4], vecZonePoints_Bottom[3], 3 );
+            
+            // Top
+            ArrayCopy( iData[BEAM_POS_TOP1], vecZonePoints_Top[0], 3 );
+            ArrayCopy( iData[BEAM_POS_TOP2], vecZonePoints_Top[1], 3 );
+            ArrayCopy( iData[BEAM_POS_TOP3], vecZonePoints_Top[2], 3 );
+            ArrayCopy( iData[BEAM_POS_TOP4], vecZonePoints_Top[3], 3 );
+            
+            #define ZONE_BEAM_ALIVE         10.0
+            // Bottom
+            for (int i = 0; i < 4; i++)
             {
-                if (indexes > 0)
-                    CPrintToChat(client, CHAT_PREFIX..."Drawing \x0750DCFF%i trigger(s) {white}for \x0750DCFF%s!", indexes, g_szZoneNames[zone]);     
+                TE_SetupBeamPoints( vecZonePoints_Bottom[i], vecZonePoints_Bottom[(i == 3) ? 0 : i+1], g_iBeam, 0, 0, 0, ZONE_BEAM_ALIVE, ZONE_WIDTH, ZONE_WIDTH, 0, 0.0, clrBeam[GREEN_ZONE], 0 );
+                TE_SendToClient(client);
             }
-            else
+            // Top
+            for (int i = 0; i < 4; i++)
             {
-                CPrintToChat(client, CHAT_PREFIX..."Drawing \x0750DCFF1 trigger(s) {white}for \x0750DCFFCheckpoint %i!", Cp_Id+1);     
+                TE_SetupBeamPoints( vecZonePoints_Top[i], vecZonePoints_Top[(i == 3) ? 0 : i+1], g_iBeam, 0, 0, 0, ZONE_BEAM_ALIVE, ZONE_WIDTH, ZONE_WIDTH, 0, 0.0, clrBeam[GREEN_ZONE], 0 );
+                TE_SendToClient(client);
             }
+            // From bottom to top.
+            for (int i = 0; i < 4; i++)
+            {
+                TE_SetupBeamPoints( vecZonePoints_Bottom[i], vecZonePoints_Top[i], g_iBeam, 0, 0, 0, ZONE_BEAM_ALIVE, ZONE_WIDTH, ZONE_WIDTH, 0, 0.0, clrBeam[GREEN_ZONE], 0 );
+                TE_SendToClient(client);
+            }
+        }
+
+        if (zone != ZONE_CP)
+        {
+            CPrintToChat(client, CHAT_PREFIX..."Drawing \x0750DCFF%i {white}trigger(s) for \x0750DCFF%s!", (indexes > 0) ? indexes : 1, g_szZoneNames[zone]);    
+        }
+        else
+        {
+            CPrintToChat(client, CHAT_PREFIX..."Drawing \x0750DCFF1 {white}trigger(s) for \x0750DCFFCheckpoint %i!", Cp_Id+1);     
+        }
     }
     return Plugin_Continue;
 }

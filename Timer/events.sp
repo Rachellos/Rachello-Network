@@ -41,16 +41,17 @@ public Action Event_ClientDeath( Handle hEvent, const char[] szEvent, bool bDont
 //////////
 // CHAT //
 //////////
-public Action OnClientSayCommand( int client, const char[] szCommand, const char[] msg )
+public Action OnClientSayCommand( int client, const char[] szCommand, const char[] text )
 {
 	if ( !client || BaseComm_IsClientGagged( client ) ) return Plugin_Continue;
 	
 		char live[10];
-		char msg2[264];
+		char msg[200];
 		char alltext[300];
 		char alltext2[300];
-		FormatEx(msg2, sizeof(msg2), "%s", msg);
-
+		FormatEx(msg, sizeof(msg), "%s", text);
+		TrimString(msg);
+		
 
 		if (StrEqual(msg, "( ͡° ͜ʖ ͡°)") || StrEqual(msg, "( ° ͜ʖ ͡°)") || StrEqual(msg, " ( ͡° ͜ʖ ͡°)") || StrEqual(msg, "( ͡° ͜ʖ ͡°) "))
 		{
@@ -485,19 +486,22 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 				}
 			}
 		}
-		PrintToServer( "%N :  %s", client, msg );
-		if ( (msg2[0] == '!') || (msg2[0] == '/') )
+	
+	PrintToServer( "%N :  %s", client, msg );
+
+	if((msg[0] == '!') || (msg[0] == '/'))
+	{
+		if ( IsCharUpper(msg[1]) || IsCharUpper(msg[2]) || IsCharUpper(msg[3]) || IsCharUpper(msg[4]) )
 		{
-			if ( IsCharUpper(msg2[1]) || IsCharUpper(msg2[2]) || IsCharUpper(msg2[3]) )
+			for(int i = 0; i <= strlen(msg); ++i)
 			{
-				for (int i = 0; i <= strlen(msg2); ++i)
-				{
-					msg2[i] = CharToLower(msg2[i]);
-				}
-				msg2[0] = '_';
-				FakeClientCommand(client, "sm%s", msg2);
+				msg[i] = CharToLower(msg[i]);
 			}
+			msg[0] = '_';
+			FakeClientCommand(client, "sm%s", msg);
 		}
+	}
+
 	return Plugin_Handled;
 }
 
@@ -618,7 +622,6 @@ public void Event_Touch_Zone( int trigger, int client )
 	{
 		if (EnteredZone[client] == zone && g_iClientState[client] == STATE_START) return;
 
-		ChangeClientState( client, STATE_START );
 		if ( (!RunIsCourse(run) || run == RUN_COURSE1))
 		{
 			IsMapMode[client] = true;
@@ -627,25 +630,28 @@ public void Event_Touch_Zone( int trigger, int client )
 		}
 		else
 		{
-			if ( g_iClientRun[client] == run - 1 || g_iClientRun[client] >= run || !IsMapMode[client] )
+			if ( (g_iClientState[client] == STATE_END && g_iClientRun[client] == run - 1) || g_iClientRun[client] >= run || !IsMapMode[client] )
 			{
 				g_iClientRun[client] = run;
 			}
 			else
 			{
-				EmitSoundToClient( client, g_szSoundsMissCp[0] );
+				if (g_iClientRun[client] != RUN_MAIN)
+				{
+					EmitSoundToClient( client, g_szSoundsMissCp[0] );
 
-				CPrintToChatClientAndSpec(client, "{red}ERROR {white}| Your run has been closed. You missed:");
+					CPrintToChatClientAndSpec(client, "{red}ERROR {white}| Your run has been closed. You missed:");
 
-				for (int i = (( run - ( run - g_iClientRun[client] ) ) * 2)+1; i < run*2; i++)
-					CPrintToChatClientAndSpec(client, "{red}ERROR {white}| {orange}%s",
-						g_szZoneNames[i]);
-
+					for (int i = (( run - ( run - g_iClientRun[client] ) ) * 2)+1; i < run*2; i++)
+						CPrintToChatClientAndSpec(client, "{red}ERROR {white}| {orange}%s",
+							g_szZoneNames[i]);
+				}
 				IsMapMode[client] = false;
 				DisplayCpTime[client] = false;
 				g_iClientRun[client] = run;
 			}
 		}
+		ChangeClientState( client, STATE_START );
 	}
 	else
 	{
@@ -737,6 +743,7 @@ public void Event_EndTouchPost_Zone( int trigger, int client )
 				g_flClientStartTime[client] = GetEngineTime();
 		}
 	}
+	EnteredZone[client] = ZONE_INVALID;
 	return;
 }
 

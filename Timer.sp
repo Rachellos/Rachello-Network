@@ -835,23 +835,13 @@ public Action Event_PlayerSay(Event event, const char[] name, bool dontBroadcast
 	event.GetString("text", message, sizeof(message));
 	if (!client) return Plugin_Continue;
 
-	if((message[0] == '!') || (message[0] == '/'))
-	{
-		for(int i = 0; i <= strlen(message); ++i)
-		{
-			message[i] = CharToLower(message[i]);
-		}
-		message[0] = '_';
-		FakeClientCommand(client, "sm%s", message);
-	}		
-	else
-	{
-		for (int i = 1; i <= MaxClients; i++)
-			if (IsClientConnected(i) && IsClientInGame(i))
-				SayText2(i, client, "");			
-	}	
+	for (int i = 1; i <= MaxClients; i++)
+		if (IsClientConnected(i) && IsClientInGame(i))
+			SayText2(i, client, "");
+
+	event.BroadcastDisabled = true;				
 	
-	return Plugin_Continue;
+	return Plugin_Handled;
 }
 
 public void OnPluginStart()
@@ -933,9 +923,9 @@ public void OnPluginStart()
 	RegConsoleCmd( "sm_goto", Command_Gotos );
 
 	// HOOKS
-	HookEvent("player_say", Event_PlayerSay, EventHookMode_Post);
+	HookEvent("player_say", Event_PlayerSay, EventHookMode_Pre);
 	HookEvent("player_spawn", Event_PlayerSpawn);
-	HookEvent("player_chat", Event_PlayerSay, EventHookMode_Post);
+	HookEvent("player_chat", Event_PlayerSay, EventHookMode_Pre);
 	HookEvent("player_disconnect", EventDisconnect, EventHookMode_Pre);
 	HookEvent( "player_spawn", Event_ClientSpawn );
 	HookEvent( "player_death", Event_ClientDeath );

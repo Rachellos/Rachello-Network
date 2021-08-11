@@ -1802,7 +1802,7 @@ public Action Command_Courses(int client, int args)
 		g_fClientRespawnAngles[client][1] = 0.0;
 		g_fClientRespawnAngles[client][2] = 0.0;
 
-		IsMapMode[client] = false;
+		IsMapMode[client] = (course != 1) ? false : true;
 		DisplayCpTime[client] = false;
 
 		return Plugin_Handled;
