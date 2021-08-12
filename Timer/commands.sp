@@ -63,27 +63,26 @@ public void GetTimer(int client, int args)
 
 	char szTime[TIME_SIZE_DEF];
 	FormatSeconds( time, szTime, FORMAT_2DECI );
-	char name[32];
-	GetClientName(client, name, sizeof( name ) );
-	if (g_iClientState[client] == STATE_END_MAIN || g_iClientState[client] == STATE_END)
+
+	if (g_iClientState[client] == STATE_END)
 	{
-		CPrintToChatAll(CHAT_PREFIX..."(%s%s) \x0764E664%s {white}state on \x0750DCFF%s End",
-		g_szStyleName[NAME_SHORT][g_iClientStyle[client]], szStyleFix,
-		name,
+		CPrintToChatAll(CHAT_PREFIX..."(%s%s) \x0764E664%N {white}state on \x0750DCFF%s End",
+		g_szStyleName[NAME_SHORT][ g_iClientStyle[client] ], szStyleFix,
+		client,
 		g_szRunName[NAME_LONG][ g_iClientRun[client] ] );
 	}
-	else if (g_iClientState[client] == STATE_START || g_iClientState[client] == STATE_CSTART2 || g_iClientState[client] == STATE_CSTART3)
+	else if (g_iClientState[client] == STATE_START)
 	{
-		CPrintToChatAll(CHAT_PREFIX..."(%s%s) \x0764E664%s {white}state on \x0750DCFF%s Start",
-		g_szStyleName[NAME_SHORT][g_iClientStyle[client ]], szStyleFix,
-		name,
+		CPrintToChatAll(CHAT_PREFIX..."(%s%s) \x0764E664%N {white}state on \x0750DCFF%s Start",
+		g_szStyleName[NAME_SHORT][ g_iClientStyle[client] ], szStyleFix,
+		client,
 		g_szRunName[NAME_LONG][ g_iClientRun[client] ] );
 	}
 	else if (g_iClientState[client] == STATE_RUNNING && g_iClientState[client] != STATE_SETSTART)
 	{
-		CPrintToChatAll(CHAT_PREFIX..."(%s%s) \x0764E664%s {white}run \x0750DCFF%s {white}with time: \x0764E664%s",
-		g_szStyleName[NAME_SHORT][g_iClientStyle[client ]], szStyleFix,
-		name,
+		CPrintToChatAll(CHAT_PREFIX..."(%s%s) \x0764E664%N {white}run \x0750DCFF%s {white}with time: \x0764E664%s",
+		g_szStyleName[NAME_SHORT][ g_iClientStyle[client] ], szStyleFix,
+		client,
 		g_szRunName[NAME_LONG][ g_iClientRun[client] ],
 		szTime );
 	}

@@ -841,7 +841,7 @@ public void Threaded_DisplayRank_oldrank( Database hOwner, DBResultSet hQuery, c
 
 		if ( szOldTimePts[client][run][mode] <= TIME_INVALID )
 		{
-			oldrank[client] = -99;
+			oldrank[client] = 99999999999;
 		}
 		else 
 		{
@@ -851,7 +851,7 @@ public void Threaded_DisplayRank_oldrank( Database hOwner, DBResultSet hQuery, c
 				oldrank[client] = hQuery.FetchInt( 0 );
 			}
 			else {
-				oldrank[client] = -99;
+				oldrank[client] = 99999999999;
 			}
 		}
 		
@@ -896,282 +896,129 @@ public void Threaded_DisplayRank_End( Database hOwner, DBResultSet hQuery, const
 		if ( hQuery.RowCount )
 		{
 			hQuery.FetchRow();
-			int check = 0;
+
 			int run = hData.Get( 0, 1 );
 			int style = hData.Get( 0, 2 );
 			int mode = hData.Get( 0, 3 );
+
+			RunType run_type = (RunIsCourse(run)) ? COURSE_RUN : (RunIsBonus(run)) ? BONUS_RUN : MAP_RUN;
+
 			char szSteam[MAX_ID_LENGTH];
-			char szQuery1[200];
+			char szQuery[800];
 			GetClientSteam( client, szSteam, sizeof( szSteam ) );
 
-			float points = 0.0, points2 = 0.0;
 			rank = hQuery.FetchInt( 0 ) + 1;
+
+			if (rank <= 0)
+				rank = 99999999999;
+
 			int outof = hData.Get( 0, 4 );
+
 			if ( rank > outof )
-			{
 				outof = rank;
-			}
 
 			if (rank <= 10)
 				requested=true;
 
-			float t6c[10] = { 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 200.0, 280.0, 400.0 };
-    		float t5c[10] = { 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0, 150.0, 210.0, 300.0 };
-            float t4c[10] = { 25.0, 37.5, 50.0, 62.5, 75.0, 87.5, 100.0, 125.0, 175.0, 250.0 };
-            float t3c[10] = { 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 100.0, 140.0, 200.0 };
-            float t2c[10] = { 15.0, 22.5, 30.0, 37.0, 45.0, 52.0, 60.0, 75.0, 105.0, 150.0 };
-            float t1c[10] = { 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 70.0, 100.0 };
+			float CompletionPoints[3][6] = 
+			{
+				//Map
+				{
+					10.0,
+					20.0,
+					30.0,
+					50.0,
+					100.0,
+					200.0
+				},
+				//Course
+				{
+					5.0,
+					10.0,
+					20.0,
+					30.0,
+					50.0,
+					100.0
+				},
+				//Bonus
+				{
+					2.0,
+					5.0,
+					10.0,
+					20.0,
+					30.0,
+					50.0
+				}
+			};
 
-			float t6b[10] = { 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 70.0, 100.0 };
-    		float t5b[10] = { 8.0, 12.0, 16.0, 20.0, 24.0, 28.0, 32.0, 40.0, 56.0, 80.0 };
-            float t4b[10] = { 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 24.0, 30.0, 42.0, 60.0 };
-            float t3b[10] = { 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 20.0, 28.0, 40.0 };
-            float t2b[10] = { 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 14.0, 20.0 };
-            float t1b[10] = { 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 7.0, 10.0 };
+			float TTPoints[3][6][10] = 
+			{
+				//Map
+				{	
+					{ 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 100.0, 140.0, 200.0 },
+					{ 25.0, 37.5, 50.0, 62.5, 75.0, 87.5, 100.0, 125.0, 175.0, 250.0 },
+					{ 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0, 150.0, 210.0, 300.0 },
+					{ 35.0, 52.5, 70.0, 87.5, 105.0, 122.5, 140.0, 175.0, 245.0, 350.0 },
+					{ 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 200.0, 280.0, 400.0 },
+					{ 50.0, 75.0, 100.0, 150.0, 175.0, 200.0, 250.0, 250.0, 350.0, 500.0 }
+				},
+				//Course
+				{	
+					{ 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 70.0, 100.0 },
+					{ 15.0, 22.5, 30.0, 37.0, 45.0, 52.0, 60.0, 75.0, 105.0, 150.0 },
+					{ 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 100.0, 140.0, 200.0 },
+					{ 25.0, 37.5, 50.0, 62.5, 75.0, 87.5, 100.0, 125.0, 175.0, 250.0 },
+					{ 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0, 150.0, 210.0, 300.0 },
+					{ 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 200.0, 280.0, 400.0 }
+				},
+				//Bonus
+				{	
+					{ 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 7.0, 10.0 },
+					{ 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 14.0, 20.0 },
+					{ 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 20.0, 28.0, 40.0 },
+					{ 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 24.0, 30.0, 42.0, 60.0 },
+					{ 8.0, 12.0, 16.0, 20.0, 24.0, 28.0, 32.0, 40.0, 56.0, 80.0 },
+					{ 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 70.0, 100.0 }
+				}
+			};
 
-			float t6[10] = { 50.0, 75.0, 100.0, 150.0, 175.0, 200.0, 250.0, 250.0, 350.0, 500.0 };
-    		float t5[10] = { 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 200.0, 280.0, 400.0 };
-            float t4[10] = { 35.0, 52.5, 70.0, 87.5, 105.0, 122.5, 140.0, 175.0, 245.0, 350.0 };
-            float t3[10] = { 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0, 150.0, 210.0, 300.0 };
-            float t2[10] = { 25.0, 37.5, 50.0, 62.5, 75.0, 87.5, 100.0, 125.0, 175.0, 250.0 };
-            float t1[10] = { 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 100.0, 140.0, 200.0 };
+			float points = CompletionPoints[view_as<int>(run_type)][g_Tiers[run][mode]], points2 = 0.0;
 			
 			char db_run[40];
-			float pointss;
 
-		   	if (run == RUN_MAIN)
-			{
-				if (g_Tiers[run][mode] == 6)pointss = 200.0;
-				else if (g_Tiers[run][mode] == 5) pointss = 100.0;
-				else if (g_Tiers[run][mode] == 4) pointss = 50.0;
-				else if (g_Tiers[run][mode] == 3) pointss = 30.0;
-				else if (g_Tiers[run][mode] == 2) pointss = 20.0;
-				else if (g_Tiers[run][mode] == 1) pointss = 10.0;
 
-				g_hDatabase.Format(db_run, sizeof(db_run), "map");
-			}
-			else if (run == RUN_BONUS1 || run == RUN_BONUS2 || run == RUN_BONUS3 || run == RUN_BONUS4 || run == RUN_BONUS5 || run == RUN_BONUS6 || run == RUN_BONUS7 || run == RUN_BONUS8 || run == RUN_BONUS9 || run == RUN_BONUS10 )
-			{
-				if (g_Tiers[run][mode] == 6) pointss = 50.0;
-				else if (g_Tiers[run][mode] == 5) pointss = 30.0;
-				else if (g_Tiers[run][mode] == 4) pointss = 20.0;
-				else if (g_Tiers[run][mode] == 3) pointss = 10.0;
-				else if (g_Tiers[run][mode] == 2) pointss = 5.0;
-				else if (g_Tiers[run][mode] == 1) pointss = 2.0;
-
-				g_hDatabase.Format(db_run, sizeof(db_run), "bonus");
-			}
-			else if (run == RUN_COURSE1 || run == RUN_COURSE2 || run == RUN_COURSE3 || run == RUN_COURSE4 || run == RUN_COURSE5 || run == RUN_COURSE6 || run == RUN_COURSE7 || run == RUN_COURSE8 || run == RUN_COURSE9 || run == RUN_COURSE10 )
-			{
-				if (g_Tiers[run][mode] == 6) pointss = 100.0;
-				else if (g_Tiers[run][mode] == 5) pointss = 50.0;
-				else if (g_Tiers[run][mode] == 4) pointss = 30.0;
-				else if (g_Tiers[run][mode] == 3) pointss = 20.0;
-				else if (g_Tiers[run][mode] == 2) pointss = 10.0;
-				else if (g_Tiers[run][mode] == 1) pointss = 5.0;
-
-				g_hDatabase.Format(db_run, sizeof(db_run), "course");
-			}
+			g_hDatabase.Format(db_run, sizeof(db_run), "%s", (RunIsCourse(run)) ? "course" : (RunIsBonus(run)) ? "bonus" : "map");
 
 			if( rank != oldrank[client] )
 			{
-				if ( szOldTimePts[client][run][mode] <= TIME_INVALID)
-				{
-					if (run == RUN_MAIN)
-					{
-						if (g_Tiers[run][mode] == 6) points = 200.0;
-						else if (g_Tiers[run][mode] == 5) points = 100.0;
-						else if (g_Tiers[run][mode] == 4) points = 50.0;
-						else if (g_Tiers[run][mode] == 3) points = 30.0;
-						else if (g_Tiers[run][mode] == 2) points = 20.0;
-						else if (g_Tiers[run][mode] == 1) points = 10.0;
-					}
-					else if (run == RUN_BONUS1 || run == RUN_BONUS2 || run == RUN_BONUS3 || run == RUN_BONUS4 || run == RUN_BONUS5 || run == RUN_BONUS6 || run == RUN_BONUS7 || run == RUN_BONUS8 || run == RUN_BONUS9 || run == RUN_BONUS10 )
-					{
-						if (g_Tiers[run][mode] == 6) points = 50.0;
-						else if (g_Tiers[run][mode] == 5) points = 30.0;
-						else if (g_Tiers[run][mode] == 4) points = 20.0;
-						else if (g_Tiers[run][mode] == 3) points = 10.0;
-						else if (g_Tiers[run][mode] == 2) points = 5.0;
-						else if (g_Tiers[run][mode] == 1) points = 2.0;
-					}
-					else if (run == RUN_COURSE1 || run == RUN_COURSE2 || run == RUN_COURSE3 || run == RUN_COURSE4 || run == RUN_COURSE5 || run == RUN_COURSE6 || run == RUN_COURSE7 || run == RUN_COURSE8 || run == RUN_COURSE9 || run == RUN_COURSE10 )
-					{
-						if (g_Tiers[run][mode] == 6) points = 100.0;
-						else if (g_Tiers[run][mode] == 5) points = 50.0;
-						else if (g_Tiers[run][mode] == 4) points = 30.0;
-						else if (g_Tiers[run][mode] == 3) points = 20.0;
-						else if (g_Tiers[run][mode] == 2) points = 10.0;
-						else if (g_Tiers[run][mode] == 1) points = 5.0;
-					}
-				}
-
 				if ( rank <= 10)
 				{
-					if (run == RUN_MAIN)
-					{
-						if (g_Tiers[run][mode] == 6)
-						{
-							points2 = t6[10 - rank];
-						}
-						else if (g_Tiers[run][mode] == 5)
-						{
-							points2 = t5[10 - rank];
-						}
-						else if (g_Tiers[run][mode] == 4)
-						{
-							points2 = t4[10 - rank];
-						}
-						else if (g_Tiers[run][mode] == 3)
-						{
-							points2 = t3[10 - rank];
-						}
-						else if (g_Tiers[run][mode] == 2)
-						{
-							points2 = t2[10 - rank];
-						}
-						else if (g_Tiers[run][mode] == 1)
-						{
-							points2 = t1[10 - rank];
-						}
-					}
-					else if (run == RUN_BONUS1 || run == RUN_BONUS2 || run == RUN_BONUS3 || run == RUN_BONUS4 || run == RUN_BONUS5 || run == RUN_BONUS6 || run == RUN_BONUS7 || run == RUN_BONUS8 || run == RUN_BONUS9 || run == RUN_BONUS10 )
-					{
-						if (g_Tiers[run][mode] == 6)
-						{ 
-							points2 = t6b[10 - rank]; 
-						}
-						else if (g_Tiers[run][mode] == 5)
-						{ 
-							points2 = t5b[10 - rank]; 
-						}
-						else if (g_Tiers[run][mode] == 4)
-						{ 
-							points2 = t4b[10 - rank]; 
-						}
-						else if (g_Tiers[run][mode] == 3) 
-						{ 
-							points2 = t3b[10 - rank]; 
-						}
-						else if (g_Tiers[run][mode] == 2) 
-						{ 
-							points2 = t2b[10 - rank]; 
-						}
-						else if (g_Tiers[run][mode] == 1) 
-						{ 
-							points2 = t1b[10 - rank]; 
-						}
-					}
-					else if (run == RUN_COURSE1 || run == RUN_COURSE2 || run == RUN_COURSE3 || run == RUN_COURSE4 || run == RUN_COURSE5 || run == RUN_COURSE6 || run == RUN_COURSE7 || run == RUN_COURSE8 || run == RUN_COURSE9 || run == RUN_COURSE10 )
-					{	
-						if (g_Tiers[run][mode] == 6)
-						{ 
-							points2 = t6c[10 - rank]; 
-						}
-						else if (g_Tiers[run][mode] == 5)
-						{ 
-							points2 = t5c[10 - rank]; 
-						}
-						else if (g_Tiers[run][mode] == 4)
-						{ 
-							points2 = t4c[10 - rank]; 
-						}
-						else if (g_Tiers[run][mode] == 3) 
-						{ 
-							points2 = t3c[10 - rank]; 
-						}
-						else if (g_Tiers[run][mode] == 2) 
-						{ 
-							points2 = t2c[10 - rank]; 
-						}
-						else if (g_Tiers[run][mode] == 1) 
-						{ 
-							points2 = t1c[10 - rank]; 
-						}
-					}						
+					points2 = TTPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1][10 - rank]; 
 				}
-
+				
 				if ( 0 < oldrank[client] <= 10 && oldrank[client] > rank && rank <= 10 )
 				{
-					if (run == RUN_MAIN)
-					{
-						if (g_Tiers[run][mode] == 6)points2 = t6[10 - rank] - t6[10 - oldrank[client]];
-						else if (g_Tiers[run][mode] == 5)points2 = t5[10 - rank] - t5[10 - oldrank[client]];
-						else if (g_Tiers[run][mode] == 4)points2 = t4[10 - rank] - t4[10 - oldrank[client]];
-						else if (g_Tiers[run][mode] == 3)points2 = t3[10 - rank] - t3[10 - oldrank[client]];
-						else if (g_Tiers[run][mode] == 2)points2 = t2[10 - rank] - t2[10 - oldrank[client]];
-						else if (g_Tiers[run][mode] == 1)points2 = t1[10 - rank] - t1[10 - oldrank[client]];
-					}
-					else if (run == RUN_BONUS1 || run == RUN_BONUS2 || run == RUN_BONUS3 || run == RUN_BONUS4 || run == RUN_BONUS5 || run == RUN_BONUS6 || run == RUN_BONUS7 || run == RUN_BONUS8 || run == RUN_BONUS9 || run == RUN_BONUS10 )
-					{
-						if (g_Tiers[run][mode] == 6)
-						{ 
-							points2 = t6b[10 - rank] - t6b[10 - oldrank[client]]; 
-						}
-						else if (g_Tiers[run][mode] == 5)
-						{ 
-							points2 = t5b[10 - rank] - t5b[10 - oldrank[client]]; 
-						}
-						else if (g_Tiers[run][mode] == 4)
-						{ 
-							points2 = t4b[10 - rank] - t4b[10 - oldrank[client]]; 
-						}
-						else if (g_Tiers[run][mode] == 3)
-						{ 
-							points2 = t3b[10 - rank] - t3b[10 - oldrank[client]]; 
-						}
-						else if (g_Tiers[run][mode] == 2)
-						{ 
-							points2 = t2b[10 - rank] - t2b[10 - oldrank[client]]; 
-						}
-						else if (g_Tiers[run][mode] == 1)
-						{ 
-							points2 = t1b[10 - rank] - t1b[10 - oldrank[client]]; 
-						}
-					}
-					else if (run == RUN_COURSE1 || run == RUN_COURSE2 || run == RUN_COURSE3 || run == RUN_COURSE4 || run == RUN_COURSE5 || run == RUN_COURSE6 || run == RUN_COURSE7 || run == RUN_COURSE8 || run == RUN_COURSE9 || run == RUN_COURSE10 )
-					{
-						if (g_Tiers[run][mode] == 6)
-						{ 
-							points2 = t6c[10 - rank] - t6c[10 - oldrank[client]]; 
-						}
-						else if (g_Tiers[run][mode] == 5)
-						{ 
-							points2 = t5c[10 - rank] - t5c[10 - oldrank[client]]; 
-						}
-						else if (g_Tiers[run][mode] == 4)
-						{ 
-							points2 = t4c[10 - rank] - t4c[10 - oldrank[client]]; 
-						}
-						else if (g_Tiers[run][mode] == 3)
-						{ 
-							points2 = t3c[10 - rank] - t3c[10 - oldrank[client]]; 
-						}
-						else if (g_Tiers[run][mode] == 2)
-						{ 
-							points2 = t2c[10 - rank] - t2c[10 - oldrank[client]]; 
-						}
-						else if (g_Tiers[run][mode] == 1)
-						{ 
-							points2 = t1c[10 - rank] - t1c[10 - oldrank[client]]; 
-						}
-					}
+					points = 0.0;
+					points2 = TTPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1][10 - rank] - TTPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1][10 - oldrank[client]];
 				}
-				static char szQuery[800];
+
 				if (rank < 11 || szOldTimePts[client][run][mode] <= TIME_INVALID)
 				{
-					char szT1[200], szT2[200], szT3[200];
+					char szTrans[200];
+					Transaction hTxn = new Transaction();
+
 					points3 = points + points2;
 					CPrintToChat(client, CHAT_PREFIX..."Gained "...CLR_CUSTOM1..."%.1f {white}%s points!", points3, (style == STYLE_DEMOMAN) ? "Demoman" : "Soldier" );
 					
-					g_hDatabase.Format(szT1, sizeof(szT1), "UPDATE "...TABLE_RECORDS..." SET pts = %.1f,%s allranks = %i WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? " beaten = 0," : "", outof, g_szCurrentMap, g_iClientId[client], run, mode);
-					g_hDatabase.Format(szT2, sizeof(szT2), "UPDATE "...TABLE_PLYDATA..." SET %s = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i AND mode = %i) WHERE uid = %i", (mode == MODE_SOLDIER) ? "solly" : "demo", g_iClientId[client], mode, g_iClientId[client]);
-					g_hDatabase.Format(szT3, sizeof(szT3), "UPDATE "...TABLE_PLYDATA..." SET overall = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i) WHERE uid = %i", g_iClientId[client], g_iClientId[client]);
-					
-					Transaction hTxn = new Transaction();
-					hTxn.AddQuery(szT1);
-					hTxn.AddQuery(szT2);
-					hTxn.AddQuery(szT3);
+					g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = %.1f,%s allranks = %i WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? " beaten = 0," : "", outof, g_szCurrentMap, g_iClientId[client], run, mode);
+					hTxn.AddQuery(szTrans);
+
+					g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i AND mode = %i) WHERE uid = %i", (mode == MODE_SOLDIER) ? "solly" : "demo", g_iClientId[client], mode, g_iClientId[client]);
+					hTxn.AddQuery(szTrans);
+
+					g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET overall = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i) WHERE uid = %i", g_iClientId[client], g_iClientId[client]);
+					hTxn.AddQuery(szTrans);
+
 					SQL_ExecuteTransaction(g_hDatabase, hTxn);
 				}
 			}
@@ -1179,22 +1026,7 @@ public void Threaded_DisplayRank_End( Database hOwner, DBResultSet hQuery, const
 			if ( rank != oldrank[client] )
 			{
 				// "XXX is ranked X/X in [XXXX XXXX]"
-				char szQuery[800];
-				PrintColorChat( client, CHAT_PREFIX..."Now ranked \x0750DCFF%i/%i"...CLR_TEXT..." on \x0750DCFF%s"...CLR_TEXT..."!", rank, outof, g_szRunName[NAME_LONG][run] );
-				
-				for (int i = 1; i <= MaxClients; i++)
-				{
-					if (IsClientInGame(i) && !IsPlayerAlive(i))
-					{
-						if (i != client)
-						{
-							if (GetEntPropEnt(i, Prop_Send, "m_hObserverTarget") == client)
-								{
-									PrintColorChat( i, CHAT_PREFIX..."Now ranked \x0750DCFF%i/%i"...CLR_TEXT..." on \x0750DCFF%s"...CLR_TEXT..."!", rank, outof, g_szRunName[NAME_LONG][run] );
-								}
-						}
-					}
-				}
+				CPrintToChatClientAndSpec( client, CHAT_PREFIX..."Now ranked \x0750DCFF%i/%i"...CLR_TEXT..." on \x0750DCFF%s"...CLR_TEXT..."!", rank, outof, g_szRunName[NAME_LONG][run] );
 
 				if (rank < 11 && rank > 1 && run == RUN_MAIN )
 				{
@@ -1207,41 +1039,40 @@ public void Threaded_DisplayRank_End( Database hOwner, DBResultSet hQuery, const
 					outof);
 				}	
 
-				char szT4[200], szT5[200], szT6[200], szT7[200], szT8[200], szT9[200], szT10[200], szT11[200], szT12[400];
+				char szTrans[200];
  
 				Transaction transaction = new Transaction();
-				g_hDatabase.Format(szT4, sizeof(szT4), "(SELECT @curRank := 0);");
-				g_hDatabase.Format(szT5, sizeof(szT5), "update maprecs SET `rank` = (@curRank := @curRank + 1) WHERE map = '%s' AND run = %i AND mode = %i ORDER BY time ASC;", g_szCurrentMap, run, mode );
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curRank := 0);");
+				transaction.AddQuery(szTrans);
 
-				g_hDatabase.Format(szT6, sizeof(szT6), "(SELECT @curClassRank := 0);");
-				g_hDatabase.Format(szT7, sizeof(szT7), "UPDATE "...TABLE_PLYDATA..." SET %s = (@curClassRank := @curClassRank + 1) where %s > 0.0 ORDER BY %s DESC;", (style == STYLE_SOLLY) ? "srank" : "drank", (style == STYLE_SOLLY) ? "solly" : "demo" , (style == STYLE_SOLLY) ? "solly" : "demo" );
-				
-				g_hDatabase.Format(szT8, sizeof(szT8), "(SELECT @curOverRank := 0);");
-				g_hDatabase.Format(szT9, sizeof(szT9), "UPDATE "...TABLE_PLYDATA..." SET orank = (@curOverRank := @curOverRank + 1) where solly > 0.0 or demo > 0.0 ORDER BY overall DESC;" );
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "update maprecs SET `rank` = (@curRank := @curRank + 1) WHERE map = '%s' AND run = %i AND mode = %i ORDER BY time ASC;", g_szCurrentMap, run, mode );
+				transaction.AddQuery(szTrans);
 
-				g_hDatabase.Format(szT10, sizeof(szT10), "(SELECT @curAllRank := (select max(`rank`) from maprecs where `map` = '%s' and `run` = %i and `mode` = %i));", g_szCurrentMap, run, mode );
-				g_hDatabase.Format(szT11, sizeof(szT11), "update maprecs set allranks = @curAllRank where map = '%s' and run = %i and mode = %i", g_szCurrentMap, run, mode );
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curClassRank := 0);");
+				transaction.AddQuery(szTrans);
 
-				
-				transaction.AddQuery(szT4);
-				transaction.AddQuery(szT5);
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (@curClassRank := @curClassRank + 1) where %s > 0.0 ORDER BY %s DESC;", (style == STYLE_SOLLY) ? "srank" : "drank", (style == STYLE_SOLLY) ? "solly" : "demo" , (style == STYLE_SOLLY) ? "solly" : "demo" );
+				transaction.AddQuery(szTrans);
 
-				transaction.AddQuery(szT6);
-				transaction.AddQuery(szT7);
-				
-				transaction.AddQuery(szT8);
-				transaction.AddQuery(szT9);
-				
-				transaction.AddQuery(szT10);
-				transaction.AddQuery(szT11);
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curOverRank := 0);");
+				transaction.AddQuery(szTrans);
+
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET orank = (@curOverRank := @curOverRank + 1) where solly > 0.0 or demo > 0.0 ORDER BY overall DESC;" );
+				transaction.AddQuery(szTrans);
+
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curAllRank := (select max(`rank`) from maprecs where `map` = '%s' and `run` = %i and `mode` = %i));", g_szCurrentMap, run, mode );
+				transaction.AddQuery(szTrans);
+
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "update maprecs set allranks = @curAllRank where map = '%s' and run = %i and mode = %i", g_szCurrentMap, run, mode );
+				transaction.AddQuery(szTrans);
 
 				SQL_ExecuteTransaction(g_hDatabase, transaction);
 
 				for (int i = 1; i < 11; i++)
 				{
-					g_hDatabase.Format(szT12, sizeof(szT12), "UPDATE "...TABLE_RECORDS..." SET pts = ((SELECT r%i from points where tier = %i and run = '%s') + %.1f) WHERE %i <= %i AND %i <= 10 AND `rank` = %i AND map = '%s' AND run = %i AND mode = %i", i, g_Tiers[run][mode], db_run, pointss, i, outof, i, i, g_szCurrentMap, run, mode);
+					g_hDatabase.Format(szQuery, sizeof(szQuery), "UPDATE "...TABLE_RECORDS..." SET pts = ((SELECT r%i from points where tier = %i and run = '%s') + %.1f) WHERE %i <= %i AND %i <= 10 AND `rank` = %i AND map = '%s' AND run = %i AND mode = %i", i, g_Tiers[run][mode], db_run, points, i, outof, i, i, g_szCurrentMap, run, mode);
 					
-					g_hDatabase.Query(Threaded_Empty, szT12);
+					g_hDatabase.Query(Threaded_Empty, szQuery);
 				}
 
 				for (int i = 1; i <= MaxClients; i++)
@@ -1252,16 +1083,15 @@ public void Threaded_DisplayRank_End( Database hOwner, DBResultSet hQuery, const
 
 				if (rank == 1 && outof > 1)
 				{
-					g_hDatabase.Format(szT12, sizeof(szT12), "UPDATE "...TABLE_RECORDS..." SET beaten = 1 WHERE `rank` = 2 AND map = '%s' AND run = %i AND mode = %i", g_szCurrentMap, run, mode);
+					g_hDatabase.Format(szQuery, sizeof(szQuery), "UPDATE "...TABLE_RECORDS..." SET beaten = 1 WHERE `rank` = 2 AND map = '%s' AND run = %i AND mode = %i", g_szCurrentMap, run, mode);
 					
-					g_hDatabase.Query(Threaded_Empty, szT12);
+					g_hDatabase.Query(Threaded_Empty, szQuery);
 				}
 			}
 		}
-
 	}
-	
 	delete hData;
+	delete hQuery;
 }
 
 public void GetTiers_CallBack( Database hOwner, DBResultSet results, const char[] szError, any data )

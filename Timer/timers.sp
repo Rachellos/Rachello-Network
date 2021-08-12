@@ -83,44 +83,44 @@ public Action Timer_EmptyQuery( Handle hTimer, int data )
 // Main component of the HUD timer.
 public Action Timer_HudTimer( Handle hTimer, int ent )
 {
-    static int client;
+    int client
+        , target
+        , prefix
+        , run
+        , mode;
+    
+    float flCurTime, TimeSplit;
+
+    char hintOutput[256]
+        , speed[32]
+        , CpSplit[100]
+        , szCurTime[TIME_SIZE_DEF]
+        , szTimeSplit[TIME_SIZE_DEF];
+
     for ( client = 1; client <= MaxClients; client++ )
     {
         if ( !IsClientInGame( client ) || IsFakeClient( client ) || IsClientSourceTV( client ) ) continue;
 
         BlockBounces(client);
        
-        static int target;
         target = client;
-        int prefix;
-        int run;
-        int mode;
-        
-		float flCurTime, TimeSplit;
-
-		char hintOutput[256];
-        char speed[32];
-        char CpSplit[100];
-		char szCurTime[TIME_SIZE_DEF], szTimeSplit[TIME_SIZE_DEF];
 	
         // Dead? Find the player we're spectating.
         if ( GetClientTeam( client ) == TFTeam_Spectator)
-		{
-        	target = GetClientSpecTarget( client );
+        {
+            target = GetClientSpecTarget( client );
 
-        // Invalid spec target?
-        // -1 = No spec target.
-        // No target? No HUD.
+            // Invalid spec target?
+            // -1 = No spec target.
+            // No target? No HUD.
 
-         	if ( target < 1 || target > MaxClients || !IsPlayerAlive( target ) )
-				{
-            		continue;
-            	}
+            if ( target < 1 || target > MaxClients || !IsPlayerAlive( target ) )
+            {
+                continue;
+            }
 		}
 
-        if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_NOT_MAIN) continue;
-
-        
+        if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_INVALID) continue;
 
 		run = g_iClientRun[target];
 		mode = g_iClientMode[target];
@@ -144,7 +144,7 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
             FormatEx(szAmmo[target], sizeof(szAmmo), "");
         }
 
-        if( g_fClientHideFlags[client] & HIDEHUD_SPEED )
+        if ( g_fClientHideFlags[client] & HIDEHUD_SPEED )
             FormatEx(speed, sizeof( speed ), "\n(%.0f u/s)\n ", GetEntitySpeed(target));
 
         if ( RunIsBonus(g_iClientRun[target]) )

@@ -127,151 +127,6 @@
 #define MATH_PI					3.14159
 
 
-#define BRUSH_MODEL				"models/props/cs_office/vending_machine.mdl"
-#define WEBHOOK "https://discord.com/api/webhooks/799962971068956692/po3TnHT3HTJ3EUJB0C8WNyoUuPTcJWA9OIVCdHOMJ20tMGkRvrCZu_47hlAXEpRmz4k7"
-
-#define WEBHOOK_SERVER_ACTIONS "https://discord.com/api/webhooks/852928160181911578/v9EWBwfclsUh6BHixOKJjEWl5g-0EfjA1CKPqK8pqHPMChb-f8uGENBxL39O2WD23SiI"
-//////////////////////
-// ZONE/MODES ENUMS //
-//////////////////////
-enum
-{
-	ZONE_INVALID = -1,
-	ZONE_START,
-	ZONE_END,
-	ZONE_COURSE_1_START,
-	ZONE_COURSE_1_END,
-	ZONE_COURSE_2_START,
-	ZONE_COURSE_2_END,
-	ZONE_COURSE_3_START,
-	ZONE_COURSE_3_END,
-	ZONE_COURSE_4_START,
-	ZONE_COURSE_4_END,
-	ZONE_COURSE_5_START,
-	ZONE_COURSE_5_END,
-	ZONE_COURSE_6_START,
-	ZONE_COURSE_6_END,
-	ZONE_COURSE_7_START,
-	ZONE_COURSE_7_END,
-	ZONE_COURSE_8_START,
-	ZONE_COURSE_8_END,
-	ZONE_COURSE_9_START,
-	ZONE_COURSE_9_END,
-	ZONE_COURSE_10_START,
-	ZONE_COURSE_10_END,
-	ZONE_BONUS_1_START,
-	ZONE_BONUS_1_END,
-	ZONE_BONUS_2_START,
-	ZONE_BONUS_2_END,
-	ZONE_BONUS_3_START,
-	ZONE_BONUS_3_END,
-	ZONE_BONUS_4_START,
-	ZONE_BONUS_4_END,
-	ZONE_BONUS_5_START,
-	ZONE_BONUS_5_END,
-	ZONE_BONUS_6_START,
-	ZONE_BONUS_6_END,
-	ZONE_BONUS_7_START,
-	ZONE_BONUS_7_END,
-	ZONE_BONUS_8_START,
-	ZONE_BONUS_8_END,
-	ZONE_BONUS_9_START,
-	ZONE_BONUS_9_END,
-	ZONE_BONUS_10_START,
-	ZONE_BONUS_10_END,
-	// End of real zones
-
-	// Start of "unlimited"/special zones
-	ZONE_COURCE,
-	ZONE_SKIP,
-	ZONE_BLOCKS,
-	ZONE_CP,
-
-	NUM_ZONES_W_CP
-};
-
-#define NUM_REALZONES	42
-#define NUM_REALZONES2	21
-
-enum
-{
-	RESENT_MAP_WRS,
-	RESENT_MAP_TTS,
-	RESENT_COURSE_WRS,
-	RESENT_COURSE_TTS,
-	RESENT_BONUS_WRS,
-	RESENT_BONUS_TTS
-};
-
-
-#define STYLEPOSTFIX_LENGTH		10
-
-
-enum ZoneData
-{
-	ZONE_ID = 0,
-	ZONE_TYPE,
-	ZONE_ENTREF,
-	ZONE_ENT,
-
-	Float:ZONE_MINS[3],
-	Float:ZONE_MAXS[3]
-};
-
-
-#define ZONE_SIZE			60
-
-enum BeamData
-{
-	BEAM_TYPE = 0,
-	BEAM_ID,
-	BEAM_INDEX,
-
-	Float:BEAM_POS_BOTTOM1[3],
-	Float:BEAM_POS_BOTTOM2[3],
-	Float:BEAM_POS_BOTTOM3[3],
-	Float:BEAM_POS_BOTTOM4[3],
-	Float:BEAM_POS_TOP1[3],
-	Float:BEAM_POS_TOP2[3],
-	Float:BEAM_POS_TOP3[3],
-	Float:BEAM_POS_TOP4[3]
-};
-
-#define BEAM_SIZE		100
-
-enum CPData
-{
-	CP_RUN = 0,
-	CP_ID,
-	CP_ENTREF,
-
-	// No multidimensional arrays allowed. TIME TO MAKE OUR OWN!
-	Float:CP_RECTIME[NUM_STYLES * NUM_MODES],
-
-	Float:CP_MINS[3],
-	Float:CP_MAXS[3]
-};
-
-enum MapData
-{
-	STIER,
-	DTIER
-};
-
-#define CP_SIZE				40 + ( NUM_STYLES * NUM_MODES )
-#define CP_INDEX_RECTIME	3
-#define CP_INDEX_PRTIME		3
-//#define CP_INDEX_BESTTIME	3 + NUM_STYLES
-
-enum C_CPData
-{
-	C_CP_ID = 0,
-	C_CP_INDEX,
-	Float:C_CP_GAMETIME
-};
-
-#define C_CP_SIZE		3
-
 
 #define PLUGIN_TAG		"{blue}[Cross Server Chat]{default}"
 #define PLAYER_GAGED 	1
@@ -327,12 +182,9 @@ int g_iSprite;
 int rank;
 
 // Running
-enum { INSIDE_START = 0, INSIDE_CSTART = 0, INSIDE_CSTART_2 = 0, INSIDE_CSTART_3 = 0, INSIDE_CSTART_4 = 0, INSIDE_CSTART_5 = 0, INSIDE_CSTART_6 = 0, INSIDE_CSTART_7 = 0, INSIDE_CSTART_8 = 0, INSIDE_CSTART_9 = 0, INSIDE_CSTART_10 = 0, INSIDE_END, INSIDE_END1, INSIDE_END2, INSIDE_END3, INSIDE_END4, INSIDE_END5, INSIDE_END6, INSIDE_END7, INSIDE_END8, INSIDE_END9, INSIDE_END10, INSIDE_END_MAIN, NUM_INSIDE };
-
 int SortMethod[MAXPLAYERS+1];
 char SortRun[MAXPLAYERS+1][10];
 char currentDemoFilename[200];
-bool bInsideZone[MAXPLAYERS+1][NUM_INSIDE][10];
 int CpBlock[MAXPLAYERS+1];
 char szWrName[MAX_NAME_LENGTH][NUM_RUNS][NUM_MODES];
 PlayerState g_iClientState[MAXPLAYERS+1]; // Player's previous state (in start/end/running?)
@@ -801,9 +653,6 @@ public void OnPluginEnd() {
 public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
-	for (int j = 0; j < NUM_INSIDE; j++)
-		for (int d = 0; d < 10; d++)		
-			bInsideZone[client][j][d] = false;
 
 	g_iClientState[client] = STATE_SETSTART;
 	g_iClientRun[client] = RUN_SETSTART;
@@ -1211,7 +1060,7 @@ public void OnMapStart()
 	{
 		if ( g_hClientCPData[i] != null ) { delete g_hClientCPData[i]; g_hClientCPData[i] = null; }
 		RegenOn[i] = false;
-		ChangeClientState(i, STATE_NOT_MAIN);
+		ChangeClientState(i, STATE_INVALID);
 		g_flClientStartTime[i] = TIME_INVALID;
 		g_flClientFinishTime[i] = TIME_INVALID;
 		flNewTimeCourse[i] = TIME_INVALID;
@@ -1221,10 +1070,6 @@ public void OnMapStart()
 		for (int j = 0; j < NUM_RUNS; j++)
 			for (int d = 0; d < NUM_MODES; d++)
 				szOldTimePts[i][j][d] = TIME_INVALID;
-
-		for (int j = 0; j < NUM_INSIDE; j++)
-			for (int d = 0; d < 10; d++)		
-				bInsideZone[i][j][d] = false;
 
 		TimerEye[i] = null;		
 	}
@@ -1713,12 +1558,6 @@ public void OnMapEnd()
 			g_SavePointOrig[i][d] = 0.0;
 	 		g_SavePointEye[i][d] = 0.0;
 	 	}
-
-		for (int j = 0; j < NUM_INSIDE; j++)
-		{
-			for (int d = 0; d < 10; d++)		
-				bInsideZone[i][j][d] = false;
-		}
 	}
 
 	if (secure)

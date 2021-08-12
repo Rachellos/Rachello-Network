@@ -25,11 +25,7 @@ public Action Event_ClientDeath( Handle hEvent, const char[] szEvent, bool bDont
 
 	if ( !(client = GetClientOfUserId( GetEventInt( hEvent, "userid" ) )) ) return;
 
-		for (int j = 0; j < NUM_INSIDE; j++)
-			for (int d = 0; d < 10; d++)		
-				bInsideZone[client][j][d] = false;
-
-	g_iClientState[client] = STATE_NOT_MAIN;			
+	g_iClientState[client] = STATE_INVALID;			
 	g_iClientRun[client] = RUN_INVALID;
 	//PRINTCHAT( client, CHAT_PREFIX..."Type "...CLR_TEAM..."!r"...CLR_TEXT..." to spawn." );
 }
