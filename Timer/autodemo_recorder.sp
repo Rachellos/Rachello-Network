@@ -41,7 +41,7 @@ public Action:Timer_CompressDemo(Handle:timer, any:pack) {
 		return Plugin_Handled;
 	}
 	BuildPath(Path_SM, output, sizeof(output), "recordings/bz2/%s.bz2", filename);
-	BZ2_CompressFile(input, output, 4, OnDemoCompressed, pack);
+	BZ2_CompressFile(input, output, 2, OnDemoCompressed, pack);
 }
 
 public void FtpResponseCallback(bool success, const char[] error, System2FTPRequest request, System2FTPResponse response) {

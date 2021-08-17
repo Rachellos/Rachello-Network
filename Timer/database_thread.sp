@@ -597,6 +597,8 @@ public void Threaded_Completions( Database hOwner, DBResultSet hQuery, const cha
 			record = hQuery.FetchInt( 1);
 			hQuery.FetchString( 0, map, sizeof( map ) );
 
+			if (FindMap(map, map, sizeof(map)) == FindMap_NotFound) continue;
+
 			IntToString(record, szId, sizeof(szId));
 			if (count != 6)
 			{
@@ -715,50 +717,44 @@ public void Threaded_RetrieveClientTimes( Database hOwner, DBResultSet hQuery, c
 
 public void Threaded_GetRank( Database hOwner, DBResultSet hQuery, const char[] szError, int client )
 {
-	if ( (client = GetClientOfUserId( client )) )
+	if ( hQuery == null )
 	{
-		if ( hQuery == null )
-		{
-			DB_LogError( "Couldn't retrieve player's Threaded_GetSolly!" );
-			
-			return;
-		}
-		char name[99], IP[99], Country[99];
-		GetClientName(client, name, sizeof(name));
-		GetClientIP(client, IP, sizeof(IP), true);
+		DB_LogError( "Couldn't retrieve player's Threaded_GetSolly!" );
 		
-		if(!GeoipCountry(IP, Country, sizeof(Country)))
+		return;
+	}
+	char name[32], IP[99], Country[99];
+	GetClientName(client, name, sizeof(name));
+	GetClientIP(client, IP, sizeof(IP), true);
+	
+	if(!GeoipCountry(IP, Country, sizeof(Country)))
+	{
+		Country = "None";
+	}
+
+	if ( hQuery.FetchRow() )
+	{
+		float solly = hQuery.FetchFloat( 0 );
+		float demo = hQuery.FetchFloat( 1 );
+		int srank = hQuery.FetchInt( 2 );
+		int drank = hQuery.FetchInt( 3 );
+
+		if (srank > 0 || drank > 0)
 		{
-			Country = "Undefined";
-		}
-
-		float solly;
-		float demo;
-		int drank;
-		int srank;
-
-		if ( hQuery.RowCount )
-		{
-			hQuery.FetchRow();
-			solly = hQuery.FetchFloat( 0 );
-			demo = hQuery.FetchFloat( 1 );
-			srank = hQuery.FetchInt( 2 );
-			drank = hQuery.FetchInt( 3 );
-
-			if ((solly > 0.0 && srank > 0) || (demo > 0.0 && drank > 0))
-			{	
-				if (srank > drank > 0)
-				{
-					CPrintToChatAll("\x0750DCFF%s {orange}(Rank %i Demoman){white} joining from \x0764E664%s", name, drank, Country );	
-				}
-				else if (0 < srank <= drank)
-				{
-					CPrintToChatAll("\x0750DCFF%s {orange}(Rank %i Soldier){white} joining from \x0764E664%s", name, srank, Country );	
-				}
+			if (srank > drank > 0)
+			{
+				CPrintToChatAll("\x0750DCFF%s {orange}(Rank %d Demoman){white} joining from \x0764E664%s", name, drank, Country );
+			}
+			else if (drank >= srank > 0)
+			{
+				CPrintToChatAll("\x0750DCFF%s {orange}(Rank %d Soldier){white} joining from \x0764E664%s", name, srank, Country );
 			}
 			else
 			{
-				CPrintToChatAll("\x0750DCFF%s {orange}(Unranked){white} joining from \x0764E664%s", name, Country );
+				if (srank <= 0)
+					CPrintToChatAll("\x0750DCFF%s {orange}(Rank %d Demoman){white} joining from \x0764E664%s", name, drank, Country );
+				else
+					CPrintToChatAll("\x0750DCFF%s {orange}(Rank %d Soldier){white} joining from \x0764E664%s", name, srank, Country );	
 			}
 		}
 		else
@@ -766,328 +762,201 @@ public void Threaded_GetRank( Database hOwner, DBResultSet hQuery, const char[] 
 			CPrintToChatAll("\x0750DCFF%s {orange}(Unranked){white} joining from \x0764E664%s", name, Country );
 		}
 	}
-}
-
-public void Threaded_DisplayRank( Database hOwner, DBResultSet hQuery, const char[] szError, ArrayList hData )
-{
-	int client;
-	if ( (client = GetClientOfUserId( hData.Get( 0, 0 ) )) )
+	else
 	{
-		if ( hQuery == null )
-		{
-			DB_LogError( "Couldn't retrieve player's Threaded_DisplayRank!" );
-			
-			delete hData;
-			return;
-		}
-		
-		
-		// Has anybody even beaten the map in the first place?
-		if ( hQuery.RowCount )
-		{
-			hQuery.FetchRow();
-			static char szQuery[162];
-			
-			int run = hData.Get( 0, 1 );
-			int style = hData.Get( 0, 2 );
-			int mode = hData.Get( 0, 3 );
-
-			FormatEx( szQuery, sizeof( szQuery ), "SELECT `rank` FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND mode = %i AND uid = %i",
-				g_szCurrentMap,
-				run,
-				mode,
-				g_iClientId[client] );
-			
-			
-			int iData[5];
-			iData[0] = GetClientUserId( client );
-			iData[1] = run;
-			iData[2] = style;
-			iData[3] = mode;
-			iData[4] = hQuery.FetchInt( 0 );
-			
-			ArrayList hData_ = new ArrayList( sizeof( iData ) );
-			hData_.PushArray( iData, sizeof( iData ) );
-			
-			
-			g_hDatabase.Query( Threaded_DisplayRank_oldrank, szQuery, hData_, DBPrio_High );
-
-			
-		}
+		CPrintToChatAll("\x0750DCFF%s {orange}(Unranked){white} joining from \x0764E664%s", name, Country );
 	}
-	
-	delete hData;
+	delete hQuery;
 }
 
-public void Threaded_DisplayRank_oldrank( Database hOwner, DBResultSet hQuery, const char[] szError, ArrayList hData )
+public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int numQueries, DBResultSet[] hQuery, any[] queryData )
 {
 	int client;
 	if ( (client = GetClientOfUserId( hData.Get( 0, 0 ) )) )
 	{
-		if ( hQuery == null )
-		{
-			DB_LogError( "Couldn't retrieve player's rank!" );
-			
-			delete hData;
-			return;
-		}
+		int outof, rank, oldrank;
+
+		if (hQuery[0].FetchRow())
+			outof = hQuery[0].FetchInt( 0 );
 		
+		if (hQuery[1].FetchRow())
+			oldrank = hQuery[1].FetchInt( 0 );
+		else
+			oldrank = 99999999999;
+
+		if (hQuery[2].FetchRow())
+			rank = hQuery[2].FetchInt( 0 ) + 1;
 		
-		static char szQuery[162];
 		int run = hData.Get( 0, 1 );
 		int style = hData.Get( 0, 2 );
 		int mode = hData.Get( 0, 3 );
-		int outof = hData.Get( 0, 4 );
 
-		if ( szOldTimePts[client][run][mode] <= TIME_INVALID )
+		RunType run_type = (RunIsCourse(run)) ? COURSE_RUN : (RunIsBonus(run)) ? BONUS_RUN : MAP_RUN;
+
+		if (rank <= 0)
+			rank = 99999999999;
+
+		if ( 99999999999 > rank > outof )
+			outof = rank;
+
+		if (rank <= 10)
+			requested=true;
+
+		float CompletionPoints[3][6] = 
 		{
-			oldrank[client] = 99999999999;
-		}
-		else 
-		{
-			if ( hQuery.RowCount )
+			//Map
 			{
-				hQuery.FetchRow();
-				oldrank[client] = hQuery.FetchInt( 0 );
+				10.0,
+				20.0,
+				30.0,
+				50.0,
+				100.0,
+				200.0
+			},
+			//Course
+			{
+				5.0,
+				10.0,
+				20.0,
+				30.0,
+				50.0,
+				100.0
+			},
+			//Bonus
+			{
+				2.0,
+				5.0,
+				10.0,
+				20.0,
+				30.0,
+				50.0
 			}
-			else {
-				oldrank[client] = 99999999999;
+		};
+
+		float TTPoints[3][6][10] = 
+		{
+			//Map
+			{	
+				{ 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 100.0, 140.0, 200.0 },
+				{ 25.0, 37.5, 50.0, 62.5, 75.0, 87.5, 100.0, 125.0, 175.0, 250.0 },
+				{ 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0, 150.0, 210.0, 300.0 },
+				{ 35.0, 52.5, 70.0, 87.5, 105.0, 122.5, 140.0, 175.0, 245.0, 350.0 },
+				{ 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 200.0, 280.0, 400.0 },
+				{ 50.0, 75.0, 100.0, 150.0, 175.0, 200.0, 250.0, 250.0, 350.0, 500.0 }
+			},
+			//Course
+			{	
+				{ 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 70.0, 100.0 },
+				{ 15.0, 22.5, 30.0, 37.0, 45.0, 52.0, 60.0, 75.0, 105.0, 150.0 },
+				{ 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 100.0, 140.0, 200.0 },
+				{ 25.0, 37.5, 50.0, 62.5, 75.0, 87.5, 100.0, 125.0, 175.0, 250.0 },
+				{ 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0, 150.0, 210.0, 300.0 },
+				{ 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 200.0, 280.0, 400.0 }
+			},
+			//Bonus
+			{	
+				{ 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 7.0, 10.0 },
+				{ 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 14.0, 20.0 },
+				{ 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 20.0, 28.0, 40.0 },
+				{ 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 24.0, 30.0, 42.0, 60.0 },
+				{ 8.0, 12.0, 16.0, 20.0, 24.0, 28.0, 32.0, 40.0, 56.0, 80.0 },
+				{ 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 70.0, 100.0 }
 			}
-		}
-		
-			
-		FormatEx( szQuery, sizeof( szQuery ), "SELECT COUNT(*) FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND style = %i AND mode = %i AND time < %f",
-		g_szCurrentMap,
-		run,
-		style,
-		mode,
-		g_flClientBestTime[client][run][mode] );
-		
-		int iData[5];
-		iData[0] = GetClientUserId( client );
-		iData[1] = run;
-		iData[2] = style;
-		iData[3] = mode;
-		iData[4] = outof;
-		
-		ArrayList hData_ = new ArrayList( sizeof( iData ) );
-		hData_.PushArray( iData, sizeof( iData ) );
-			
-			
-		g_hDatabase.Query( Threaded_DisplayRank_End, szQuery, hData_, DBPrio_High );
-	}
-	delete hData;
-}
+		};
 
-public void Threaded_DisplayRank_End( Database hOwner, DBResultSet hQuery, const char[] szError, ArrayList hData )
-{
-	int client;
-	if ( (client = GetClientOfUserId( hData.Get( 0, 0 ) )) )
-	{
-		if ( hQuery == null )
+		float points = CompletionPoints[view_as<int>(run_type)][g_Tiers[run][mode]], points2 = 0.0;
+		
+		char db_run[40];
+		char szTrans[200];
+
+		Transaction transaction = new Transaction();
+
+		g_hDatabase.Format(db_run, sizeof(db_run), "%s", (RunIsCourse(run)) ? "course" : (RunIsBonus(run)) ? "bonus" : "map");
+
+		if( rank != oldrank )
 		{
-			DB_LogError( "Couldn't retrieve player's rank!" );
+			if ( rank <= 10)
+			{
+				points2 = TTPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1][10 - rank]; 
+			}
 			
-			delete hData;
-			return;
-		}
-		
-		
-		if ( hQuery.RowCount )
-		{
-			hQuery.FetchRow();
-
-			int run = hData.Get( 0, 1 );
-			int style = hData.Get( 0, 2 );
-			int mode = hData.Get( 0, 3 );
-
-			RunType run_type = (RunIsCourse(run)) ? COURSE_RUN : (RunIsBonus(run)) ? BONUS_RUN : MAP_RUN;
-
-			char szSteam[MAX_ID_LENGTH];
-			char szQuery[800];
-			GetClientSteam( client, szSteam, sizeof( szSteam ) );
-
-			rank = hQuery.FetchInt( 0 ) + 1;
-
-			if (rank <= 0)
-				rank = 99999999999;
-
-			int outof = hData.Get( 0, 4 );
-
-			if ( rank > outof )
-				outof = rank;
-
-			if (rank <= 10)
-				requested=true;
-
-			float CompletionPoints[3][6] = 
+			if ( 0 < oldrank <= 10 && oldrank > rank && rank <= 10 )
 			{
-				//Map
-				{
-					10.0,
-					20.0,
-					30.0,
-					50.0,
-					100.0,
-					200.0
-				},
-				//Course
-				{
-					5.0,
-					10.0,
-					20.0,
-					30.0,
-					50.0,
-					100.0
-				},
-				//Bonus
-				{
-					2.0,
-					5.0,
-					10.0,
-					20.0,
-					30.0,
-					50.0
-				}
-			};
+				points = 0.0;
+				points2 = TTPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1][10 - rank] - TTPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1][10 - oldrank];
+			}
 
-			float TTPoints[3][6][10] = 
+			if (rank < 11 || szOldTimePts[client][run][mode] <= TIME_INVALID)
 			{
-				//Map
-				{	
-					{ 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 100.0, 140.0, 200.0 },
-					{ 25.0, 37.5, 50.0, 62.5, 75.0, 87.5, 100.0, 125.0, 175.0, 250.0 },
-					{ 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0, 150.0, 210.0, 300.0 },
-					{ 35.0, 52.5, 70.0, 87.5, 105.0, 122.5, 140.0, 175.0, 245.0, 350.0 },
-					{ 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 200.0, 280.0, 400.0 },
-					{ 50.0, 75.0, 100.0, 150.0, 175.0, 200.0, 250.0, 250.0, 350.0, 500.0 }
-				},
-				//Course
-				{	
-					{ 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 70.0, 100.0 },
-					{ 15.0, 22.5, 30.0, 37.0, 45.0, 52.0, 60.0, 75.0, 105.0, 150.0 },
-					{ 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 100.0, 140.0, 200.0 },
-					{ 25.0, 37.5, 50.0, 62.5, 75.0, 87.5, 100.0, 125.0, 175.0, 250.0 },
-					{ 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0, 150.0, 210.0, 300.0 },
-					{ 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 200.0, 280.0, 400.0 }
-				},
-				//Bonus
-				{	
-					{ 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 7.0, 10.0 },
-					{ 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 14.0, 20.0 },
-					{ 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 20.0, 28.0, 40.0 },
-					{ 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 24.0, 30.0, 42.0, 60.0 },
-					{ 8.0, 12.0, 16.0, 20.0, 24.0, 28.0, 32.0, 40.0, 56.0, 80.0 },
-					{ 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 70.0, 100.0 }
-				}
-			};
-
-			float points = CompletionPoints[view_as<int>(run_type)][g_Tiers[run][mode]], points2 = 0.0;
-			
-			char db_run[40];
-
-
-			g_hDatabase.Format(db_run, sizeof(db_run), "%s", (RunIsCourse(run)) ? "course" : (RunIsBonus(run)) ? "bonus" : "map");
-
-			if( rank != oldrank[client] )
-			{
-				if ( rank <= 10)
-				{
-					points2 = TTPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1][10 - rank]; 
-				}
+				points3 = points + points2;
+				CPrintToChat(client, CHAT_PREFIX..."Gained "...CLR_CUSTOM1..."%.1f {white}%s points!", points3, (style == STYLE_DEMOMAN) ? "Demoman" : "Soldier" );
 				
-				if ( 0 < oldrank[client] <= 10 && oldrank[client] > rank && rank <= 10 )
-				{
-					points = 0.0;
-					points2 = TTPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1][10 - rank] - TTPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1][10 - oldrank[client]];
-				}
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = %.1f,%s allranks = %i WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? " beaten = 0," : "", outof, g_szCurrentMap, g_iClientId[client], run, mode);
+				transaction.AddQuery(szTrans);
 
-				if (rank < 11 || szOldTimePts[client][run][mode] <= TIME_INVALID)
-				{
-					char szTrans[200];
-					Transaction hTxn = new Transaction();
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i AND mode = %i) WHERE uid = %i;", (mode == MODE_SOLDIER) ? "solly" : "demo", g_iClientId[client], mode, g_iClientId[client]);
+				transaction.AddQuery(szTrans);
 
-					points3 = points + points2;
-					CPrintToChat(client, CHAT_PREFIX..."Gained "...CLR_CUSTOM1..."%.1f {white}%s points!", points3, (style == STYLE_DEMOMAN) ? "Demoman" : "Soldier" );
-					
-					g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = %.1f,%s allranks = %i WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? " beaten = 0," : "", outof, g_szCurrentMap, g_iClientId[client], run, mode);
-					hTxn.AddQuery(szTrans);
-
-					g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i AND mode = %i) WHERE uid = %i", (mode == MODE_SOLDIER) ? "solly" : "demo", g_iClientId[client], mode, g_iClientId[client]);
-					hTxn.AddQuery(szTrans);
-
-					g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET overall = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i) WHERE uid = %i", g_iClientId[client], g_iClientId[client]);
-					hTxn.AddQuery(szTrans);
-
-					SQL_ExecuteTransaction(g_hDatabase, hTxn);
-				}
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET overall = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i) WHERE uid = %i;", g_iClientId[client], g_iClientId[client]);
+				transaction.AddQuery(szTrans);
 			}
-			
-			if ( rank != oldrank[client] )
+
+			// "XXX is ranked X/X in [XXXX XXXX]"
+			CPrintToChatClientAndSpec( client, CHAT_PREFIX..."Now ranked \x0750DCFF%i/%i"...CLR_TEXT..." on \x0750DCFF%s"...CLR_TEXT..."!", rank, outof, g_szRunName[NAME_LONG][run] );
+
+			if (rank < 11 && rank > 1 && run == RUN_MAIN )
 			{
-				// "XXX is ranked X/X in [XXXX XXXX]"
-				CPrintToChatClientAndSpec( client, CHAT_PREFIX..."Now ranked \x0750DCFF%i/%i"...CLR_TEXT..." on \x0750DCFF%s"...CLR_TEXT..."!", rank, outof, g_szRunName[NAME_LONG][run] );
-
-				if (rank < 11 && rank > 1 && run == RUN_MAIN )
-				{
-					char	szStyleFix[STYLEPOSTFIX_LENGTH];
-					GetStylePostfix( mode, szStyleFix, true );
-					CPrintToChatAll(CHAT_PREFIX..."(%s%s) \x0764E664%N {white}finished the map with rank \x0764E664%i/%i{white}!",
-					g_szStyleName[NAME_SHORT][style], szStyleFix,
-					client,
-					rank,
-					outof);
-				}	
-
-				char szTrans[200];
- 
-				Transaction transaction = new Transaction();
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curRank := 0);");
-				transaction.AddQuery(szTrans);
-
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "update maprecs SET `rank` = (@curRank := @curRank + 1) WHERE map = '%s' AND run = %i AND mode = %i ORDER BY time ASC;", g_szCurrentMap, run, mode );
-				transaction.AddQuery(szTrans);
-
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curClassRank := 0);");
-				transaction.AddQuery(szTrans);
-
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (@curClassRank := @curClassRank + 1) where %s > 0.0 ORDER BY %s DESC;", (style == STYLE_SOLLY) ? "srank" : "drank", (style == STYLE_SOLLY) ? "solly" : "demo" , (style == STYLE_SOLLY) ? "solly" : "demo" );
-				transaction.AddQuery(szTrans);
-
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curOverRank := 0);");
-				transaction.AddQuery(szTrans);
-
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET orank = (@curOverRank := @curOverRank + 1) where solly > 0.0 or demo > 0.0 ORDER BY overall DESC;" );
-				transaction.AddQuery(szTrans);
-
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curAllRank := (select max(`rank`) from maprecs where `map` = '%s' and `run` = %i and `mode` = %i));", g_szCurrentMap, run, mode );
-				transaction.AddQuery(szTrans);
-
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "update maprecs set allranks = @curAllRank where map = '%s' and run = %i and mode = %i", g_szCurrentMap, run, mode );
-				transaction.AddQuery(szTrans);
-
-				SQL_ExecuteTransaction(g_hDatabase, transaction);
-
-				for (int i = 1; i < 11; i++)
-				{
-					g_hDatabase.Format(szQuery, sizeof(szQuery), "UPDATE "...TABLE_RECORDS..." SET pts = ((SELECT r%i from points where tier = %i and run = '%s') + %.1f) WHERE %i <= %i AND %i <= 10 AND `rank` = %i AND map = '%s' AND run = %i AND mode = %i", i, g_Tiers[run][mode], db_run, points, i, outof, i, i, g_szCurrentMap, run, mode);
-					
-					g_hDatabase.Query(Threaded_Empty, szQuery);
-				}
-
-				for (int i = 1; i <= MaxClients; i++)
-				{
-					if (IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i))
-						DB_RetrieveClientData( i );
-				}
-
-				if (rank == 1 && outof > 1)
-				{
-					g_hDatabase.Format(szQuery, sizeof(szQuery), "UPDATE "...TABLE_RECORDS..." SET beaten = 1 WHERE `rank` = 2 AND map = '%s' AND run = %i AND mode = %i", g_szCurrentMap, run, mode);
-					
-					g_hDatabase.Query(Threaded_Empty, szQuery);
-				}
+				char	szStyleFix[STYLEPOSTFIX_LENGTH];
+				GetStylePostfix( mode, szStyleFix, true );
+				CPrintToChatAll(CHAT_PREFIX..."(%s%s) \x0764E664%N {white}finished the map with rank \x0764E664%i/%i{white}!",
+				g_szStyleName[NAME_SHORT][style], szStyleFix,
+				client,
+				rank,
+				outof);
 			}
+
+			g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curRank := 0);");
+			transaction.AddQuery(szTrans);
+
+			g_hDatabase.Format(szTrans, sizeof(szTrans), "update maprecs SET `rank` = (@curRank := @curRank + 1) WHERE map = '%s' AND run = %i AND mode = %i ORDER BY time ASC;", g_szCurrentMap, run, mode );
+			transaction.AddQuery(szTrans);
+
+			g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curClassRank := 0);");
+			transaction.AddQuery(szTrans);
+
+			g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (@curClassRank := @curClassRank + 1) where %s > 0.0 ORDER BY %s DESC;", (style == STYLE_SOLLY) ? "srank" : "drank", (style == STYLE_SOLLY) ? "solly" : "demo" , (style == STYLE_SOLLY) ? "solly" : "demo" );
+			transaction.AddQuery(szTrans);
+
+			g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curOverRank := 0);");
+			transaction.AddQuery(szTrans);
+
+			g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET orank = (@curOverRank := @curOverRank + 1) where solly > 0.0 or demo > 0.0 ORDER BY overall DESC;" );
+			transaction.AddQuery(szTrans);
+
+			g_hDatabase.Format(szTrans, sizeof(szTrans), "SELECT @curAllRank := (select max(`rank`) from maprecs where `map` = '%s' and `run` = %i and `mode` = %i);", g_szCurrentMap, run, mode );
+			transaction.AddQuery(szTrans);
+
+			g_hDatabase.Format(szTrans, sizeof(szTrans), "update maprecs set allranks = @curAllRank where map = '%s' and run = %i and mode = %i;", g_szCurrentMap, run, mode );
+			transaction.AddQuery(szTrans);
+
+			if (rank == 1 && outof > 1)
+			{
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET beaten = 1 WHERE `rank` = 2 AND map = '%s' AND run = %i AND mode = %i", g_szCurrentMap, run, mode);
+				
+				transaction.AddQuery(szTrans);
+			}
+
+			int cycle = (outof >= 10) ? 10 : outof;
+			for (int i = 1; i <= cycle; i++)
+			{
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = ((SELECT r%i from points where tier = %i and run = '%s') + %.1f) WHERE %i <= %i AND %i <= 10 AND `rank` = %i AND map = '%s' AND run = %i AND mode = %i", i, g_Tiers[run][mode], db_run, points, i, outof, i, i, g_szCurrentMap, run, mode);
+				
+				transaction.AddQuery(szTrans);
+			}
+
+			SQL_ExecuteTransaction(g_hDatabase, transaction);
+
+			DB_RetrieveClientData( client );
 		}
 	}
 	delete hData;
@@ -1247,7 +1116,6 @@ public void Threaded_OnAddRecordDone( Database hOwner, DBResultSet hQuery, const
 			int style = hData.Get( 0, 2 );
 			int mode = hData.Get( 0, 3 );
 			DB_DisplayClientRank( client, run, style, mode );
-			return;
 		}
 	}
 	delete hData;

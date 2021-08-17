@@ -222,7 +222,6 @@ int profile_run[MAXPLAYERS+1];
 int SetCustZone[MAXPLAYERS+1];
 int tier_block[MAXPLAYERS+1];
 int tier_run[MAXPLAYERS+1];
-int oldrank[MAXPLAYERS+1];
 int db_style[MAXPLAYERS+1];
 
 int g_iClientIdle[MAXPLAYERS+1];
@@ -272,7 +271,7 @@ bool secure = false;
 int iClass;
 int CpPlusSplit[MAXPLAYERS+1];
 char CpTimeSplit[MAXPLAYERS+1][TIME_SIZE_DEF];
-bool DisplayCpTime[MAXPLAYERS+1] = false;
+bool DisplayCpTime[MAXPLAYERS+1] = { false, ... };
 bool requestedByMenu = false;
 char DBS_Name[32][MAXPLAYERS+1];
 float szOldTime[MAXPLAYERS+1];
@@ -1732,7 +1731,7 @@ public Action SendDiscordMessage(int client, int args)
 	return Plugin_Handled;
 }
 
-public void GetRank( int client )
+public void GetJoiningRank( int client )
 {
 	static char szQuery[162];
 	static char szSteam[MAX_ID_LENGTH];
@@ -1742,7 +1741,7 @@ public void GetRank( int client )
 	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT solly, demo, srank, drank FROM "...TABLE_PLYDATA..." WHERE steamid = '%s'", szSteam );
 			
 			
-	g_hDatabase.Query( Threaded_GetRank, szQuery, GetClientUserId( client ), DBPrio_High );
+	g_hDatabase.Query( Threaded_GetRank, szQuery, client, DBPrio_High );
 }	
 
 public void OnClientConnected(int client) {
@@ -1776,7 +1775,7 @@ public void OnClientPostAdminCheck( int client )
 	if ( !IsFakeClient( client ) )
 	{
 		DB_RetrieveClientData( client );
-		GetRank(client);
+		GetJoiningRank(client);
 
 		char query[200];
 		DB_SaveClientData(client);
@@ -2881,7 +2880,6 @@ stock void DoRecordNotification( int client, char szName[MAX_NAME_LENGTH], int r
 	static float flImprove;
 	flImprove = flOldBestTime - flNewTime;
 	
-	
 	if ( flPrevMapBest > flNewTime )
 	{
 		if (run == RUN_MAIN)
@@ -3008,178 +3006,138 @@ stock void DoRecordNotification( int client, char szName[MAX_NAME_LENGTH], int r
 		}
 	}
 
-delete hook;		
+	delete hook;
 
-if ( g_fClientHideFlags[client] & HIDEHUD_PRTIME )	
-{
-	if ( flPrevMapBest <= TIME_INVALID )
+	if ( g_fClientHideFlags[client] & HIDEHUD_PRTIME )	
 	{
+		if ( flPrevMapBest <= TIME_INVALID )
+		{
+		}
+		else 
+		{
+			float flLeftSeconds;
+			int prefix = '+';
+
+			if ( flNewTime < flOldBestTime )
+			{
+				flLeftSeconds = flOldBestTime - flNewTime;
+				prefix = '-';
+				
+			}
+			else
+			{
+				flLeftSeconds = flNewTime - flOldBestTime;
+			}
+			if ( flOldBestTime > TIME_INVALID )
+			{
+			FormatSeconds( flLeftSeconds, szFormTime, FORMAT_2DECI );
+			FormatEx( szTxt, sizeof( szTxt ), "%s {white}(\x0750DCFFPR %c%s{white})",
+				szTxt,
+				prefix,
+				szFormTime );
+				
+			}
+		}	
 	}
-	else 
+	if ( flPrevMapBest > TIME_INVALID && !(g_fClientHideFlags[client] & HIDEHUD_PRTIME) )
 	{
-		float flLeftSeconds;
-		int prefix = '+';
+			float flLeftSeconds;
+			int prefix = '+';
 
-		if ( flNewTime < flOldBestTime )
-		{
-			flLeftSeconds = flOldBestTime - flNewTime;
-			prefix = '-';
-			
-		}
-		else
-		{
-			flLeftSeconds = flNewTime - flOldBestTime;
-		}
-		if ( flOldBestTime > TIME_INVALID )
-		{
-		FormatSeconds( flLeftSeconds, szFormTime, FORMAT_2DECI );
-		FormatEx( szTxt, sizeof( szTxt ), "%s {white}(\x0750DCFFPR %c%s{white})",
-			szTxt,
-			prefix,
-			szFormTime );
-			
-		}
-	}	
-}
-if ( flPrevMapBest > TIME_INVALID && !(g_fClientHideFlags[client] & HIDEHUD_PRTIME) )
-	{
-		float flLeftSeconds;
-		int prefix = '+';
+			if ( flNewTime < flPrevMapBest )
+			{
+				flLeftSeconds = flPrevMapBest - flNewTime;
+				prefix = '-';
+				
+			}
+			else
+			{
+				flLeftSeconds = flNewTime - flPrevMapBest;
+			}
 
-		if ( flNewTime < flPrevMapBest )
-		{
-			flLeftSeconds = flPrevMapBest - flNewTime;
-			prefix = '-';
-			
-		}
-		else
-		{
-			flLeftSeconds = flNewTime - flPrevMapBest;
-		}
-
-		FormatSeconds( flLeftSeconds, szFormTime, FORMAT_2DECI );
-		Format( szTxt, sizeof( szTxt ), "%s {white}(\x0750DCFFWR %c%s{white})",
-			szTxt,
-			prefix,
-			szFormTime );	
+			FormatSeconds( flLeftSeconds, szFormTime, FORMAT_2DECI );
+			Format( szTxt, sizeof( szTxt ), "%s {white}(\x0750DCFFWR %c%s{white})",
+				szTxt,
+				prefix,
+				szFormTime );	
 	}
 	if ( flOldBestTime > flNewTime )
-		{
-			FormatSeconds( flImprove, szImproveTime, FORMAT_2DECI );
-			Format( szTxt, sizeof( szTxt ), "%s | %s improvement!",
-			szTxt,
-			szImproveTime );
-		}
-
-	/*
-	int sound;
-
-	if ( bIsBest )
 	{
-		// [BOT CHEER]
-		sound = GetRandomInt( 1, sizeof( g_szWinningSounds ) - 1 );
+		FormatSeconds( flImprove, szImproveTime, FORMAT_2DECI );
+		Format( szTxt, sizeof( szTxt ), "%s | %s improvement!",
+		szTxt,
+		szImproveTime );
 	}
-	else
-	{
-		/ Beep!
-		sound = 0;
-	}*/
+
 
 	int[] clients = new int[MaxClients];
 	int numClients;
 
-if ( g_iClientRun[client] == RUN_MAIN || flPrevMapBest > flNewTime || flPrevMapBest <= TIME_INVALID )
-{
-	for ( int i = 1; i <= MaxClients; i++ )
+	if ( g_iClientRun[client] == RUN_MAIN || flPrevMapBest > flNewTime || flPrevMapBest <= TIME_INVALID )
 	{
-		if ( IsClientInGame( i ) && !(g_fClientHideFlags[i] & HIDEHUD_ZONEMSG) )
+		for ( int i = 1; i <= MaxClients; i++ )
 		{
-			if ( !(g_fClientHideFlags[i] & HIDEHUD_ZONEMSG) )
+			if ( IsClientInGame( i ) && !(g_fClientHideFlags[i] & HIDEHUD_ZONEMSG) )
 			{
-				clients[numClients++] = i;
-			}
-
-			if ( !(g_fClientHideFlags[i] & HIDEHUD_ZONEMSG))
-			{
-				CPrintToChat( i, "%s", szTxt );
+				if ( !(g_fClientHideFlags[i] & HIDEHUD_ZONEMSG) )
+				{
+					clients[numClients++] = i;
+					CPrintToChat( i, "%s", szTxt );
+				}
 			}
 		}
 	}
-}
-else 
-{
-	for ( int i = 1; i <= MaxClients; i++ )
+	else 
 	{
-		if ( i == client && IsClientInGame( i ) && !(g_fClientHideFlags[i] & HIDEHUD_ZONEMSG) )
+		for ( int i = 1; i <= MaxClients; i++ )
 		{
-			SetGlobalTransTarget( i );
-			if ( !(g_fClientHideFlags[i] & HIDEHUD_ZONEMSG))
+			if ( i == client && IsClientInGame( i ) && !(g_fClientHideFlags[i] & HIDEHUD_ZONEMSG) )
 			{
-				CPrintToChat( i, "%s", szTxt );
-			}
-		}
-		if (IsClientInGame(i) && !IsPlayerAlive(i) && !(g_fClientHideFlags[i] & HIDEHUD_ZONEMSG))
-			if (GetEntPropEnt(i, Prop_Send, "m_hObserverTarget") == client)
+				SetGlobalTransTarget( i );
+				if ( !(g_fClientHideFlags[i] & HIDEHUD_ZONEMSG))
 				{
 					CPrintToChat( i, "%s", szTxt );
 				}
+			}
+			if (IsClientInGame(i) && !IsPlayerAlive(i) && !(g_fClientHideFlags[i] & HIDEHUD_ZONEMSG))
+			{
+				if (GetEntPropEnt(i, Prop_Send, "m_hObserverTarget") == client)
+				{
+					CPrintToChat( i, "%s", szTxt );
+				}
+			}
+		}
 	}
-}
 
-if ( g_iClientRun[client] == RUN_MAIN && (flNewTime > flPrevMapBest && flPrevMapBest != TIME_INVALID) )
-{
-	EmitSound( clients, numClients, g_szWinningSounds[0] );
-}
-if ( ( g_iClientRun[client] == RUN_COURSE1 || g_iClientRun[client] == RUN_COURSE2 || g_iClientRun[client] == RUN_COURSE3 || g_iClientRun[client] == RUN_COURSE4 || g_iClientRun[client] == RUN_COURSE5 || g_iClientRun[client] == RUN_COURSE6 || g_iClientRun[client] == RUN_COURSE7 || g_iClientRun[client] == RUN_COURSE8 || g_iClientRun[client] == RUN_COURSE9 || g_iClientRun[client] == RUN_COURSE10 ) && (flNewTime >= flPrevMapBest && flPrevMapBest != TIME_INVALID) )
-{
-	EmitSoundToClient( client, g_szSoundsCourse[0] );
-}
-if ( ( g_iClientRun[client] == RUN_COURSE1 || g_iClientRun[client] == RUN_COURSE2 || g_iClientRun[client] == RUN_COURSE3 || g_iClientRun[client] == RUN_COURSE4 || g_iClientRun[client] == RUN_COURSE5 || g_iClientRun[client] == RUN_COURSE6 || g_iClientRun[client] == RUN_COURSE7 || g_iClientRun[client] == RUN_COURSE8 || g_iClientRun[client] == RUN_COURSE9 || g_iClientRun[client] == RUN_COURSE10 ) && (flNewTime < flPrevMapBest || flPrevMapBest <= TIME_INVALID) )
-{
-	EmitSoundToClient( client, g_szSoundsCourseWr[0] );
-}
-if ( g_iClientRun[client] == RUN_MAIN && (flNewTime < flPrevMapBest || flPrevMapBest <= TIME_INVALID))
+	if ( flNewTime >= flPrevMapBest && flPrevMapBest != TIME_INVALID )
 	{
-		for ( int i = 1; i <= MaxClients; i++ )
-		{
-			if ( i == client && IsClientInGame( i ) )
-			{
-				SetGlobalTransTarget( i );
-				{
-					if ( !(g_fClientHideFlags[i] & HIDEHUD_RECSOUNDS) )
-					{
-						EmitSoundToClient( i, g_szWrSounds[0] );
-					}
-				}
-			}
-			if ( i != client && IsClientInGame( i ) )
-			{
-				SetGlobalTransTarget( i );
-				{
-					if ( !(g_fClientHideFlags[i] & HIDEHUD_RECSOUNDS) )
-					{
-						EmitSoundToClient( i, g_szWrSoundsNo[0] );
-					}
-				}
-			}
-		}	
+		if (run == RUN_MAIN)
+			EmitSound( clients, numClients, g_szWinningSounds[0] );
+		else if (RunIsCourse(run))
+			EmitSoundToClient( client, g_szSoundsCourse[0] );
 	}
-if ( ( g_iClientRun[client] == RUN_BONUS1 || g_iClientRun[client] == RUN_BONUS2 || g_iClientRun[client] == RUN_BONUS3 || g_iClientRun[client] == RUN_BONUS4 || g_iClientRun[client] == RUN_BONUS5 || g_iClientRun[client] == RUN_BONUS6 || g_iClientRun[client] == RUN_BONUS7 || g_iClientRun[client] == RUN_BONUS8 || g_iClientRun[client] == RUN_BONUS9 || g_iClientRun[client] == RUN_BONUS10 ) && (flNewTime < flPrevMapBest || flPrevMapBest <= TIME_INVALID))
+
+	if ( flNewTime < flPrevMapBest || flPrevMapBest <= TIME_INVALID )
 	{
 		for ( int i = 1; i <= MaxClients; i++ )
 		{
-			if ( IsClientInGame( i ) )
+			if ( IsClientInGame( i ) && IsClientConnected( i ))
 			{
 				SetGlobalTransTarget( i );
 				{
 					if ( !(g_fClientHideFlags[i] & HIDEHUD_RECSOUNDS) )
 					{
-						EmitSoundToClient( i, g_szWrSoundsBonus[0] );
+						if (run == RUN_MAIN)
+							EmitSoundToClient( i, (i == client) ? g_szWrSounds[0] : g_szWrSoundsNo[0] );
+						else if (RunIsCourse(run))
+							EmitSoundToClient( i, g_szSoundsCourseWr[0] );
+						else if (RunIsBonus(run))
+							EmitSoundToClient( i, g_szWrSoundsBonus[0] );
 					}
 				}
 			}
-		}	
-	}	
+		}
+	}
 }
 
 stock int FindEmptyMimic()

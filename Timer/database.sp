@@ -894,12 +894,33 @@ stock void DB_DisplayClientRank( int client, int run = RUN_MAIN, int style = STY
 {
 	if ( g_flClientBestTime[client][run][mode] <= TIME_INVALID ) return;
 	
-	
-	static char szQuery[162];
-	FormatEx( szQuery, sizeof( szQuery ), "SELECT COUNT(*) FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND mode = %i",
+	Transaction t = new Transaction();
+
+	char szQuery[162];
+
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT COUNT(*) FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND mode = %i",
 		g_szCurrentMap,
 		run,
 		mode );
+
+	t.AddQuery(szQuery);
+
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT `rank` FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND mode = %i AND uid = %i",
+		g_szCurrentMap,
+		run,
+		mode,
+		g_iClientId[client] );
+
+	t.AddQuery(szQuery);
+
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT COUNT(*) FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND style = %i AND mode = %i AND time < %f",
+		g_szCurrentMap,
+		run,
+		style,
+		mode,
+		g_flClientBestTime[client][run][mode] );
+
+	t.AddQuery(szQuery);
 	
 	
 	int iData[4];
@@ -910,9 +931,8 @@ stock void DB_DisplayClientRank( int client, int run = RUN_MAIN, int style = STY
 	
 	ArrayList hData = new ArrayList( sizeof( iData ) );
 	hData.PushArray( iData, sizeof( iData ) );
-	
-	
-	g_hDatabase.Query( Threaded_DisplayRank, szQuery, hData, DBPrio_Normal );
+
+	SQL_ExecuteTransaction(g_hDatabase, t, OnDisplayRankTxnSuccess, _, hData);
 }
 
 stock bool DB_SaveClientRecord( int client, float flNewTime )
@@ -992,8 +1012,8 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 			mode,
 			flNewTime,
 			DemoUrl,
-			(run != RUN_MAIN && run != RUN_BONUS1 && run != RUN_BONUS2 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS5 && run != RUN_BONUS6 && run != RUN_BONUS7 && run != RUN_BONUS8 && run != RUN_BONUS9 && run != RUN_BONUS10 ) ? (g_flTicks_Cource_Start[client] - 67) : (g_flTicks_Start[client] - 67),
-			(run != RUN_MAIN && run != RUN_BONUS1 && run != RUN_BONUS2 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS5 && run != RUN_BONUS6 && run != RUN_BONUS7 && run != RUN_BONUS8 && run != RUN_BONUS9 && run != RUN_BONUS10 ) ? (g_flTicks_Cource_End[client] - 67) : (g_flTicks_End[client] - 67),
+			( RunIsCourse(run) ) ? (g_flTicks_Cource_Start[client] - 67) : (g_flTicks_Start[client] - 67),
+			( RunIsCourse(run) ) ? (g_flTicks_Cource_End[client] - 67) : (g_flTicks_End[client] - 67),
 			server_id,
 			DEMO_RECORDING );
 			
@@ -1004,8 +1024,8 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 			FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_RECORDS..." SET time = %.16f, date = CURRENT_TIMESTAMP, demourl = '%s', start_tick = %i, end_tick = %i, server_id = %i, demo_status = %i WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i",
 			flNewTime,
 			DemoUrl,
-			(run != RUN_MAIN && run != RUN_BONUS1 && run != RUN_BONUS2 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS5 && run != RUN_BONUS6 && run != RUN_BONUS7 && run != RUN_BONUS8 && run != RUN_BONUS9 && run != RUN_BONUS10 ) ? (g_flTicks_Cource_Start[client] - 67) : (g_flTicks_Start[client] - 67),
-			(run != RUN_MAIN && run != RUN_BONUS1 && run != RUN_BONUS2 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS3 && run != RUN_BONUS4 && run != RUN_BONUS5 && run != RUN_BONUS6 && run != RUN_BONUS7 && run != RUN_BONUS8 && run != RUN_BONUS9 && run != RUN_BONUS10 ) ? (g_flTicks_Cource_End[client] - 67) : (g_flTicks_End[client] - 67),
+			( RunIsCourse(run) ) ? (g_flTicks_Cource_Start[client] - 67) : (g_flTicks_Start[client] - 67),
+			( RunIsCourse(run) ) ? (g_flTicks_Cource_End[client] - 67) : (g_flTicks_End[client] - 67),
 			server_id,
 			DEMO_RECORDING,
 			g_szCurrentMap,

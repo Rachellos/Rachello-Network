@@ -721,6 +721,7 @@ public void Event_EndTouchPost_Zone( int trigger, int client )
 
 			g_hClientCPData[client] = new ArrayList( view_as<int>( C_CPData ) );
 			g_iClientCurCP[client] = -1;
+			DisplayCpTime[client] = false;
 
 			g_flClientStartTime[client] = GetEngineTime();
 			g_flTicks_Start[client] = GetGameTickCount() - STVTickStart;
