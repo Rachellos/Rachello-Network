@@ -233,6 +233,10 @@ int g_iClientId[MAXPLAYERS+1]; // IMPORTANT!!
 int g_tier_MapMenu[MAXPLAYERS+1];
 char db_map[MAXPLAYERS+1][100];
 
+bool isHudDrawing[MAXPLAYERS+1];
+float TimeToDrawHud[MAXPLAYERS+1];
+float LastHudDrawing[MAXPLAYERS+1];
+
 float g_CustomRespawnPos[NUM_RUNS][3];
 float g_CustomRespawnAng[NUM_RUNS][3];
 float g_fClientRespawnPosition[MAXPLAYERS+1][3];
@@ -1212,7 +1216,7 @@ while ((iCP = FindEntityByClassname(iCP, "trigger_capture_area")) != -1)
 	// Repeating timer that sends the zones to the clients every X seconds.
 
 	// Show timer to players.
-	CreateTimer( TIMER_UPDATE_INTERVAL, Timer_HudTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
+	CreateTimer( 0.1, Timer_HudTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
 	CreateTimer( 1.0, Timer_EndMap, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
 	CreateTimer( 1.0, Timer_regencheck, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
 	CreateTimer( 60.0, Timer_Ad, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
@@ -1604,7 +1608,9 @@ public void OnClientPutInServer( int client )
 {
 	IsMapMode[client] = true;
 	LastUsage[client] = 0;
-	
+	isHudDrawing[client] = false;
+	TimeToDrawHud[client] = TIME_INVALID;
+	LastHudDrawing[client] = GetEngineTime();
 	char szSteam[100];
 	char szQuery[200];
 	GetClientSteam(client, szSteam, sizeof( szSteam )	);

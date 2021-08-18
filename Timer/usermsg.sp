@@ -61,6 +61,34 @@ stock void SendColorMessage( int target, int author, const char[] szMsg )
 	}
 }
 
+stock bool Client_PrintHintText(int client, const char[] format, any ...)
+{
+	Handle userMessage = StartMessageOne("KeyHintText", client);
+
+	if (userMessage == INVALID_HANDLE) {
+		return false;
+	}
+
+	char buffer[254];
+
+	SetGlobalTransTarget(client);
+	VFormat(buffer, sizeof(buffer), format, 3);
+
+	if (GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available
+		&& GetUserMessageType() == UM_Protobuf) {
+
+		PbAddString(userMessage, "hints", buffer);
+	}
+	else {
+		BfWriteByte(userMessage, 1);
+		BfWriteString(userMessage, buffer);
+	}
+
+	EndMessage();
+
+	return true;
+}
+
 stock void ShowKeyHintText( int client, int target )
 {
 	if ( TF2_GetPlayerClass(client) != TFClass_DemoMan && TF2_GetPlayerClass(client) != TFClass_Soldier && GetClientTeam( client ) != TFTeam_Spectator ) return;
@@ -76,7 +104,7 @@ stock void ShowKeyHintText( int client, int target )
 		WorldRecord[100];
 
 	int Spec_Count = 0;
-	for (int i = 1; i < MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientInGame(i) || !IsClientObserver(i))
 				continue;
@@ -98,114 +126,108 @@ stock void ShowKeyHintText( int client, int target )
 				FormatEx(szSpectators, sizeof(szSpectators), "%s\n%N", szSpectators, i);
 		}
 	}
-	
-	Handle hMsg = StartMessageOne( "KeyHintText", client );
-	
-	if ( hMsg != null )
-	{
-		int run = g_iClientRun[target];
-		int style = g_iClientStyle[target];
-		int mode = g_iClientMode[target];
-		int timeleft;
-		GetMapTimeLeft(timeleft);
 
-		char remaining[100],
-				tempus_info[100];
-				//tempus_info_pr[100];
+	int run = g_iClientRun[target];
+	int style = g_iClientStyle[target];
+	int mode = g_iClientMode[target];
+	int timeleft;
+	GetMapTimeLeft(timeleft);
 
+	char remaining[100],
+			tempus_info[100];
+			//tempus_info_pr[100];
+	if (g_TempusWrTime[run][mode] > TIME_INVALID)
 		FormatSeconds( g_TempusWrTime[run][mode], tempuswr, FORMAT_3DECI );
-		//FormatSeconds( g_TempusPrTime[target][run][mode], tempuspr, FORMAT_3DECI );
-		
-		FormatEx(tempus_info, sizeof(tempus_info), " \nTempus WR:\n%s (%s)\n", 
-			(g_TempusWrTime[run][mode] == TIME_INVALID) ? "None" : tempuswr,
-			(g_TempusWrTime[run][mode] == TIME_INVALID) ? "" : sz_TempusWrName[run][mode]);
+	//FormatSeconds( g_TempusPrTime[target][run][mode], tempuspr, FORMAT_3DECI );
+	
+	FormatEx(tempus_info, sizeof(tempus_info), " \nTempus WR:\n%s (%s)\n", 
+		(g_TempusWrTime[run][mode] <= TIME_INVALID) ? "None" : tempuswr,
+		(g_TempusWrTime[run][mode] <= TIME_INVALID) ? "" : sz_TempusWrName[run][mode]);
 
-		/*FormatEx(tempus_info_pr, sizeof(tempus_info_pr), "\nTempus PR:\n%s\n", 
-			(g_TempusPrTime[target][run][mode] == TIME_INVALID) ? "None" : tempuspr);*/
+	/*FormatEx(tempus_info_pr, sizeof(tempus_info_pr), "\nTempus PR:\n%s\n", 
+		(g_TempusPrTime[target][run][mode] == TIME_INVALID) ? "None" : tempuspr);*/
 
-		if ( timeleft > 60 )
-		{
-			int mins = timeleft / 60;
-			FormatEx(remaining, sizeof(remaining), "%i minutes remaining", mins);
-		}
-		else if (timeleft >= 30)
-		{
-			FormatEx(remaining, sizeof(remaining), "> 30 sec remaining");
-		}
-		else if (timeleft < 30 && timeleft > 10)
-		{
-			FormatEx(remaining, sizeof(remaining), "< 30 sec remaining");
-		}
-		else if(timeleft < 10 && timeleft > 0)
-		{
-			FormatEx(remaining, sizeof(remaining), "%i sec remaining", timeleft);
-		}
-		else if (timeleft <= 0)
-		{
-			FormatEx(remaining, sizeof(remaining), "Map ending...");
-		}
-
-		if ( g_flClientBestTime[target][run][mode] != TIME_INVALID )
-		{
-			FormatSeconds( g_flClientBestTime[target][run][mode], szTime, FORMAT_3DECI );
-		}
-		else
-		{
-			FormatEx( szTime, sizeof( szTime ), "None" );
-		}
-			
-		if ( g_flMapBestTime[run][style][mode] != TIME_INVALID )
-		{
-			FormatSeconds( g_flMapBestTime[run][style][mode], szBestTime, FORMAT_3DECI );
-			FormatEx( WorldRecord, sizeof( WorldRecord ), "%s (%s)", szBestTime, szWrName[run][mode] );
-		}
-		else
-		{
-			FormatEx( WorldRecord, sizeof( WorldRecord ), "None" );
-		}
-
-		if ( g_flClientBestTime[target][run][mode] <= g_flMapBestTime[run][style][mode] || g_flClientBestTime[target][run][mode] <= TIME_INVALID)
-		{
-			FormatEx( szTxt, sizeof( szTxt ), "");
-		}
-		else if ( g_flClientBestTime[target][run][mode] > g_flMapBestTime[run][style][mode])
-		{
-			float interval = g_flClientBestTime[target][run][mode] - g_flMapBestTime[run][style][mode];
-			
-			FormatSeconds( interval, szInterval, FORMAT_3DECI );
-			FormatEx( szTxt, sizeof( szTxt ), "(+%s)", szInterval );
-		}
-
-		if ( !g_bClientPractising[target] && run != RUN_SETSTART )
-		{
-			static char szStylePostFix[STYLEPOSTFIX_LENGTH];
-			GetStylePostfix( g_iClientMode[target], szStylePostFix );
-			
-			FormatEx( szText, sizeof( szText ), "%s\n\n::%s%s::\n\nPersonal Record:\n%s %s\n\nWorld Record:\n%s\n%s",
-					remaining,
-					g_szStyleName[NAME_LONG][style], szStylePostFix,
-					szTime,
-					szTxt,
-					WorldRecord,
-					(!(g_fClientHideFlags[client] & HIDEHUD_TEMPUSWR)) ? tempus_info : ""/*,
-					(!(g_fClientHideFlags[client] & HIDEHUD_TEMPUSPR)) ? tempus_info_pr : ""*/
-					);
-		}
-		else
-		{
-			FormatEx( szText, sizeof( szText ), "%s\n\n", remaining);
-		}
-		
-		FormatEx(szSpecCount, sizeof(szSpecCount), "(+%i)", Spec_Count-5);
-
-		if (!(g_fClientHideFlags[client] & HIDEHUD_SPECTYPE))
-			Format(szText, sizeof(szText), "%s\nSpectators: %i", szText, Spec_Count);
-		else
-			Format(szText, sizeof(szText), "%s\nSpectator list:%s\n%s", szText, szSpectators, ((Spec_Count-5) > 0) ? szSpecCount : "");
-		
-		BfWriteByte( hMsg, 1 );
-		BfWriteString( hMsg, szText );
-		
-		EndMessage();
+	if ( timeleft > 60 )
+	{
+		int mins = timeleft / 60;
+		FormatEx(remaining, sizeof(remaining), "%i minutes remaining", mins);
 	}
+	else if (timeleft >= 30)
+	{
+		FormatEx(remaining, sizeof(remaining), "> 30 sec remaining");
+	}
+	else if (timeleft < 30 && timeleft > 10)
+	{
+		FormatEx(remaining, sizeof(remaining), "< 30 sec remaining");
+	}
+	else if(timeleft < 10 && timeleft > 0)
+	{
+		FormatEx(remaining, sizeof(remaining), "%i sec remaining", timeleft);
+	}
+	else if (timeleft <= 0)
+	{
+		FormatEx(remaining, sizeof(remaining), "Map ending...");
+	}
+
+	if ( g_flClientBestTime[target][run][mode] != TIME_INVALID )
+	{
+		FormatSeconds( g_flClientBestTime[target][run][mode], szTime, FORMAT_3DECI );
+	}
+	else
+	{
+		FormatEx( szTime, sizeof( szTime ), "None" );
+	}
+		
+	if ( g_flMapBestTime[run][style][mode] != TIME_INVALID )
+	{
+		FormatSeconds( g_flMapBestTime[run][style][mode], szBestTime, FORMAT_3DECI );
+		FormatEx( WorldRecord, sizeof( WorldRecord ), "%s (%s)", szBestTime, szWrName[run][mode] );
+	}
+	else
+	{
+		FormatEx( WorldRecord, sizeof( WorldRecord ), "None" );
+	}
+
+	if ( g_flClientBestTime[target][run][mode] <= g_flMapBestTime[run][style][mode] || g_flClientBestTime[target][run][mode] <= TIME_INVALID)
+	{
+		FormatEx( szTxt, sizeof( szTxt ), "");
+	}
+	else if ( g_flClientBestTime[target][run][mode] > g_flMapBestTime[run][style][mode])
+	{
+		float interval = g_flClientBestTime[target][run][mode] - g_flMapBestTime[run][style][mode];
+		
+		FormatSeconds( interval, szInterval, FORMAT_3DECI );
+		FormatEx( szTxt, sizeof( szTxt ), "(+%s)", szInterval );
+	}
+
+	if ( !g_bClientPractising[target] && run != RUN_SETSTART )
+	{
+		static char szStylePostFix[STYLEPOSTFIX_LENGTH];
+		GetStylePostfix( g_iClientMode[target], szStylePostFix );
+		
+		FormatEx( szText, sizeof( szText ), "%s\n\n::%s%s::\n\nPersonal Record:\n%s %s\n\nWorld Record:\n%s\n%s",
+				remaining,
+				g_szStyleName[NAME_LONG][style], szStylePostFix,
+				szTime,
+				szTxt,
+				WorldRecord,
+				(!(g_fClientHideFlags[client] & HIDEHUD_TEMPUSWR)) ? tempus_info : ""/*,
+				(!(g_fClientHideFlags[client] & HIDEHUD_TEMPUSPR)) ? tempus_info_pr : ""*/
+				);
+	}
+	else
+	{
+		FormatEx( szText, sizeof( szText ), "%s\n\n", remaining);
+	}
+	
+	FormatEx(szSpecCount, sizeof(szSpecCount), "(+%i)", Spec_Count-5);
+
+	if (!(g_fClientHideFlags[client] & HIDEHUD_SPECTYPE))
+		Format(szText, sizeof(szText), "%s\nSpectators: %i", szText, Spec_Count);
+	else
+		Format(szText, sizeof(szText), "%s\nSpectator list:%s\n%s", szText, szSpectators, ((Spec_Count-5) > 0) ? szSpecCount : "");
+	
+	Client_PrintHintText(client, szText);
+
+	return;
 }

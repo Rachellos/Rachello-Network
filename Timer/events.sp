@@ -534,6 +534,10 @@ public Action Event_ClientSpawn( Handle hEvent, const char[] szEvent, bool bDont
 	
 	if (g_bClientPractising[client])
 		g_bClientPractising[client] = false;
+	
+	isHudDrawing[client] = false;
+	TimeToDrawHud[client] = GetEngineTime();
+	LastHudDrawing[client] = GetEngineTime();
 
 	if (TF2_GetPlayerClass(client) == TFClass_Soldier)
 	{

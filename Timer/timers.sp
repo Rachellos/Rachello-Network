@@ -73,7 +73,6 @@ public Action Timer_Ad( Handle hTimer )
     return Plugin_Continue; 
 }
 
-
 public Action Timer_EmptyQuery( Handle hTimer, int data )
 {
 	g_hDatabase.Query(Threaded_Empty, "Select uid from plydata limit 1");
@@ -88,7 +87,7 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
         , prefix
         , run
         , mode;
-    
+
     float flCurTime, TimeSplit;
 
     char hintOutput[256]
@@ -99,12 +98,15 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
 
     for ( client = 1; client <= MaxClients; client++ )
     {
-        if ( !IsClientInGame( client ) || IsFakeClient( client ) || IsClientSourceTV( client ) ) continue;
+        if ( !IsClientInGame( client ) || IsFakeClient( client ) || IsClientSourceTV( client ) || g_fClientHideFlags[client] & HIDEHUD_TIMER) { isHudDrawing[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue; }
+		if ( TF2_GetPlayerClass(client) != TFClass_DemoMan && TF2_GetPlayerClass(client) != TFClass_Soldier && GetClientTeam( client ) != TFTeam_Spectator ) { isHudDrawing[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue; }
 
         BlockBounces(client);
-       
+
         target = client;
-	
+
+        //Handle userMessage = StartMessageOne("HintText", client);
+
         // Dead? Find the player we're spectating.
         if ( GetClientTeam( client ) == TFTeam_Spectator)
         {
@@ -118,22 +120,27 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
             {
                 continue;
             }
-		}
+            int iSpecMode = GetEntProp(client, Prop_Send, "m_iObserverMode");
+			
+			// The client isn't spectating any one person, so ignore them.
+		    if (iSpecMode != 4 && iSpecMode != 5)
+				continue;
+        }
 
         if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_INVALID) continue;
 
-		run = g_iClientRun[target];
-		mode = g_iClientMode[target];
-
+        run = g_iClientRun[target];
+        mode = g_iClientMode[target];
+        
         if ( !(g_fClientHideFlags[client] & HIDEHUD_SIDEINFO) )
         {
             ShowKeyHintText( client, target );
         }
-        
+
         if ( (g_fClientHideFlags[client] & HIDEHUD_TIMER)) continue;
 
         if (DisplayCpTime[target])
-          	FormatEx(CpSplit, sizeof(CpSplit), "(%s %c%s)\n", g_fClientHideFlags[client] & HIDEHUD_PRTIME ? "PR" : "WR", CpPlusSplit[target], CpTimeSplit[target]);
+            FormatEx(CpSplit, sizeof(CpSplit), "(%s %c%s)\n", g_fClientHideFlags[client] & HIDEHUD_PRTIME ? "PR" : "WR", CpPlusSplit[target], CpTimeSplit[target]);
 
         if ( szClass[g_iClientRun[target]][g_iClientMode[target]] <= 0 || RegenOn[target])
         {
@@ -152,43 +159,43 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
 
         else if ( g_iClientRun[target] == RUN_MAIN || RunIsCourse(g_iClientRun[target]))
             FormatEx( szTimerMode[target], sizeof(szTimerMode), "%s", (IsMapMode[target]) ?
-            	((RunIsCourse(g_iClientRun[target])) ? "Map" : "Linear") : "Course" );     
+                ((RunIsCourse(g_iClientRun[target])) ? "Map" : "Linear") : "Course" );     
 
         if ( g_iClientRun[target] == RUN_SETSTART )
         {
-            Format(hintOutput, 256, "" );
+            continue;
         }
         else if (g_iClientState[target] == STATE_END)
-       	{
-         	if ( RUN_COURSE1 <= run < RUN_COURSE10 && g_bIsLoaded[run + 1] && IsMapMode[target])
-            	flCurTime = GetEngineTime() - g_flClientStartTime[target];
-        	else
-            	flCurTime = g_flClientFinishTime[target];
+        {
+            if ( RUN_COURSE1 <= run < RUN_COURSE10 && g_bIsLoaded[run + 1] && IsMapMode[target])
+                flCurTime = GetEngineTime() - g_flClientStartTime[target];
+            else
+                flCurTime = g_flClientFinishTime[target];
 
-        	FormatSeconds( flCurTime, szCurTime );
+            FormatSeconds( flCurTime, szCurTime );
 
-       		float OldTime;
+            float OldTime;
 
             if ( g_fClientHideFlags[client] & HIDEHUD_PRTIME )
-            	OldTime = szOldTimePts[target][run][mode];
+                OldTime = szOldTimePts[target][run][mode];
             else
-              	OldTime = szOldTimeWr;
+                OldTime = szOldTimeWr;
 
             if ( RUN_COURSE1 <= run < RUN_COURSE10 )
             {
                 TimeSplit = (flNewTimeCourse[target] < OldTime) ? OldTime - flNewTimeCourse[target] : flNewTimeCourse[target] - OldTime;
                 prefix = (flNewTimeCourse[target] < OldTime) ? '-' : '+';
             }
-          	else
-           	{
+            else
+            {
                 TimeSplit = (g_flClientFinishTime[target] < OldTime) ? OldTime - g_flClientFinishTime[target] : g_flClientFinishTime[target] - OldTime;
                 prefix = (g_flClientFinishTime[target] < OldTime) ? '-' : '+';       
-          	}
+            }
 
-        	FormatSeconds( TimeSplit, szTimeSplit );
-          	FormatSeconds( flCurTime, szCurTime );
-         	Format(hintOutput, 256, "%s\n(%s %c%s)\n \n[%s End]\n %s\n%s mode %s", szCurTime, (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit, g_szRunName[NAME_LONG][run], speed, szTimerMode[target], szAmmo[target] );
-      	}     
+            FormatSeconds( TimeSplit, szTimeSplit );
+            FormatSeconds( flCurTime, szCurTime );
+            Format(hintOutput, 256, "%s\n(%s %c%s)\n \n[%s End]\n %s\n%s mode %s", szCurTime, (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit, g_szRunName[NAME_LONG][run], speed, szTimerMode[target], szAmmo[target] );
+        }     
         else if ( g_iClientState[target] == STATE_START )
         {
             flCurTime = GetEngineTime() - g_flClientStartTime[target];
@@ -203,7 +210,7 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
             flBestTime = g_flMapBestTime[ g_iClientRun[target] ][ g_iClientStyle[target] ][ g_iClientMode[target] ];
         
             FormatSeconds( flCurTime, szCurTime );
-           
+        
             Format(hintOutput, 256, " %s\n%s \n[%s]\n %s\n%s mode %s",
                 szCurTime,
                 CpSplit,
@@ -215,37 +222,25 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
         }
         if(g_bClientPractising[target])
         {
-  		 	Format(hintOutput, 256, "Timer Disabled Mode %s", szAmmo[target] );
-  		}
+            Format(hintOutput, 256, "Timer Disabled Mode %s", szAmmo[target] );
+        }
 
-        PrintHintText( client, hintOutput);
-			
+        //PrintHintText( client, hintOutput);
+        //PrintHintText( client, "");
+        if (!isHudDrawing[client] && (GetEngineTime() - LastHudDrawing[client]) > 0.5)
+        {
+            isHudDrawing[client] = true;
+            PrintHintText( client, hintOutput);
+            TimeToDrawHud[client] = GetEngineTime() + 0.6;
+            LastHudDrawing[client] = GetEngineTime();
+        }
+        else if ( isHudDrawing[client] && (GetEngineTime() - TimeToDrawHud[client]) > 0.0 )
+        {
+            LastHudDrawing[client] = GetEngineTime();
+            PrintHintText( client, hintOutput);
+        }
      }
 	return Plugin_Continue;
-}
- 
- 
-public Action Timer_classcheck( Handle hTimer )
-{
-
-	static int client; 
-	for ( client = 1; client <= MaxClients; client++ )
-    {
-		if (!IsClientInGame(client)) continue;
-
-		if (GetClientTeam(client) > 1)	
-		{
-			if (TF2_GetPlayerClass(client) == TFClass_Soldier)
-			{
-			    SetPlayerStyle( client, STYLE_SOLLY );
-			}
-			if (TF2_GetPlayerClass(client) == TFClass_DemoMan)
-			{
-			   SetPlayerStyle( client, STYLE_DEMOMAN );
-			}
-		}
-		
-	}
 }
 
 public Action Timer_EndMap( Handle hTimer )
