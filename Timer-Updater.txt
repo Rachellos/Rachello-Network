@@ -1,0 +1,14 @@
+"Updater"
+{
+    "Information"
+    {
+        "Version"
+        {
+            "Latest"    "2.2.0"
+        }
+    }
+    "Files"
+    {
+        "Plugin"    "Path_SM/plugins/Timer.smx"
+    }
+}

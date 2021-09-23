@@ -95,7 +95,7 @@ stock void ShowKeyHintText( int client, int target )
 
 	char szTime[TIME_SIZE_DEF],
 		szBestTime[TIME_SIZE_DEF],
-		szText[200],
+		szText[400],
 		szInterval[TIME_SIZE_DEF],
 		szTxt[TIME_SIZE_DEF],
 		tempuswr[TIME_SIZE_DEF],
@@ -132,6 +132,8 @@ stock void ShowKeyHintText( int client, int target )
 	int mode = g_iClientMode[target];
 	int timeleft;
 	GetMapTimeLeft(timeleft);
+
+	if (run == RUN_INVALID) return;
 
 	char remaining[100],
 			tempus_info[100];

@@ -24,6 +24,8 @@
 #include <scp>
 #include <socket>
 #undef REQUIRE_PLUGIN
+#include <updater>
+#define UPDATE_URL    "http://website.com/myplugin/updatefile.txt"
 #include <tEasyFTP>
 #include <unixtime_sourcemod>
 
@@ -76,7 +78,7 @@
 #define HIDEHUD_PRTIME			( 1 << 1 )
 #define HIDEHUD_VM				( 1 << 2 )
 #define HIDEHUD_PLAYERS			( 1 << 3 )
-#define HIDEHUD_TIMER			( 1 << 4 )
+#define HIDEHUD_CENTRAL_HUD		( 1 << 4 )
 #define HIDEHUD_SIDEINFO		( 1 << 5 )
 #define HIDEHUD_CHAT			( 1 << 6 )
 #define HIDEHUD_BOTS			( 1 << 7 )
@@ -96,6 +98,7 @@
 #define HIDEHUD_CLASS			( 1 << 21 )
 #define HIDEHUD_PERSONALREC		( 1 << 22 )
 #define HIDEHUD_WORLDREC		( 1 << 23 )
+#define HIDEHUD_TIMER			( 1 << 24 )
 
 // HUD flags to hide specific objects.
 #define HIDE_FLAGS				3946
@@ -126,19 +129,13 @@
 
 #define MATH_PI					3.14159
 
-
-
-#define PLUGIN_TAG		"{blue}[Cross Server Chat]{default}"
-#define PLAYER_GAGED 	1
-#define PLAYER_UNGAGED 	0
 #define DISCONNECTSTR	"DISCONNECTMEPLSTHX"
 #define SENDERNAME		"[SENDER NAME]"
 #define SERVERTAG		"[SERVER TAG]"
 #define SENDERMSG		"[MESSAGE]"
-#define WRMSG		"[WRMSG]"
 
 Handle serverSocket;
-Handle globalClientSocket;
+Socket globalClientSocket;
 Handle COOKIE_ClientGaged;
 Handle ARRAY_Connections;
 Handle CVAR_MessageKey;
@@ -200,7 +197,8 @@ float g_flClientCourseStartTime[MAXPLAYERS+1]; // When we started our Course? En
 float flNewTimeCourse[MAXPLAYERS+1];
 float g_flClientFinishTime[MAXPLAYERS+1]; // This is to tell the client's finish time in the end.
 float g_flClientBestTime[MAXPLAYERS+1][NUM_RUNS][NUM_MODES];
-float f_CpPr[MAXPLAYERS+1][NUM_MODES][30];
+float f_CpPr[MAXPLAYERS+1][NUM_MODES][50];
+float f_CpWr[NUM_MODES][50];
 
 int g_iClientCurCP[MAXPLAYERS+1];
 ArrayList g_hClientCPData[MAXPLAYERS+1];
@@ -317,10 +315,10 @@ int prev_random_msg;
 
 int g_ZoneMethod[MAXPLAYERS+1];
 
-char server_name[NUM_NAMES][4][120] =
+char server_name[NUM_NAMES][5][120] =
 {
-	{ "N/A", "RG #1488 - Finland | Rachello Network", "RG #1488 - Russia | Rachello Network", "RG #1488 - Australia | Rachello Network" },
-	{ "N/A", "EU", "RU", "AU" }
+	{ "N/A", "RG #1488 - Finland | Rachello Network", "RG #1488 - Russia | Rachello Network", "RG #1488 - Australia | Rachello Network", "US West California | Rachello Network" },
+	{ "N/A", "EU", "RU", "AU", "US" }
 };
 
 Handle hPlugin = INVALID_HANDLE;
@@ -679,32 +677,308 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	return Plugin_Continue;
 }
 
-public Action Event_PlayerSay(Event event, const char[] name, bool dontBroadcast) {
-	int userid = event.GetInt("userid");
-	int client = GetClientOfUserId(userid);
+public Action OnClientSayCommand( int client, const char[] szCommand, const char[] text )
+{
+	if ( !client || BaseComm_IsClientGagged( client ) ) return Plugin_Continue;
 
-	char message[256];
-	event.GetString("text", message, sizeof(message));
-	if (!client) return Plugin_Continue;
+	char live[10];
+	char msg[200];
+	char alltext[300];
+	int rank;
+	char class[1];
 
-	for (int i = 1; i <= MaxClients; i++)
-		if (IsClientConnected(i) && IsClientInGame(i))
-			SayText2(i, client, "");
-
-	event.BroadcastDisabled = true;				
+	FormatEx(msg, sizeof(msg), "%s", text);
+	TrimString(msg);
 	
+	if (StrEqual(msg, "( ͡° ͜ʖ ͡°)") || StrEqual(msg, "( ° ͜ʖ ͡°)") || StrEqual(msg, " ( ͡° ͜ʖ ͡°)") || StrEqual(msg, "( ͡° ͜ʖ ͡°) "))
+	{
+		PrintToChat(client, CHAT_PREFIX..."Fuck Lenny");
+	}
+	if ( !IsPlayerAlive(client) )
+		FormatEx(live, sizeof(live), "* ");
+	else
+		FormatEx(live, sizeof(live), "");
+
+	if (g_fClientHideFlags[client] & HIDEHUD_CHATRANKSOLLY)
+	{
+		class[0] = 'S';
+		rank = ranksolly[client];
+	}
+	else if (g_fClientHideFlags[client] & HIDEHUD_CHATRANKDEMO)
+	{
+		class[0] = 'D';
+		rank = rankdemo[client];
+	}
+	else
+	{
+		if (ranksolly[client] <= 0)
+		{
+			class[0] = 'D';
+			rank = rankdemo[client];
+		}
+		else if (rankdemo[client] <= 0)
+		{
+			class[0] = 'S';
+			rank = ranksolly[client];
+		}
+		else
+		{
+			if (ranksolly[client] <= rankdemo[client])
+			{
+				class[0] = 'S';
+				rank = ranksolly[client];
+			}
+			else
+			{
+				class[0] = 'D';
+				rank = rankdemo[client];
+			}
+		}
+	}
+
+	switch ( rank )
+	{
+		case 1 : 
+		{
+			FormatEx( alltext, sizeof(alltext), "%s{1}[{white}%s{1}]{2}Emperor{1}] {3}%N \x01:  {4}%s", live, class, client, msg );
+		}
+		case 2 : 
+		{
+			FormatEx( alltext, sizeof(alltext), "%s{5}[{white}%s{5}]{6}King{5}] {7}%N \x01:  {8}%s", live, class, client, msg );
+		}
+		case 3 : 
+		{
+			FormatEx( alltext, sizeof(alltext), "%s{9}[{white}%s{9}]{10}Archduke{9}] {11}%N \x01:  {12}%s", live, class, client, msg );
+		}
+		case 4 : 
+		{
+			FormatEx( alltext, sizeof(alltext), "%s{13}[{white}%s{13}]{14}Lord{13}] {15}%N \x01:  {12}%s", live, class, client, msg );
+		}
+		case 5 : 
+		{
+			FormatEx( alltext, sizeof(alltext), "%s{16}[{white}%s{16}]{17}Duke{16}] {18}%N \x01:  {12}%s", live, class, client, msg );
+		}
+		default :
+		{
+			if (6 <= rank <= 10 )
+			{
+				if (rank == 6)
+					FormatEx( alltext, sizeof(alltext), "%s{19}[{white}%s{19}]{20}Prince I{19}] {10}%N \x01:  {12}%s", live, class, client, msg );
+				else if (rank == 7)
+					FormatEx( alltext, sizeof(alltext), "%s{19}[{white}%s{19}]{20}Prince II{19}] {10}%N \x01:  {12}%s", live, class, client, msg );
+				else if (rank == 8)
+					FormatEx( alltext, sizeof(alltext), "%s{19}[{white}%s{19}]{20}Prince III{19}] {10}%N \x01:  {12}%s", live, class, client, msg );
+				else if (rank == 9)
+					FormatEx( alltext, sizeof(alltext), "%s{19}[{white}%s{19}]{20}Prince IV{19}] {10}%N \x01:  {12}%s", live, class, client, msg );
+				else if (rank == 10)
+					FormatEx( alltext, sizeof(alltext), "%s{19}[{white}%s{19}]{20}Prince V{19}] {10}%N \x01:  {12}%s", live, class, client, msg );		
+			}
+			else if ( 11 <= rank <= 15 )
+			{
+				if (rank == 11)
+					FormatEx( alltext, sizeof(alltext), "%s{21}[{white}%s{21}]{22}Earl I{21}] {23}%N \x01:  {12}%s", live, class, client, msg );
+				else if (rank == 12)
+					FormatEx( alltext, sizeof(alltext), "%s{21}[{white}%s{21}]{22}Earl II{21}] {23}%N \x01:  {12}%s", live, class, client, msg );
+				else if (rank == 13)
+					FormatEx( alltext, sizeof(alltext), "%s{21}[{white}%s{21}]{22}Earl III{21}] {23}%N \x01:  {12}%s", live, class, client, msg );
+				else if (rank == 14)
+					FormatEx( alltext, sizeof(alltext), "%s{21}[{white}%s{21}]{22}Earl IV{21}] {23}%N \x01:  {12}%s", live, class, client, msg );
+				else if (rank == 15)
+					FormatEx( alltext, sizeof(alltext), "%s{21}[{white}%s{21}]{22}Earl V{21}] {23}%N \x01:  {12}%s", live, class, client, msg );		
+			}
+			else if ( 16 <= rank <= 20 )
+			{
+				if (rank == 16)
+					FormatEx( alltext, sizeof(alltext), "%s{sirb}[{white}%s{sirb}]{sirr}Sir I{sirb}] {sirn}%N \x01:  {sirc}%s", live, class, client, msg );	
+				else if (rank == 17)
+					FormatEx( alltext, sizeof(alltext), "%s{sirb}[{white}%s{sirb}]{sirr}Sir II{sirb}] {sirn}%N \x01:  {sirc}%s", live, class, client, msg );	
+				else if (rank == 18)
+					FormatEx( alltext, sizeof(alltext), "%s{sirb}[{white}%s{sirb}]{sirr}Sir III{sirb}] {sirn}%N \x01:  {sirc}%s", live, class, client, msg );	
+				else if (rank == 19)
+					FormatEx( alltext, sizeof(alltext), "%s{sirb}[{white}%s{sirb}]{sirr}Sir IV{sirb}] {sirn}%N \x01:  {sirc}%s", live, class, client, msg );	
+				else if (rank == 20)
+					FormatEx( alltext, sizeof(alltext), "%s{sirb}[{white}%s{sirb}]{sirr}Sir V{sirb}] {sirn}%N \x01:  {sirc}%s", live, class, client, msg );		
+			}
+			else if ( 21 <= rank <= 25 )
+			{
+				if (rank == 21)
+					FormatEx( alltext, sizeof(alltext), "%s{countb}[{white}%s{countb}]{countr}Count I{countb}] {countn}%N \x01:  {countc}%s", live, class, client, msg );	
+				else if (rank == 22)
+					FormatEx( alltext, sizeof(alltext), "%s{countb}[{white}%s{countb}]{countr}Count II{countb}] {countn}%N \x01:  {countc}%s", live, class, client, msg );	
+				else if (rank == 23)
+					FormatEx( alltext, sizeof(alltext), "%s{countb}[{white}%s{countb}]{countr}Count III{countb}] {countn}%N \x01:  {countc}%s", live, class, client, msg );	
+				else if (rank == 24)
+					FormatEx( alltext, sizeof(alltext), "%s{countb}[{white}%s{countb}]{countr}Count IV{countb}] {countn}%N \x01:  {countc}%s", live, class, client, msg );	
+				else if (rank == 25)
+					FormatEx( alltext, sizeof(alltext), "%s{countb}[{white}%s{countb}]{countr}Count V{countb}] {countn}%N \x01:  {countc}%s", live, class, client, msg );		
+			}
+			else if ( 26 <= rank <= 30 )
+			{
+				if (rank == 26)
+					FormatEx( alltext, sizeof(alltext), "%s{baronb}[{white}%s{baronb}]{baronr}Baron I{baronb}] {baronn}%N \x01:  {baronc}%s", live, class, client, msg );	
+				else if (rank == 27)
+					FormatEx( alltext, sizeof(alltext), "%s{baronb}[{white}%s{baronb}]{baronr}Baron II{baronb}] {baronn}%N \x01:  {baronc}%s", live, class, client, msg );	
+				else if (rank == 28)
+					FormatEx( alltext, sizeof(alltext), "%s{baronb}[{white}%s{baronb}]{baronr}Baron III{baronb}] {baronn}%N \x01:  {baronc}%s", live, class, client, msg );	
+				else if (rank == 29)
+					FormatEx( alltext, sizeof(alltext), "%s{baronb}[{white}%s{baronb}]{baronr}Baron IV{baronb}] {baronn}%N \x01:  {baronc}%s", live, class, client, msg );	
+				else if (rank == 30)
+					FormatEx( alltext, sizeof(alltext), "%s{baronb}[{white}%s{baronb}]{baronr}Baron V{baronb}] {baronn}%N \x01:  {baronc}%s", live, class, client, msg );		
+			}
+			else if ( 31 <= rank <= 35 )
+			{
+				if (rank == 31)
+					FormatEx( alltext, sizeof(alltext), "%s{knightb}[{white}%s{knightb}]{knightr}Knight I{knightb}] {knightn}%N \x01:  {knightc}%s", live, class, client, msg );	
+				else if (rank == 32)
+					FormatEx( alltext, sizeof(alltext), "%s{knightb}[{white}%s{knightb}]{knightr}Knight II{knightb}] {knightn}%N \x01:  {knightc}%s", live, class, client, msg );
+				else if (rank == 33)
+					FormatEx( alltext, sizeof(alltext), "%s{knightb}[{white}%s{knightb}]{knightr}Knight III{knightb}] {knightn}%N \x01:  {knightc}%s", live, class, client, msg );	
+				else if (rank == 34)
+					FormatEx( alltext, sizeof(alltext), "%s{knightb}[{white}%s{knightb}]{knightr}Knight IV{knightb}] {knightn}%N \x01:  {knightc}%s", live, class, client, msg );	
+				else if (rank == 35)
+					FormatEx( alltext, sizeof(alltext), "%s{knightb}[{white}%s{knightb}]{knightr}Knight V{knightb}] {knightn}%N \x01:  {knightc}%s", live, class, client, msg );		
+			}
+			else if ( 36 <= rank <= 40 )
+			{
+				if (rank == 36)
+					FormatEx( alltext, sizeof(alltext), "%s{nobleb}[{white}%s{nobleb}]{nobler}Noble I{nobleb}] {noblen}%N \x01:  {noblec}%s", live, class, client, msg );	
+				else if (rank == 37)
+					FormatEx( alltext, sizeof(alltext), "%s{nobleb}[{white}%s{nobleb}]{nobler}Noble II{nobleb}] {noblen}%N \x01:  {noblec}%s", live, class, client, msg );		
+				else if (rank == 38)
+					FormatEx( alltext, sizeof(alltext), "%s{nobleb}[{white}%s{nobleb}]{nobler}Noble III{nobleb}] {noblen}%N \x01:  {noblec}%s", live, class, client, msg );	
+				else if (rank == 39)
+					FormatEx( alltext, sizeof(alltext), "%s{nobleb}[{white}%s{nobleb}]{nobler}Noble IV{nobleb}] {noblen}%N \x01:  {noblec}%s", live, class, client, msg );		
+				else if (rank == 40)
+					FormatEx( alltext, sizeof(alltext), "%s{nobleb}[{white}%s{nobleb}]{nobler}Noble V{nobleb}] {noblen}%N \x01:  {noblec}%s", live, class, client, msg );		
+			}
+			else if ( 41 <= rank <= 45 )
+			{
+				if (rank == 41)
+					FormatEx( alltext, sizeof(alltext), "%s{esquireb}[{white}%s{esquireb}]{esquirer}Esquire I{esquireb}] {esquiren}%N \x01:  {esquirec}%s", live, class, client, msg );	
+				else if (rank == 42)
+					FormatEx( alltext, sizeof(alltext), "%s{esquireb}[{white}%s{esquireb}]{esquirer}Esquire II{esquireb}] {esquiren}%N \x01:  {esquirec}%s", live, class, client, msg );		
+				else if (rank == 43)
+					FormatEx( alltext, sizeof(alltext), "%s{esquireb}[{white}%s{esquireb}]{esquirer}Esquire III{esquireb}] {esquiren}%N \x01:  {esquirec}%s", live, class, client, msg );		
+				else if (rank == 44)
+					FormatEx( alltext, sizeof(alltext), "%s{esquireb}[{white}%s{esquireb}]{esquirer}Esquire IV{esquireb}] {esquiren}%N \x01:  {esquirec}%s", live, class, client, msg );	
+				else if (rank == 45)
+					FormatEx( alltext, sizeof(alltext), "%s{esquireb}[{white}%s{esquireb}]{esquirer}Esquire V{esquireb}] {esquiren}%N \x01:  {esquirec}%s", live, class, client, msg );		
+			}
+			else if ( 46 <= rank <= 50 )
+			{
+				if (rank == 46)
+					FormatEx( alltext, sizeof(alltext), "%s{jesterb}[{white}%s{jesterb}]{jesterr}Jester I{jesterb}] {jestern}%N \x01:  {jesterc}%s", live, class, client, msg );	
+				else if (rank == 47)
+					FormatEx( alltext, sizeof(alltext), "%s{jesterb}[{white}%s{jesterb}]{jesterr}Jester II{jesterb}] {jestern}%N \x01:  {jesterc}%s", live, class, client, msg );
+				else if (rank == 48)
+					FormatEx( alltext, sizeof(alltext), "%s{jesterb}[{white}%s{jesterb}]{jesterr}Jester III{jesterb}] {jestern}%N \x01:  {jesterc}%s", live, class, client, msg );	
+				else if (rank == 49)
+					FormatEx( alltext, sizeof(alltext), "%s{jesterb}[{white}%s{jesterb}]{jesterr}Jester IV{jesterb}] {jestern}%N \x01:  {jesterc}%s", live, class, client, msg );
+				else if (rank == 50)
+					FormatEx( alltext, sizeof(alltext), "%s{jesterb}[{white}%s{jesterb}]{jesterr}Jester V{jesterb}] {jestern}%N \x01:  {jesterc}%s", live, class, client, msg );
+			}
+			else if ( 51 <= rank <= 55 )
+			{
+				if (rank == 51)
+					FormatEx( alltext, sizeof(alltext), "%s{plebeianb}[{white}%s{plebeianb}]{plebeianr}Plebeian I{plebeianb}] {plebeiann}%N \x01:  {plebeianc}%s", live, class, client, msg );	
+				else if (rank == 52)
+					FormatEx( alltext, sizeof(alltext), "%s{plebeianb}[{white}%s{plebeianb}]{plebeianr}Plebeian II{plebeianb}] {plebeiann}%N \x01:  {plebeianc}%s", live, class, client, msg );
+				else if (rank == 53)
+					FormatEx( alltext, sizeof(alltext), "%s{plebeianb}[{white}%s{plebeianb}]{plebeianr}Plebeian III{plebeianb}] {plebeiann}%N \x01:  {plebeianc}%s", live, class, client, msg );	
+				else if (rank == 54)
+					FormatEx( alltext, sizeof(alltext), "%s{plebeianb}[{white}%s{plebeianb}]{plebeianr}Plebeian IV{plebeianb}] {plebeiann}%N \x01:  {plebeianc}%s", live, class, client, msg );	
+				else if (rank == 55)
+					FormatEx( alltext, sizeof(alltext), "%s{plebeianb}[{white}%s{plebeianb}]{plebeianr}Plebeian V{plebeianb}] {plebeiann}%N \x01:  {plebeianc}%s", live, class, client, msg );
+			}
+			else if ( 56 <= rank <= 60 )
+			{
+				if (rank == 56)
+					FormatEx( alltext, sizeof(alltext), "%s{peasantb}[{white}%s{peasantb}]{peasantr}Peasant I{peasantb}] {peasantn}%N \x01:  {peasantc}%s", live, class, client, msg );	
+				else if (rank == 57)
+					FormatEx( alltext, sizeof(alltext), "%s{peasantb}[{white}%s{peasantb}]{peasantr}Peasant II{peasantb}] {peasantn}%N \x01:  {peasantc}%s", live, class, client, msg );
+				else if (rank == 58)
+					FormatEx( alltext, sizeof(alltext), "%s{peasantb}[{white}%s{peasantb}]{peasantr}Peasant III{peasantb}] {peasantn}%N \x01:  {peasantc}%s", live, class, client, msg );	
+				else if (rank == 59)
+					FormatEx( alltext, sizeof(alltext), "%s{peasantb}[{white}%s{peasantb}]{peasantr}Peasant IV{peasantb}] {peasantn}%N \x01:  {peasantc}%s", live, class, client, msg );
+				else if (rank == 60)
+					FormatEx( alltext, sizeof(alltext), "%s{peasantb}[{white}%s{peasantb}]{peasantr}Peasant V{peasantb}] {peasantn}%N \x01:  {peasantc}%s", live, class, client, msg );		
+			}	
+			else
+			{
+				if (rank > 60)
+					FormatEx( alltext, sizeof(alltext), "%s{peonb}[{white}%s{peonb}]{peonr}Peon{peonb}] {peonn}%N \x01:  {peonc}%s", live, class, client, msg );		
+				else
+					FormatEx( alltext, sizeof(alltext), "%s[Unranked] {lightgray}%N \x01:  %s", live, client, msg );
+			}	
+		}
+	}
+/*
+	Colours go in this order: brackets, rank, name, chat.
+	Emperor: #000000, #525252, #3838FF, #87BBFF
+	King: #AD0000, #FF3838, #F56200, #FFFF7A
+	Archduke: #0000B3, #45AAF7, #3C4CA5, #FFFFFF
+	Lord: #005200, #009900, #626262, #FFFFFF
+	Duke: #ACA287, #645456, #E85265, #FFFFFF
+	Prince: #2E6994, #00FFCC, #45AAF7, #FFFFFF
+	Earl: #292626, #7D7777, #E8E5E5, #FFFFFF
+	Sir: #BD5C00, #EC3E00, #FFFFFF, #FFFFFF
+	Count: #059605, #54AB31, #FFFFFF, #FFFFFF
+	Baron: #35B7EA, #C567E0, #FFFFFF, #FFFFFF
+	Knight: #FF8A8A, #D91818, #FFFFFF, #FFFFFF
+	Noble: #9EA5CB, #9477D4, #FFFFFF, #FFFFFF
+	Esquire: #A9B6B3, #45AAF7, #FFFFFF, #FFFFFF
+	Jester: #C5B1A3, #3EBBA0, #FFFFFF, #FFFFFF
+	Plebeian: #C2C2A6, #66924C, #FFFFFF, #FFFFFF
+	Peasant: #B9B3B3, #AFE06C, #FFFFFF, #FFFFFF
+	Peon: #A6A6A6, #EFDA3F, #FFFFFF, #FFFFFF
+*/	
+		
+	for (int i = 1; i <= MaxClients; i++)
+		if (IsClientConnected(i) && IsClientInGame(i) && !(g_fClientHideFlags[i] & HIDEHUD_CHAT))
+			CPrintToChat(i, alltext);
+	
+	PrintToServer( "%N :  %s", client, msg );
+
+	if(msg[0] == '!' || msg[0] == '/')
+	{
+		int isCaps = false;
+
+		for(int i = 0; i <= strlen(msg); ++i)
+		{
+			if (IsCharUpper(msg[i]))
+			{
+				isCaps = true;
+				break;
+			}
+		}
+
+		if ( isCaps )
+		{
+			for(int i = 0; i <= strlen(msg); ++i)
+			{
+				msg[i] = CharToLower(msg[i]);
+			}
+			msg[0] = '_';
+			FakeClientCommand(client, "sm%s", msg);
+		}
+	}			
 	return Plugin_Handled;
 }
 
 public void OnPluginStart()
 {
+	if (LibraryExists("updater"))
+    {
+        Updater_AddPlugin(UPDATE_URL);
+    }
+
 	Handle pIterator = GetPluginIterator();
 	hPlugin = ReadPlugin(pIterator);
 	CloseHandle(pIterator);
 
 	requested = false;
 	char path[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, path, sizeof(path), "recordings");
+	BuildPath(Path_SM, path, sizeof(path), "recordings/bz2");
 	if(!DirExists(path)) {
 		CreateDirectory(path, FPERM_U_READ|FPERM_U_WRITE|FPERM_U_EXEC|FPERM_G_READ|FPERM_G_EXEC|FPERM_O_READ|FPERM_O_EXEC);
 	}
@@ -733,9 +1007,6 @@ public void OnPluginStart()
 
 	LoadTranslations("sourceirc.phrases");
 	g_cvColor.GetString(g_sColor, sizeof(g_sColor));*/
-
-	RegAdminCmd("sm_cscgag", CMD_GagFromCrossServer, ADMFLAG_CHAT, "Ban/Unban a player from using the cross server chat functionality.");
-	RegConsoleCmd("sm_msg", CMD_SendMessage, "Send a message to all server.");
 
 	CVAR_MasterChatServer = CreateConVar("sm_csc_is_master_server", "0", "Is this server the master chat server ? 1 = yes | 0 = no", _, true, 0.0, true, 1.0);
 	CVAR_MasterServerIP = CreateConVar("sm_csc_master_chat_server_ip", "123.467.89.10", "IP of the master chat server");
@@ -773,19 +1044,15 @@ public void OnPluginStart()
 	LoadTranslations("common.phrases");
 
 	RegConsoleCmd( "sm_goto", Command_Gotos );
+	RegConsoleCmd("sm_msg", CMD_SendMessage, "Send a message to all server.");
 
 	// HOOKS
-	HookEvent("player_say", Event_PlayerSay, EventHookMode_Pre);
 	HookEvent("player_spawn", Event_PlayerSpawn);
-	HookEvent("player_chat", Event_PlayerSay, EventHookMode_Pre);
-	HookEvent("player_disconnect", EventDisconnect, EventHookMode_Pre);
+	HookEvent("player_disconnect", EventDisconnect, EventHookMode_Post);
 	HookEvent( "player_spawn", Event_ClientSpawn );
 	HookEvent( "player_death", Event_ClientDeath );
 
 	HookEvent( "teamplay_round_start", Event_RoundRestart, EventHookMode_PostNoCopy );
-
-
-	AddCommandListener( Listener_Kill, "kill" );
 
 
 	// SPAWNING
@@ -839,8 +1106,6 @@ public void OnPluginStart()
 	RegConsoleCmd( "sm_dzl", Timer_DrawZoneBeamsList );
 	RegConsoleCmd( "sm_dzlist", Timer_DrawZoneBeamsList );
 
-	RegConsoleCmd( "sm_msg", SendDiscordMessage );
-
 	RegConsoleCmd( "sm_overall", Command_Overall );	
 	RegConsoleCmd( "sm_time", Command_Time );
 
@@ -875,7 +1140,7 @@ public void OnPluginStart()
 	RegConsoleCmd( "sm_ranks", Command_Ranks );
 
 	RegConsoleCmd( "sm_pr", Command_PersonalRecords );
-	RegConsoleCmd( "sm_personalrecords", Command_PersonalRecords );
+	RegConsoleCmd( "sm_personalrecord", Command_PersonalRecords );
 
 	RegConsoleCmd( "sm_pts", Command_MapPoints );
 	RegConsoleCmd( "sm_points", Command_MapPoints );
@@ -912,6 +1177,7 @@ public void OnPluginStart()
 	RegConsoleCmd( "sm_dvid", Command_DVid );
 
 	RegConsoleCmd( "sm_incomplete", Command_IncompleteMaps );
+	RegConsoleCmd( "sm_incompletions", Command_IncompleteMaps );
 
 
 	// ADMIN STUFF
@@ -970,6 +1236,14 @@ public void OnPluginStart()
 	//LoadTranslations( "opentimer.phrases" );
 
 	DB_InitializeDatabase();
+}
+
+public void OnLibraryAdded(const char[] name)
+{
+    if (StrEqual(name, "updater"))
+    {
+        Updater_AddPlugin(UPDATE_URL);
+    }
 }
 
 public Action EventDisconnect(Handle event, const char[] name, bool dontBroadcast)
@@ -1215,10 +1489,8 @@ while ((iCP = FindEntityByClassname(iCP, "trigger_capture_area")) != -1)
 
 	// Repeating timer that sends the zones to the clients every X seconds.
 
-	// Show timer to players.
-	CreateTimer( 0.1, Timer_HudTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
 	CreateTimer( 1.0, Timer_EndMap, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
-	CreateTimer( 1.0, Timer_regencheck, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
+	CreateTimer( 2.5, Timer_regencheck, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
 	CreateTimer( 60.0, Timer_Ad, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
 
 	for (int q = 0; q < MAXPLAYERS; q++){
@@ -1577,8 +1849,6 @@ public void OnMapEnd()
 
 	g_VoteTimer = null;
 
-	DisconnectFromMasterServer();
-
 	deleteMapInfo(g_hMapInfo);
 	// Save zones.
 	//g_bLateLoad = false;
@@ -1602,6 +1872,8 @@ public void OnMapEnd()
 		}
 		delete g_hZones; g_hZones = null;
 	}
+
+	DisconnectFromMasterServer();
 }
 
 public void OnClientPutInServer( int client )
@@ -1707,35 +1979,6 @@ public void IdleSys_OnClientReturn(int client, int time)
 	PrintToChatAll("%s", result);
 	return Plugin_Handled;
 }*/
-
-public Action SendDiscordMessage(int client, int args)
-{
-	if (args < 1)
-	{
-		CPrintToChat(client, CHAT_PREFIX..."Use \x0750DCFF!msg {white}<message>");
-		return Plugin_Handled;
-	}
-	char sMessage[264], text[500];
-	GetCmdArgString(sMessage, sizeof(sMessage));
-	DiscordWebHook hook = new DiscordWebHook(WEBHOOK);
-	hook.SlackMode = true;
-	hook.SetUsername( "Chat" );
-	Format(text, sizeof(text), "`%s` **%N:** %s", server_name[NAME_SHORT][server_id], client, sMessage);	
-	CPrintToChatAll("| \x0750DCFF(%s) - \x0764E664%N\x07C8C8C8: %s", server_name[NAME_SHORT][server_id], client, sMessage);
-	hook.SetContent(text);
-	hook.Send();
-	delete hook;
-
-	if(StrEqual(sMessage, "Ping", false))
-	{
-		hook = new DiscordWebHook(WEBHOOK);
-		hook.SetUsername("Chat");
-		hook.SetContent("Pong!");
-		hook.Send();
-		delete hook;
-	}
-	return Plugin_Handled;
-}
 
 public void GetJoiningRank( int client )
 {
@@ -1867,11 +2110,12 @@ public void OnClientDisconnect( int client )
 
 }
 
-public void DB_Completions( int client, int style )
+public void DB_Completions( int client, int uid, int style )
 {
 	char szQuery[192];
+	db_style[client] = style;
 	FormatEx( szQuery, sizeof( szQuery ), "SELECT map, recordid, style FROM "...TABLE_RECORDS..." WHERE uid = %i AND run = 0 AND style = %i",
-	db_id[client],
+	uid,
 	style );
 	g_hDatabase.Query( Threaded_Completions, szQuery, GetClientUserId( client ), DBPrio_Normal );
 }
@@ -2612,9 +2856,9 @@ stock int FindCPIndex( int run, int id )
 	return -1;
 }
 
-stock void SetWrCpTime( int index, int style, int mode, float flTime )
+stock void SetWrCpTime( int index, int mode, float flTime )
 {
-	g_hCPs.Set( index, flTime, CP_INDEX_RECTIME + ( NUM_STYLES * mode + style ) );
+	f_CpWr[mode][index] = flTime;
 
 	return;
 }
@@ -2872,11 +3116,13 @@ stock void DoRecordNotification( int client, char szName[MAX_NAME_LENGTH], int r
 	char			szStyleFix[STYLEPOSTFIX_LENGTH];
 	char wr_notify[999];
 	char update_records[200];
-	char socket_key[20];
+	char socket_key[20], server_tag[15];
 	GetStylePostfix( mode, szStyleFix, true );
 	char			szFormTime[TIME_SIZE_DEF];
 	GetClientName( client, szName, sizeof( szName ) );
 	FormatSeconds( flNewTime, szFormTime, FORMAT_2DECI );
+	GetConVarString(CVAR_MessageKey, socket_key, sizeof(socket_key));
+	GetConVarString(CVAR_ServerTag, server_tag, sizeof(server_tag));
 
 	char buffer[500];
 
@@ -2909,8 +3155,7 @@ stock void DoRecordNotification( int client, char szName[MAX_NAME_LENGTH], int r
 			hook.SetContent( buffer );
 			hook.Send();
 
-			GetConVarString(CVAR_MessageKey, socket_key, sizeof(socket_key));
-			Format(wr_notify, sizeof(wr_notify), "%swrnotifycode| {lightskyblue}(%s) {white}:: (%s) \x0764E664%N {white}broke the \x0750DCFF%s {white}:: \x0764E664%s {white}(\x0750DCFFWR -%s{white})!", socket_key, server_name[NAME_SHORT][server_id], g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime, wr_improve);
+			Format(wr_notify, sizeof(wr_notify), "%swrnotifycode| {lightskyblue}(%s) {white}:: (%s) \x0764E664%N {white}broke the \x0750DCFF%s {white}:: \x0764E664%s {white}(\x0750DCFFWR -%s{white})!", socket_key, server_tag, g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime, wr_improve);
 	
 			if(isMasterServer)
 				SendToAllClients(wr_notify, sizeof(wr_notify), INVALID_HANDLE);
@@ -2941,7 +3186,6 @@ stock void DoRecordNotification( int client, char szName[MAX_NAME_LENGTH], int r
 				hook.Send();
 			}
 
-			GetConVarString(CVAR_MessageKey, socket_key, sizeof(socket_key));
 			Format(update_records, sizeof(update_records), "%supdate_records", socket_key);
 			if(isMasterServer)
 				SendToAllClients(update_records, sizeof(update_records), INVALID_HANDLE);
@@ -2990,19 +3234,16 @@ stock void DoRecordNotification( int client, char szName[MAX_NAME_LENGTH], int r
 			hook.SetContent( buffer );
 			hook.Send();
 
-			GetConVarString(CVAR_MessageKey, socket_key, sizeof(socket_key));
-			Format(wr_notify, sizeof(wr_notify), "%swrnotifycode| {lightskyblue}(%s) {white}:: \x0764E664%N {white}set the \x0750DCFF%s {white}:: \x0764E664%s{white}!", socket_key, server_name[NAME_SHORT][server_id], client, g_szCurrentMap, szFormTime);
+			Format(wr_notify, sizeof(wr_notify), "%swrnotifycode| {lightskyblue}(%s) {white}:: \x0764E664%N {white}set the \x0750DCFF%s {white}:: \x0764E664%s{white}!", socket_key, server_tag, client, g_szCurrentMap, szFormTime);
 			
 			if(isMasterServer)
 				SendToAllClients(wr_notify, sizeof(wr_notify), INVALID_HANDLE);
 			else
-				if (connected)
-					SocketSend(globalClientSocket, wr_notify, sizeof(wr_notify));
+				SocketSend(globalClientSocket, wr_notify, sizeof(wr_notify));
 		}
 		else
 		{
 			requested = true;
-			GetConVarString(CVAR_MessageKey, socket_key, sizeof(socket_key));
 			Format(update_records, sizeof(update_records), "%supdate_records", socket_key);
 			if(isMasterServer)
 				SendToAllClients(update_records, sizeof(update_records), INVALID_HANDLE);

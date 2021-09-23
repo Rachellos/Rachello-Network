@@ -2,7 +2,7 @@ public Action Command_Version( int client, int args )
 {
 	if ( client )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."Running version "...CLR_TEAM...""...PLUGIN_VERSION_CORE...CLR_TEXT..." made by "...CLR_TEAM...""...PLUGIN_AUTHOR_CORE...CLR_TEXT..."." );
+		PrintToChatAll( CHAT_PREFIX..."Running version "...CLR_TEAM...""...PLUGIN_VERSION_CORE...CLR_TEXT..." made by "...CLR_TEAM...""...PLUGIN_AUTHOR_CORE...CLR_TEXT..."." );
 	}
 	else
 	{
@@ -912,7 +912,7 @@ public Action Command_ResentRecords_Bonus( int client, int args )
 	if ( !client ) return Plugin_Handled;
 	
 	char query[200];
-	FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, run, (select name from plydata where uid = maprecs.uid) FROM maprecs where rank = 1 and run >= %i and run <= %i order by date desc limit 50", RUN_BONUS1, RUN_BONUS10);
+	FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` = 1 and run >= %i and run <= %i order by date desc limit 50", RUN_BONUS1, RUN_BONUS10);
 	g_hDatabase.Query(RecentRecords_Bonus_Wr_Callback, query, GetClientUserId( client ));
 	
 	return Plugin_Handled;
@@ -923,7 +923,7 @@ public Action Command_ResentRecords_Course( int client, int args )
 	if ( !client ) return Plugin_Handled;
 	
 	char query[200];
-	FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, run, (select name from plydata where uid = maprecs.uid) FROM maprecs where rank = 1 and run >= %i and run <= %i order by date desc limit 50", RUN_COURSE1, RUN_COURSE10);
+	FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` = 1 and run >= %i and run <= %i order by date desc limit 50", RUN_COURSE1, RUN_COURSE10);
 	g_hDatabase.Query(RecentRecords_Course_Wr_Callback, query, GetClientUserId( client ));
 	
 	return Plugin_Handled;
@@ -1309,7 +1309,7 @@ public void Ranks_list(int client, Menu mMenu, int page)
     mMenu.AddItem("Jester", "[46-50] Jester");
     mMenu.AddItem("Plebeian", "[51-55] Plebeian");
     mMenu.AddItem("Peasant", "[56-60] Peasant");
-    mMenu.AddItem("Peons", "[61+] Peon");
+    mMenu.AddItem("Peon", "[61+] Peon");
     
     mMenu.DisplayAt(client, menu_page[client], MENU_TIME_FOREVER);
 
@@ -1411,10 +1411,10 @@ public int Menu_Ranks_Callback( Menu mMenu, MenuAction action, int client, int i
 	    	mMenu.RemoveItem(item);
 	    	mMenu.InsertItem(item, "Peasant", "[56-60] Peasant Ranks:\n[56] Peasant I\n[57] Peasant II\n[58] Peasant III\n[59] Peasant IV\n[60] Peasant V\n ");
 	    }
-	    else if (StrEqual(szItem, "Peons"))
+	    else if (StrEqual(szItem, "Peon"))
 	    {
 	    	mMenu.RemoveItem(item);
-	    	mMenu.InsertItem(item, "Peons", "[61+] Peon Ranks:\nNo Sub-ranks\n ");
+	    	mMenu.InsertItem(item, "Peon", "[61+] Peon Ranks:\nNo Sub-ranks\n ");
 	    }
 	    
     	mMenu.DisplayAt(client, menu_page[client], MENU_TIME_FOREVER);
@@ -1474,7 +1474,7 @@ public Action Command_ResentBrokenRecords(int client, int args)
 		g_hDatabase.Format(query, sizeof(query), "select name from plydata where name LIKE '%s%%' order by overall DESC limit 1;", sArg);
 		t.AddQuery(query);
 
-		g_hDatabase.Format(query, sizeof(query), "SELECT mode, map, run, recordid FROM maprecs where uid = (select uid from plydata where name like '%s%%' order by overall DESC limit 1) and beaten = 1 and `rank` > 1 order by date DESC;", sArg);
+		g_hDatabase.Format(query, sizeof(query), "SELECT mode, map, run, recordid, date, CURRENT_TIMESTAMP FROM maprecs where uid = (select uid from plydata where name like '%s%%' order by overall DESC limit 1) and beaten = 1 and `rank` > 1 order by date DESC;", sArg);
 		t.AddQuery(query);
 	}
 	else
@@ -1482,7 +1482,7 @@ public Action Command_ResentBrokenRecords(int client, int args)
 		g_hDatabase.Format(query, sizeof(query), "select name from plydata where uid = %i limit 1;", g_iClientId[client]);
 		t.AddQuery(query);
 
-		g_hDatabase.Format(query, sizeof(query), "SELECT mode, map, run, recordid FROM maprecs where uid = %i and beaten = 1 and `rank` > 1 order by date DESC;", g_iClientId[client]);
+		g_hDatabase.Format(query, sizeof(query), "SELECT mode, map, run, recordid, date, CURRENT_TIMESTAMP FROM maprecs where uid = %i and beaten = 1 and `rank` > 1 order by date DESC;", g_iClientId[client]);
 		t.AddQuery(query);
 	}
 
@@ -1504,6 +1504,7 @@ public void Threaded_ResentBrokenRecords(Database g_hDatabase, any client, int n
 	char my_name[32], map[40], buffer[100], szId[10];
 
 	Menu mMenu = new Menu( menu_RecentBroken );
+	char time_ago[40], cur_date[40], rec_date[40]; 
 
 	if (results[0].FetchRow())
 		results[0].FetchString( 0, my_name, sizeof( my_name ));
@@ -1516,8 +1517,12 @@ public void Threaded_ResentBrokenRecords(Database g_hDatabase, any client, int n
 			results[1].FetchString( 1, map, sizeof( map ));
 			run = results[1].FetchInt( 2 );
 			recordid = results[1].FetchInt( 3 );
+			results[1].FetchString( 4, rec_date, sizeof( rec_date ));
+			results[1].FetchString( 5, cur_date, sizeof( cur_date ));
 
-			FormatEx(buffer, sizeof(buffer), "(%s) %s [%s]", g_szModeName[NAME_SHORT][mode], map, g_szRunName[NAME_LONG][run] );
+			FormatTimeDuration(time_ago, sizeof(time_ago), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(rec_date));
+
+			FormatEx(buffer, sizeof(buffer), "(%s) %s [%s] - %s", g_szModeName[NAME_SHORT][mode], map, g_szRunName[NAME_LONG][run], time_ago);
 			IntToString(recordid, szId, sizeof(szId));
 			mMenu.AddItem(szId, buffer);
 		}
@@ -2374,31 +2379,15 @@ public Action Command_RecordsPrint( int client, int args )
 	GetCmdArg(1, szTarget, sizeof( szTarget ) );
 	menu_page[client] = 0;
 
-		for (int i = 0; i < NUM_RUNS+20; i+=2 )
-		{
-			PrintToConsole(client, "%s - %s - %s", g_szRunName[NAME_LONG][i/2], g_szZoneNames[i], g_szZoneNames[i+1]);
-		}
-
-
-	if ( args == 0 )
+	if ( args > 0 && !GetMapDisplayName(szTarget, displayName, sizeof(displayName)) )
 	{
-		FormatEx(db_map[client], sizeof( db_map ), "%s", g_szCurrentMap );
-		FormatEx(szQuery, sizeof( szQuery ), "SELECT run FROM map_info WHERE map_name = '%s' AND run > 0", g_szCurrentMap );
-		g_hDatabase.Query( NormalTop, szQuery, client, DBPrio_Normal );
+		PrintToChat(client, CHAT_PREFIX..."Map not found");
+		return Plugin_Handled;
 	}
-	else
-	{
-		if ( GetMapDisplayName(szTarget, displayName, sizeof(displayName)) )
-		{
-			FormatEx(db_map[client], sizeof( db_map ), "%s", displayName );
-			FormatEx(szQuery, sizeof( szQuery ), "SELECT run FROM map_info WHERE map_name = '%s' AND run > 0", displayName );
-			g_hDatabase.Query( NormalTop, szQuery, client, DBPrio_Normal );
-		}
-		else
-		{
-			PrintToChat(client, CHAT_PREFIX..."Map not found");
-		}
-	}
+
+	FormatEx(db_map[client], sizeof( db_map ), "%s", (args == 0) ? g_szCurrentMap : displayName );
+	FormatEx(szQuery, sizeof( szQuery ), "SELECT run FROM map_info WHERE map_name = '%s' AND run > 0", (args == 0) ? g_szCurrentMap : displayName );
+	g_hDatabase.Query( NormalTop, szQuery, client, DBPrio_Normal );
 	return Plugin_Handled;
 }
 
@@ -3521,18 +3510,10 @@ public Action DRank( int client, int args)
 	if (args > 0)
 	{
 		GetCmdArg(1, arg_name, sizeof(arg_name));
-		for (int i=0; i<strlen(arg_name); i++)
-		{
-			if (IsCharNumeric(arg_name[i]))
-			{
+
+		if (IsCharNumeric(arg_name[0]))
 				is_rank = true;
-			}
-			else
-			{
-				is_rank = false;
-				break;
-			}
-		}
+				
 		if (is_rank) {
 			StringToIntEx(arg_name, arg_rank);
 			g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT name, drank, (SELECT max(drank) from plydata), (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = 3) FROM "...TABLE_PLYDATA..." WHERE drank = %i and drank > 0", arg_rank);

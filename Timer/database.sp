@@ -469,7 +469,7 @@ public int Handler_Prifile( Menu mMenu, MenuAction action, int client, int item 
 	}
 	if (item == 5)
 	{
-		DB_Completions(client, 0);
+		DB_Completions(client, db_id[client], 0);
 	}
 	if ( item == 6 )
 	{
@@ -781,7 +781,7 @@ public void Threaded_DemoInfo( Database hOwner, DBResultSet hQuery, const char[]
 public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
 		if(item == 1) {
-			CPrintToChat(client, CHAT_PREFIX... "{orange}https://game339233.ourserver.ru/demos/server_%i/%s", server_id_database[client], DemoUrlClient[client]);
+			CPrintToChat(client, CHAT_PREFIX... "{orange}http://54.219.84.106/demos/server_%i/%s", server_id_database[client], DemoUrlClient[client]);
 			DemoInfo(client, DemoInfoId[client] );
 		}
 		else if (item == 2)
@@ -1093,7 +1093,7 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 				flRecTime );
 				
 				if (flPrevMapBest <= TIME_INVALID || flNewTime < flPrevMapBest)
-					SetWrCpTime( iData[C_CP_INDEX], style, mode, flRecTime );
+					SetWrCpTime( iData[C_CP_INDEX], mode, flRecTime );
 
 				SetPrCpTime( iData[C_CP_INDEX], mode, flRecTime, client  );
 				
@@ -1116,7 +1116,6 @@ stock bool DB_SaveClientData( int client )
 	static char szSteam[MAX_ID_LENGTH];
 	if ( !GetClientSteam( client, szSteam, sizeof( szSteam ) ) ) return false;
 	
-	
 	static char szName[MAX_NAME_LENGTH];
 	GetClientName( client, szName, sizeof( szName ) );
 	
@@ -1126,8 +1125,8 @@ stock bool DB_SaveClientData( int client )
 		strcopy( szName, sizeof( szName ), "Player" );
 		
 	static char szQuery[192];
-	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET name = '%N' WHERE steamid = '%s'",
-		client,
+	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET name = '%s' WHERE steamid = '%s'",
+		szName,
 		szSteam );
 	
 	g_hDatabase.Query( Threaded_Empty, szQuery );
@@ -1311,7 +1310,7 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 		}
 	}
 
-	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, style, mode, time, map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' group by map, run, mode, id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' group by map, run, mode, id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
 				
 	g_hDatabase.Query( Threaded_Init_CP_WR_Times, szQuery, _, DBPrio_High );
 }

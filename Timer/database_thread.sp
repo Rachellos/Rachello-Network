@@ -587,17 +587,16 @@ public void Threaded_Completions( Database hOwner, DBResultSet hQuery, const cha
 	int count = 0;	
 	if ( hQuery.RowCount )
 	{
-		hQuery.FetchRow();
-		style = hQuery.FetchInt( 2);
-	
 		while ( hQuery.FetchRow() )
 		{
+			hQuery.FetchString( 0, map, sizeof( map ) );
+			
+			if (FindMap(map, map, sizeof(map)) == FindMap_NotFound) continue;
+
 			count++;
 			num++;
-			record = hQuery.FetchInt( 1);
-			hQuery.FetchString( 0, map, sizeof( map ) );
-
-			if (FindMap(map, map, sizeof(map)) == FindMap_NotFound) continue;
+			record = hQuery.FetchInt(1);
+			style = hQuery.FetchInt(2);
 
 			IntToString(record, szId, sizeof(szId));
 			if (count != 6)
@@ -610,16 +609,8 @@ public void Threaded_Completions( Database hOwner, DBResultSet hQuery, const cha
 				FormatEx( szItem, sizeof( szItem ), "%s\n ", map );
 				mMenu.AddItem( szId, szItem );
 
-				if (style == 0)
-				{
-					db_style[client] = 0;
-					mMenu.AddItem("", "[Soldier]", ITEMDRAW_CONTROL);
-				}
-				else
-				{
-					db_style[client] = 1;
-					mMenu.AddItem("", "[Demoman]", ITEMDRAW_CONTROL);
-				}
+				mMenu.AddItem("c", (db_style[client] == 0) ? "[Soldier]" : "[Demoman]");
+				
 				count = 0;
 			}
 		}
@@ -630,16 +621,7 @@ public void Threaded_Completions( Database hOwner, DBResultSet hQuery, const cha
 				mMenu.AddItem("","", ITEMDRAW_SPACER);
 			}
 				
-			if (style == STYLE_SOLLY)
-			{
-				db_style[client] = 0;
-				mMenu.AddItem("", "[Soldier]", ITEMDRAW_CONTROL);
-			}
-			else
-			{
-				db_style[client] = 1;
-				mMenu.AddItem("", "[Demoman]", ITEMDRAW_CONTROL);
-			}
+			mMenu.AddItem("c", (db_style[client] == 0) ? "[Soldier]" : "[Demoman]");
 		}
 	}
 	else
@@ -650,21 +632,11 @@ public void Threaded_Completions( Database hOwner, DBResultSet hQuery, const cha
 			mMenu.AddItem("","", ITEMDRAW_SPACER);
 		}
 
-		if (style == 1)
-		{
-			db_style[client] = 1;
-			FormatEx(item, sizeof( item ), "[Demoman]\n " );
-		}
-		else if (style == 0)
-		{
-			db_style[client] = 0;
-			FormatEx(item, sizeof( item ), "[Soldier]\n " );
-		}
-		mMenu.AddItem("", item);
+		mMenu.AddItem("c", (db_style[client] == 0) ? "[Soldier]" : "[Demoman]");
 	}
 
 	mMenu.ExitBackButton = true;
-	mMenu.SetTitle( "<Completions menu :: %s>\nPlayer: %s :: (%i total)\n ", g_szStyleName[NAME_LONG][style], DBS_Name[client], num+1 );	
+	mMenu.SetTitle( "<Completions menu :: %s>\nPlayer: %s :: (%i total)\n ", g_szStyleName[NAME_LONG][style], DBS_Name[client], num );	
 	mMenu.Display( client, MENU_TIME_FOREVER );
 
 }		
@@ -864,7 +836,7 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 			}
 		};
 
-		float points = CompletionPoints[view_as<int>(run_type)][g_Tiers[run][mode]], points2 = 0.0;
+		float points = CompletionPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1], points2 = 0.0;
 		
 		char db_run[40];
 		char szTrans[200];
@@ -960,7 +932,6 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 		}
 	}
 	delete hData;
-	delete hQuery;
 }
 
 public void GetTiers_CallBack( Database hOwner, DBResultSet results, const char[] szError, any data )
@@ -1403,7 +1374,7 @@ public void Threaded_Init_CPs( Database hOwner, DBResultSet hQuery, const char[]
 	
 	// GET CHECKPOINT TIMES
 	char szQuery[500];
-	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, style, mode, time, map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' group by map, run, mode, id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' group by map, run, mode, id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
 	
 	g_hDatabase.Query( Threaded_Init_CP_WR_Times, szQuery, _, DBPrio_High );
 }
@@ -1419,8 +1390,7 @@ public void Threaded_Init_CP_WR_Times( Database hOwner, DBResultSet hQuery, cons
 	}
 	
 	if ( !hQuery.RowCount ) return;
-	
-	
+
 	int id;
 	int run;
 	int index;
@@ -1428,19 +1398,15 @@ public void Threaded_Init_CP_WR_Times( Database hOwner, DBResultSet hQuery, cons
 	while ( hQuery.FetchRow() )
 	{
 		run = hQuery.FetchInt( 1 );
-		
-		
 		id = hQuery.FetchInt( 2 );
-		
 		index = FindCPIndex( run, id );
 		
 		if ( index != -1 )
 		{
-			int style = hQuery.FetchInt( 3 );
-			int mode = hQuery.FetchInt( 4 );
-			float flTime = hQuery.FetchFloat(  5 );
+			int mode = hQuery.FetchInt( 3 );
+			float flTime = hQuery.FetchFloat(  4 );
 			
-			SetWrCpTime( index, style, mode, flTime );
+			SetWrCpTime( index, mode, flTime );
 		}
 	}
 }
@@ -1459,7 +1425,6 @@ public void Threaded_Init_CP_PR_Times( Database hOwner, DBResultSet hQuery, cons
 		return;
 	}
 	
-	
 	int id;
 	int run;
 	int index;
@@ -1467,9 +1432,7 @@ public void Threaded_Init_CP_PR_Times( Database hOwner, DBResultSet hQuery, cons
 	while ( hQuery.FetchRow() )
 	{
 		run = hQuery.FetchInt( 1 );
-		
 		id = hQuery.FetchInt( 0 );
-		
 		index = FindCPIndex( run, id );
 		
 		if ( index != -1 )

@@ -1,109 +1,60 @@
 
 public Action CMD_SendMessage(client, args)
 {
-	char allArgs[90];
-	GetCmdArgString(allArgs, sizeof(allArgs));
+	if (args < 1)
+	{
+		CPrintToChat(client, CHAT_PREFIX..."Use \x0750DCFF!msg {white}<message>");
+		return Plugin_Handled;
+	}
+
+	char Message[256];
+	GetCmdArgString(Message, sizeof(Message));
 
 	char finalMessage[999];
 	char key[20];
 	char serverTag[60];
 	char playerName[40];
-	
-	bool execute = false;
-	char strFlag[100];
-	GetConVarString(CVAR_AdminFlag, strFlag, sizeof(strFlag));
-	
-	if(!StrEqual(strFlag, "NONE"))
-	{
-		int flag = ReadFlagString(strFlag);
-	
-		if(CheckCommandAccess(client, "CAN_SEND_NETWORK_MESSAGES", flag, true))
-			execute = true;
-	}
-	else
-	{
-		execute = true;
-	}
 		
-	if(execute)
-	{
-		if(gagState[client] == PLAYER_GAGED)
-		{
-			Handle pack;
-			char text[200];
-			CreateDataTimer(0.5, PrintMessageOnChatMessage, pack);
-			WritePackCell(pack, client);
-			Format(text, sizeof(text), "%s You have been banned from using this command.", PLUGIN_TAG);
-			WritePackString(pack, text);
-		}
-		else
-		{
-			GetConVarString(CVAR_ServerTag, serverTag, sizeof(serverTag));
-			GetConVarString(CVAR_MessageKey, key, sizeof(key));
-			GetConVarString(CVAR_MsgFormat, finalMessage, sizeof(finalMessage));
-			Format(playerName, sizeof(playerName), "%N", client); //Little hack for chat colors user
-			
-			ReplaceString(finalMessage, sizeof(finalMessage), SENDERNAME, playerName);
-			ReplaceString(finalMessage, sizeof(finalMessage), SERVERTAG, serverTag);
-			ReplaceString(finalMessage, sizeof(finalMessage), SENDERMSG, allArgs);
-			Format(finalMessage, sizeof(finalMessage), "%s%s", key, finalMessage);
-			
-			if(isMasterServer)
-				SendToAllClients(finalMessage, sizeof(finalMessage), INVALID_HANDLE);
-			else
-				if (SocketIsConnected(globalClientSocket))
-					SocketSend(globalClientSocket, finalMessage, sizeof(finalMessage));
-		}
-	}
-	else
-	{
-		Handle pack;
-		char text[200];
-		CreateDataTimer(0.5, PrintMessageOnChatMessage, pack);
-		WritePackCell(pack, client);
-		Format(text, sizeof(text), "%s You don't have the right to do that.", PLUGIN_TAG);
-		WritePackString(pack, text);	
-	}
+	GetConVarString(CVAR_ServerTag, serverTag, sizeof(serverTag));
+	GetConVarString(CVAR_MessageKey, key, sizeof(key));
+	GetConVarString(CVAR_MsgFormat, finalMessage, sizeof(finalMessage));
+	Format(playerName, sizeof(playerName), "%N", client); //Little hack for chat colors user
 	
-	return Plugin_Handled;
-}
+	ReplaceString(finalMessage, sizeof(finalMessage), SENDERNAME, playerName);
+	ReplaceString(finalMessage, sizeof(finalMessage), SERVERTAG, serverTag);
+	ReplaceString(finalMessage, sizeof(finalMessage), SENDERMSG, Message);
+	Format(finalMessage, sizeof(finalMessage), "%s%s", key, finalMessage);
+	
+	char text[500];
+	DiscordWebHook hook = new DiscordWebHook(WEBHOOK);
+	hook.SlackMode = true;
+	hook.SetUsername( "Chat" );
+	Format(text, sizeof(text), "`%s` **%N:** %s", serverTag, client, Message);	
+	hook.SetContent(text);
+	hook.Send();
+	delete hook;
 
-//I don't think commenting this block is needed.
-public Action CMD_GagFromCrossServer(client, args)
-{
-	if(!IsValidClient(client))
-		return Plugin_Handled;
-		
-	if(args != 1)
+	if(StrEqual(Message, "Ping", false))
 	{
-		CPrintToChat(client, "%s Usage : sm_cscgag [TARGET]", PLUGIN_TAG);
-		return Plugin_Handled;
+		hook = new DiscordWebHook(WEBHOOK);
+		hook.SetUsername("Chat");
+		hook.SetContent("Pong!");
+		hook.Send();
+		delete hook;
 	}
-		
-	char arg1[20];
-	char tmp[10];
-	char cookieValue[10];
-	GetCmdArg(1, arg1, sizeof(arg1));
-	GetClientCookie(client, COOKIE_ClientGaged, cookieValue, sizeof(cookieValue));
-	gagState[client] = StringToInt(cookieValue);
-	
-	int target = FindTarget(client, arg1, true);
-	
-	if(gagState[target] == PLAYER_GAGED)
+
+	if(isMasterServer)
 	{
-		CPrintToChat(client, "%s %N is now {green}ungaged{default} !", PLUGIN_TAG, target);	
-		gagState[target] = PLAYER_UNGAGED;
+		SendToAllClients(finalMessage, sizeof(finalMessage), INVALID_HANDLE);
+
+		ReplaceString(finalMessage, sizeof(finalMessage), key, ""); //Remove the key from the message
+		CPrintToChatAll(finalMessage);
 	}
-	else if(gagState[target] == PLAYER_UNGAGED)
+	else
 	{
-		CPrintToChat(client, "%s %N is now {fullred}gaged{default} !", PLUGIN_TAG, target);	
-		gagState[target] = PLAYER_GAGED;
+		if (connected)
+			SocketSend(globalClientSocket, finalMessage, sizeof(finalMessage));
 	}
-	
-	IntToString(gagState[client], tmp, sizeof(tmp));
-	SetClientCookie(client, COOKIE_ClientGaged, tmp);
-		
-	return Plugin_Continue;		
 }
 
 public Action OnChatMessage(&author, ArrayList recipients, char[] name, char[] message)
@@ -123,63 +74,25 @@ public Action OnChatMessage(&author, ArrayList recipients, char[] name, char[] m
 		GetConVarString(CVAR_SendMessageTag, sendChar, sizeof(sendChar));	
 		if(FindCharInString(message, sendChar[0]) == 0) //'+' as been found, continue :
 		{
-			bool execute = false;
-			char strFlag[100];
-			GetConVarString(CVAR_AdminFlag, strFlag, sizeof(strFlag)); //Get the admin flag from the cvar
+			//<-------------------------------------------------------------------
+			GetConVarString(CVAR_ServerTag, serverTag, sizeof(serverTag));
+			GetConVarString(CVAR_MessageKey, key, sizeof(key));
+			GetConVarString(CVAR_MsgFormat, finalMessage, sizeof(finalMessage));
+			Format(playerName, sizeof(playerName), "%N", author); //Little hack for chat colors user
 			
-			if(!StrEqual(strFlag, "NONE")) //If the admin flag is NONE, then, skip this small block and continue :
-			{
-				int flag = ReadFlagString(strFlag); //Create flag from string
+			ReplaceString(finalMessage, sizeof(finalMessage), SENDERNAME, playerName);
+			ReplaceString(finalMessage, sizeof(finalMessage), SERVERTAG, serverTag);
+			ReplaceString(finalMessage, sizeof(finalMessage), SENDERMSG, message);
+			Format(finalMessage, sizeof(finalMessage), "%s%s", key, finalMessage);
+			//------------------------------------------------------------------->
 			
-				if(CheckCommandAccess(author, "CAN_SEND_NETWORK_MESSAGES", flag, true)) //Check acces level of the player
-					execute = true;
-			}
-			else if(gagState[author] == PLAYER_GAGED) //If the player is gaged, block him.
-			{
-				Handle pack;
-				char text[200];
-				CreateDataTimer(0.5, PrintMessageOnChatMessage, pack);
-				WritePackCell(pack, author);
-				Format(text, sizeof(text), "%s You have been banned from using this command.", PLUGIN_TAG);
-				WritePackString(pack, text);
-				execute = false; //Can always execute the next part of code 
-			}
-			else
-			{
-				execute = true;
-			}
-				
-			if(execute) //if the author is allowed to continue
-			{
-				//<-------------------------------------------------------------------
-				GetConVarString(CVAR_ServerTag, serverTag, sizeof(serverTag));
-				GetConVarString(CVAR_MessageKey, key, sizeof(key));
-				GetConVarString(CVAR_MsgFormat, finalMessage, sizeof(finalMessage));
-				Format(playerName, sizeof(playerName), "%N", author); //Little hack for chat colors user
-				
-				ReplaceString(finalMessage, sizeof(finalMessage), SENDERNAME, playerName);
-				ReplaceString(finalMessage, sizeof(finalMessage), SERVERTAG, serverTag);
-				ReplaceString(finalMessage, sizeof(finalMessage), SENDERMSG, message);
-				Format(finalMessage, sizeof(finalMessage), "%s%s", key, finalMessage);
-				//------------------------------------------------------------------->
-				
-				//This block above is just to build message, could make a function but too lazy.
-			
-			
-				if(isMasterServer) //If the this server is the MCS, then send the message to all clients
-					SendToAllClients(finalMessage, sizeof(finalMessage), INVALID_HANDLE);
-				else // If the this server is NOT the MCS, send it to the MCS and he will send to all other clients
-					SocketSend(globalClientSocket, finalMessage, sizeof(finalMessage));
-			}
-			else //Player don't have acces to the command, send a delayed message (because we are on OnChatMessage hook)
-			{
-				Handle pack;
-				char text[200];
-				CreateDataTimer(0.5, PrintMessageOnChatMessage, pack);
-				WritePackCell(pack, author);
-				Format(text, sizeof(text), "%s You don't have the right to do that.", PLUGIN_TAG);
-				WritePackString(pack, text);	
-			}
+			//This block above is just to build message, could make a function but too lazy.
+		
+		
+			if(isMasterServer) //If the this server is the MCS, then send the message to all clients
+				SendToAllClients(finalMessage, sizeof(finalMessage), INVALID_HANDLE);
+			else // If the this server is NOT the MCS, send it to the MCS and he will send to all other clients
+				SocketSend(globalClientSocket, finalMessage, sizeof(finalMessage));
 		}
 		
 		processing[author] = false; //Processing is done, ready for next hook
@@ -190,20 +103,6 @@ public Action OnChatMessage(&author, ArrayList recipients, char[] name, char[] m
 public Action TimerReconnect(Handle tmr, any arg)
 {
 	ConnecToMasterServer();
-}
-
-//Allow you to print messages when OnChatMessage hook delayed by a timer
-public Action PrintMessageOnChatMessage(Handle timer, Handle pack)
-{
-	char text[128];
-	int client;
- 
-	ResetPack(pack);
-	client = ReadPackCell(pack);
-	ReadPackString(pack, text, sizeof(text));
-	//Restoring pack has finished, go abive and print message.
- 
-	CPrintToChat(client, "%s", text);
 }
 
 //stocks
@@ -230,7 +129,6 @@ public OnSocketIncoming(Handle socket, Handle newSocket, char[] remoteIP, remote
 		SocketSetDisconnectCallback(newSocket, OnChildSocketDisconnected);	//Bla bla bla, you got it.
 		SocketSetErrorCallback(newSocket, OnChildSocketError);				//Bla bla bla, you got it.
 		PushArrayCell(ARRAY_Connections, newSocket); //Save the handle to the connection into a array to send futur messages
-		PrintToServer("%i", view_as<int>(newSocket));
 	}
 }
 
@@ -251,11 +149,10 @@ public OnClientSocketConnected(Handle socket, any arg)
 //When the server crash, we can't do something but wait for a admin to reload the plugin.
 public OnServerSocketError(Handle socket, const int errorType, const int errorNum, any ary)
 {
-
 	if (socket != null)
 	{
 		CloseHandle(socket);
-		socket = INVALID_HANDLE;
+		socket = null;
 	}
 }
 
@@ -269,13 +166,12 @@ public OnClientSocketError(Handle socket, const int errorType, const int errorNu
 		RemoveFromArray(ARRAY_Connections, index); //Remove the client from connection, since he is disconnected
 	}
 
-	if (globalClientSocket != INVALID_HANDLE)
+	if (globalClientSocket != null)
 	{
 		CloseHandle(globalClientSocket);
-		globalClientSocket = INVALID_HANDLE;
+		globalClientSocket = null;
 	}
 	CreateTimer(GetConVarFloat(CVAR_ReconnectTime), TimerReconnect); //Ask for the plugin to reconnect to the MCS in X seconds
-
 }
 
 //When a client sent a message to the MCS OR the MCS sent a message to the client, and the MCS have to handle it :
@@ -284,6 +180,10 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, const int dataSiz
 	char key[20];
 	GetConVarString(CVAR_MessageKey, key, sizeof(key));
 	char szQuery[500];
+	//If the message is coming from a client, then the server has to send it to ALL other clients :
+	if(isMasterServer)
+		SendToAllClients(receiveData, dataSize, socket);
+
 	if(StrContains(receiveData, key) != -1) //The message contain the security key ?
 	{
 		ReplaceString(receiveData, dataSize, key, ""); //Remove the key from the message
@@ -320,7 +220,7 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, const int dataSiz
 					}
 				}
 
-				g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, style, mode, time, map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' group by map, run, mode, id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
+				g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' group by map, run, mode, id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
 				
 				g_hDatabase.Query( Threaded_Init_CP_WR_Times, szQuery, _, DBPrio_High );
 
@@ -349,7 +249,7 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, const int dataSiz
 					}
 				}
 
-				g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, style, mode, time, map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' group by map, run, mode, id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
+				g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' group by map, run, mode, id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
 				
 				g_hDatabase.Query( Threaded_Init_CP_WR_Times, szQuery, _, DBPrio_High );
 		    }
@@ -359,10 +259,6 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, const int dataSiz
 			}
 		}
 	}
-	
-	//If the message is coming from a client, then the server has to send it to ALL other clients :
-	if(isMasterServer)
-		SendToAllClients(receiveData, dataSize, socket);
 }
 
 //Called when the MCS disconnect, force the client to reconnect :
@@ -372,10 +268,10 @@ public OnChildSocketDisconnected(Handle socket, any hFile)
 	{
 		PrintToServer("Lost connection to master chat server, reconnecting...");
 		connected = false; //Very important.
-		if (globalClientSocket != INVALID_HANDLE)
+		if (globalClientSocket != null)
 		{
 			CloseHandle(globalClientSocket);
-			globalClientSocket = INVALID_HANDLE;
+			globalClientSocket = null;
 		}
 		CreateTimer(GetConVarFloat(CVAR_ReconnectTime), TimerReconnect); //Reconnecting timer
 	}
@@ -406,10 +302,7 @@ stock void SendToAllClients(char[] finalMessage, int msgSize, Handle sender)
 	{
 		//Get client :
 		Handle clientSocket = GetArrayCell(ARRAY_Connections, i);
-		if(clientSocket != INVALID_HANDLE && SocketIsConnected(clientSocket))
-		{
-			SocketSend(clientSocket, finalMessage, msgSize);
-		}
+		SocketSend(clientSocket, finalMessage, msgSize);
 	}
 }
 
@@ -435,9 +328,12 @@ stock void DisconnectFromMasterServer()
 	GetConVarString(FindConVar("hostname"), serverName, sizeof(serverName));
 	Format(finalMessage, sizeof(finalMessage), "%s%s%s", key, DISCONNECTSTR, serverName);
 	//Send the disconnecting message
-	SocketSend(globalClientSocket, finalMessage, sizeof(finalMessage));
-	CloseHandle(globalClientSocket);
-	globalClientSocket = INVALID_HANDLE;	
+	if (globalClientSocket != null && globalClientSocket != INVALID_HANDLE)
+	{
+		SocketSend(globalClientSocket, finalMessage, sizeof(finalMessage));
+		CloseHandle(globalClientSocket);
+		globalClientSocket = null;	
+	}
 }
 
 //Connect to the MCS

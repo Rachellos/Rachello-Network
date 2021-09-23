@@ -42,7 +42,6 @@ public void ShowHideMenuRHud(int client)
 	Menu mMenu = new Menu( Handler_HudRHud );
 	
 	mMenu.SetTitle( "<Settings Menu> :: Right Hud\n " );
-	//mMenu.AddItem( "time", ( g_fClientHideFlags[client] & HIDEHUD_TIMER )			? "Central Hud: OFF" : "Central Hud: ON" );
 	mMenu.AddItem( "info", ( g_fClientHideFlags[client] & HIDEHUD_SIDEINFO ) 		? "Right Hud: [OFF]" : "Right Hud: [ON]" );
 	mMenu.AddItem( "time", ( g_fClientHideFlags[client] & HIDEHUD_TIMEREMAINING ) 		? "Time Remaining: [OFF]" : "Time Remaining: [ON]" );
 	mMenu.AddItem( "clas", ( g_fClientHideFlags[client] & HIDEHUD_CLASS ) 		? "Class Name: [OFF]" : "Class Name: [ON]" );
@@ -64,8 +63,8 @@ public void ShowHideMenuCHud(int client)
 	
 	mMenu.SetTitle( "<Settings Menu> :: Central Hud\n " );
 
-	mMenu.AddItem( "hud", ( g_fClientHideFlags[client] & HIDEHUD_TIMER )			? "Central Hud: [OFF]" : "Central Hud: [ON]" );
-	mMenu.AddItem( "time", ( g_fClientHideFlags[client] & HIDEHUD_TIMER )			? "Central Hud: [OFF]" : "Central Hud: [ON]" );
+	mMenu.AddItem( "hud", ( g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD )			? "Central Hud: [OFF]" : "Central Hud: [ON]" );
+	mMenu.AddItem( "time", ( g_fClientHideFlags[client] & HIDEHUD_TIMER )			? "Timer: [OFF]" : "Timer: [ON]" );
 	mMenu.AddItem( "speed", ( g_fClientHideFlags[client] & HIDEHUD_SPEED )		? "Speedometer: [ON]" : "Speedometer: [OFF]" );
 	
 	mMenu.ExitBackButton = true;
@@ -91,7 +90,7 @@ public void ShowHideMenuChat(int client)
 	else
 	{
 		g_fClientHideFlags[client] |= HIDEHUD_CHATRANKAUTO;
-		FormatEx(chat_rank, sizeof(chat_rank), "Your rank in chat: [Automatically]");
+		FormatEx(chat_rank, sizeof(chat_rank), "Your rank in chat: [Auto]");
 	}
 	mMenu.AddItem( "chat", ( g_fClientHideFlags[client] & HIDEHUD_CHAT ) 			? "Show Messages by players: [OFF]" : "Show Messages by players: [ON]" );
 	mMenu.AddItem( "rank", chat_rank );
@@ -110,13 +109,6 @@ public int Handler_Hud( Menu mMenu, MenuAction action, int client, int item )
 
 	if ( action == MenuAction_End)
 	{
-		PrintToChat(client, CHAT_PREFIX..."Saving settings...");
-		GetClientSteam(client, szSteam, sizeof(szSteam)	);
-		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
-		g_fClientHideFlags[client],
-		szSteam);
-		g_hDatabase.Query( Threaded_Empty, szQuery );
-		PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		delete mMenu;
 		return 0;
 	}
@@ -130,7 +122,6 @@ public int Handler_Hud( Menu mMenu, MenuAction action, int client, int item )
 		g_hDatabase.Query( Threaded_Empty, szQuery );
 		PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 	}
-	if ( action != MenuAction_Select ) return 0;
 
 	if ( action == MenuAction_Select )
 	{
@@ -169,15 +160,6 @@ public int Handler_HudRHud( Menu mMenu, MenuAction action, int client, int item 
 	
 	if ( action == MenuAction_End)
 	{
-		char szQuery[192];
-		char szSteam[100];
-		PrintToChat(client, CHAT_PREFIX..."Saving settings...");
-		GetClientSteam(client, szSteam, sizeof(szSteam)	);
-		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
-		g_fClientHideFlags[client],
-		szSteam);
-		g_hDatabase.Query( Threaded_Empty, szQuery, client, DBPrio_High );
-		PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		delete mMenu;
 		return 0;
 	}
@@ -196,7 +178,7 @@ public int Handler_HudRHud( Menu mMenu, MenuAction action, int client, int item 
 		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
 		g_fClientHideFlags[client],
 		szSteam);
-		g_hDatabase.Query( Threaded_Empty, szQuery, client, DBPrio_High );
+		g_hDatabase.Query( Threaded_Empty, szQuery );
 		PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		return 0;
 	}
@@ -270,16 +252,6 @@ public int Handler_HudCHud( Menu mMenu, MenuAction action, int client, int item 
 {
 	if ( action == MenuAction_End)
 	{
-	 	
-		char szQuery[192];
-		char szSteam[100];
-		CPrintToChat(client, CHAT_PREFIX..."Saving settings...");
-		GetClientSteam(client, szSteam, sizeof(szSteam)	);
-		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
-		g_fClientHideFlags[client],
-		szSteam);
-		g_hDatabase.Query( Threaded_Empty, szQuery, client, DBPrio_High );
-		CPrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		delete mMenu;
 		return 0;
 	}
@@ -298,11 +270,10 @@ public int Handler_HudCHud( Menu mMenu, MenuAction action, int client, int item 
 		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
 		g_fClientHideFlags[client],
 		szSteam);
-		g_hDatabase.Query( Threaded_Empty, szQuery, client, DBPrio_High );
+		g_hDatabase.Query( Threaded_Empty, szQuery );
 		CPrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		return 0;
 	}
-	if (action != MenuAction_Select) return 0;
 
 	if (action == MenuAction_Select)
 	{
@@ -310,6 +281,17 @@ public int Handler_HudCHud( Menu mMenu, MenuAction action, int client, int item 
 		GetMenuItem( mMenu, item, szItem, sizeof( szItem ) );
 		
 		if ( StrEqual( szItem, "hud" ) )
+		{
+			if ( g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD )
+			{
+				g_fClientHideFlags[client] &= ~HIDEHUD_CENTRAL_HUD;
+			}
+			else
+			{
+				g_fClientHideFlags[client] |= HIDEHUD_CENTRAL_HUD;
+			}
+		}
+		if ( StrEqual( szItem, "time" ) )
 		{
 			if ( g_fClientHideFlags[client] & HIDEHUD_TIMER )
 			{
@@ -337,18 +319,8 @@ public int Handler_HudCHud( Menu mMenu, MenuAction action, int client, int item 
 }
 public int Handler_HudGen( Menu mMenu, MenuAction action, int client, int item )
 {
-	if ( action == MenuAction_End && action != MenuAction_Select)
+	if ( action == MenuAction_End)
 	{
-	 	
-		char szQuery[192];
-		char szSteam[100];
-		CPrintToChat(client, CHAT_PREFIX..."Saving settings...");
-		GetClientSteam(client, szSteam, sizeof(szSteam)	);
-		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
-		g_fClientHideFlags[client],
-		szSteam);
-		g_hDatabase.Query( Threaded_Empty, szQuery );
-		CPrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		delete mMenu;
 		return 0;
 	}
@@ -413,15 +385,6 @@ public int Handler_HudChat( Menu mMenu, MenuAction action, int client, int item 
 {
 	if ( action == MenuAction_End)
 	{
-		char szQuery[192];
-		char szSteam[100];
-		PrintToChat(client, CHAT_PREFIX..."Saving settings...");
-		GetClientSteam(client, szSteam, sizeof(szSteam)	);
-		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
-		g_fClientHideFlags[client],
-		szSteam);
-		g_hDatabase.Query( Threaded_Empty, szQuery);
-		PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		delete mMenu;
 		return 0;
 	}
@@ -555,27 +518,29 @@ public int Handler_Completions( Menu mMenu, MenuAction action, int client, int i
 	if ( action == MenuAction_End ) { delete mMenu; return 0; }
 	if (action == MenuAction_Cancel)
 	{
-    if (item == MenuCancel_ExitBack)
-	{
-		int args;
-	   	DB_Profile( client, args, 1, DBS_Name[client], 0 ); 
-		return 0;
-    }
+		if (item == MenuCancel_ExitBack)
+		{
+			int args;
+			DB_Profile( client, args, 0, "", db_id[client] ); 
+			return 0;
+		}
 	}
 	if ( action != MenuAction_Select ) return 0;
 	if ( action == MenuAction_Select )
 	{
-		char szItem[5];
+		char szItem[10];
 		int rec;
 		GetMenuItem( mMenu, item, szItem, sizeof( szItem ) );
-		if ( item == 6 )
+		if ( szItem[0] == 'c' )
 		{
-			DB_Completions(client, (db_style[client] == STYLE_SOLLY) ? STYLE_DEMOMAN : STYLE_SOLLY);
+			DB_Completions(client, db_id[client], (db_style[client] == STYLE_SOLLY) ? STYLE_DEMOMAN : STYLE_SOLLY);
 			return 0;
 		}
-		StringToIntEx(szItem, rec);
-		DB_RecordInfo(client, rec);
+		else
+		{
+			StringToIntEx(szItem, rec);
+			DB_RecordInfo(client, rec);
+		}
 	}
-	
 	return 0;
 }

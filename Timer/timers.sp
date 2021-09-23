@@ -29,15 +29,11 @@ public Action Timer_regencheck( Handle hTimer )
     {
 		if (IsClientConnected(iclient) && IsClientInGame(iclient) && IsPlayerAlive(iclient))
 		{
-            iWeapon = GetEntPropEnt(iclient, Prop_Data, "m_hActiveWeapon");
-            if ( szClass[g_iClientRun[iclient]][g_iClientMode[iclient]] <= 0 && !RegenOn[iclient] || RegenOn[iclient])
+            BlockBounces(iclient);
+            if ( (szClass[g_iClientRun[iclient]][g_iClientMode[iclient]] <= 0 && !RegenOn[iclient]) || RegenOn[iclient])
             {
-                if (iWeapon != -1 && IsValidEntity(iWeapon) && (ammo = GetEntProp(iWeapon, Prop_Data, "m_iClip1")) < 2  )
-                {
                     TF2_RegeneratePlayer(iclient);
-                }
-                 
-            }
+            }     
         }     
 	}
     return Plugin_Continue;	
@@ -80,7 +76,7 @@ public Action Timer_EmptyQuery( Handle hTimer, int data )
 }
 
 // Main component of the HUD timer.
-public Action Timer_HudTimer( Handle hTimer, int ent )
+public void OnGameFrame()
 {
     int client
         , target
@@ -98,10 +94,7 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
 
     for ( client = 1; client <= MaxClients; client++ )
     {
-        if ( !IsClientInGame( client ) || IsFakeClient( client ) || IsClientSourceTV( client ) || g_fClientHideFlags[client] & HIDEHUD_TIMER) { isHudDrawing[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue; }
-		if ( TF2_GetPlayerClass(client) != TFClass_DemoMan && TF2_GetPlayerClass(client) != TFClass_Soldier && GetClientTeam( client ) != TFTeam_Spectator ) { isHudDrawing[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue; }
-
-        BlockBounces(client);
+        if ( !IsClientInGame( client ) || !IsClientConnected(client) || IsFakeClient( client ) || IsClientSourceTV( client )) continue;
 
         target = client;
 
@@ -127,20 +120,23 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
 				continue;
         }
 
-        if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_INVALID) continue;
-
-        run = g_iClientRun[target];
-        mode = g_iClientMode[target];
+        
+		if ( TF2_GetPlayerClass(target) != TFClass_DemoMan && TF2_GetPlayerClass(target) != TFClass_Soldier && GetClientTeam( target ) != TFTeam_Spectator ) { isHudDrawing[target] = false; TimeToDrawHud[target] = TIME_INVALID; continue; }
         
         if ( !(g_fClientHideFlags[client] & HIDEHUD_SIDEINFO) )
         {
             ShowKeyHintText( client, target );
         }
 
-        if ( (g_fClientHideFlags[client] & HIDEHUD_TIMER)) continue;
+        if ( g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD) { isHudDrawing[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue; }
+        
+        run = g_iClientRun[target];
+        mode = g_iClientMode[target];
+        
+        if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_INVALID || g_iClientRun[target] == RUN_SETSTART ) {isHudDrawing[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue;}
 
         if (DisplayCpTime[target])
-            FormatEx(CpSplit, sizeof(CpSplit), "(%s %c%s)\n", g_fClientHideFlags[client] & HIDEHUD_PRTIME ? "PR" : "WR", CpPlusSplit[target], CpTimeSplit[target]);
+            FormatEx(CpSplit, sizeof(CpSplit), "(%s %c%s)\n", g_fClientHideFlags[target] & HIDEHUD_PRTIME ? "PR" : "WR", CpPlusSplit[target], CpTimeSplit[target]);
 
         if ( szClass[g_iClientRun[target]][g_iClientMode[target]] <= 0 || RegenOn[target])
         {
@@ -193,14 +189,21 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
             }
 
             FormatSeconds( TimeSplit, szTimeSplit );
-            FormatSeconds( flCurTime, szCurTime );
-            Format(hintOutput, 256, "%s\n(%s %c%s)\n \n[%s End]\n %s\n%s mode %s", szCurTime, (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit, g_szRunName[NAME_LONG][run], speed, szTimerMode[target], szAmmo[target] );
+            if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER) )
+            {
+                FormatSeconds( flCurTime, szCurTime );
+                StrCat(szCurTime, sizeof(szCurTime), "\n");
+            }
+            Format(hintOutput, 256, "%s(%s %c%s)\n \n[%s End]\n %s\n%s mode %s", szCurTime, (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit, g_szRunName[NAME_LONG][run], speed, szTimerMode[target], szAmmo[target] );
         }     
         else if ( g_iClientState[target] == STATE_START )
         {
             flCurTime = GetEngineTime() - g_flClientStartTime[target];
-            FormatSeconds( flCurTime, szCurTime );
-            Format(hintOutput, 256, "  %s\n \n[%s Start]\n %s\n%s mode %s", IsMapMode[target] ? ( (RunIsCourse(g_iClientRun[target]) && g_iClientRun[target] != RUN_COURSE1) ? szCurTime : g_szCurrentMap ) : g_szCurrentMap, g_szRunName[NAME_LONG][ g_iClientRun[target] ], speed, szTimerMode[target], szAmmo[target] );
+            if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER) )
+            {
+                FormatSeconds( flCurTime, szCurTime );
+            }
+            Format(hintOutput, 256, "%s\n \n[%s Start]\n %s\n%s mode %s", IsMapMode[target] ? ( (RunIsCourse(g_iClientRun[target]) && g_iClientRun[target] != RUN_COURSE1) ? szCurTime : g_szCurrentMap ) : g_szCurrentMap, g_szRunName[NAME_LONG][ g_iClientRun[target] ], speed, szTimerMode[target], szAmmo[target] );
         }
         else
         {
@@ -208,10 +211,14 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
         
             static float flBestTime;
             flBestTime = g_flMapBestTime[ g_iClientRun[target] ][ g_iClientStyle[target] ][ g_iClientMode[target] ];
+
+            if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER) )
+            {
+                FormatSeconds( flCurTime, szCurTime );
+                StrCat(szCurTime, sizeof(szCurTime), "\n");
+            }
         
-            FormatSeconds( flCurTime, szCurTime );
-        
-            Format(hintOutput, 256, " %s\n%s \n[%s]\n %s\n%s mode %s",
+            Format(hintOutput, 256, " %s%s \n[%s]\n %s\n%s mode %s",
                 szCurTime,
                 CpSplit,
                 g_szRunName[NAME_LONG][ g_iClientRun[target] ],
@@ -239,8 +246,7 @@ public Action Timer_HudTimer( Handle hTimer, int ent )
             LastHudDrawing[client] = GetEngineTime();
             PrintHintText( client, hintOutput);
         }
-     }
-	return Plugin_Continue;
+    }
 }
 
 public Action Timer_EndMap( Handle hTimer )
