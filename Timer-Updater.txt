@@ -5,7 +5,6 @@
         "Version"
         {
             	"Latest"    "2.2.2"
-		"Previous"	"2.2.1"
         }
     }
     "Files"
