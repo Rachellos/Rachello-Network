@@ -4,15 +4,13 @@
     {
         "Version"
         {
-            	"Latest"    "2.2.2"
+            	"Latest"    "2.2.3"
         }
     }
     "Files"
     {
-	"Patch"
-	{
-        	"Plugin"    "Path_SM/plugins/Timer.smx"
-	}
 	"Plugin"    "Path_SM/plugins/Timer.smx"
+
+	"Source"    "Path_SM/Timer.sp"
     }
 }
