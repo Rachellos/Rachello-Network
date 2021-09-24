@@ -5,10 +5,15 @@
         "Version"
         {
             	"Latest"    "2.2.2"
+		"Previous"	"2.2.1"
         }
     }
     "Files"
     {
+	"Patch"
+	{
+        	"Plugin"    "Path_SM/plugins/Timer.smx"
+	}
 	"Plugin"    "Path_SM/plugins/Timer.smx"
     }
 }
