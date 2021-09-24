@@ -4,17 +4,11 @@
     {
         "Version"
         {
-            	"Latest"    "2.2.1"
-		"Previous"	"2.2.0"
+            	"Latest"    "2.2.2"
         }
-	"Notes"	"Added Noclip notify"
     }
     "Files"
     {
-	"Patch"
-	{
-        	"Plugin"    "Path_SM/plugins/Timer.smx"
-	}
 	"Plugin"    "Path_SM/plugins/Timer.smx"
     }
 }
