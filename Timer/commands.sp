@@ -953,7 +953,7 @@ public int Recent_records_handler( Menu mMenu, MenuAction action, int client, in
 	if ( action == MenuAction_End ) { delete mMenu; return 0; }
 	if ( action != MenuAction_Select ) return 0;
 
-	char query[200];
+	char query[300];
 
 	if (item == 0)
 	{
