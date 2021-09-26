@@ -52,8 +52,10 @@ public void Threaded_PrintRecordsPoints( Database hOwner, DBResultSet hQuery, co
 
 			}
 		}
-		mMenu.Display( client, MENU_TIME_FOREVER );
 
+		mMenu.ExitBackButton = (GetLastPrevMenuIndex(client) != -1) ? true : false;
+		SetNewPrevMenu(client,mMenu);
+		mMenu.Display( client, MENU_TIME_FOREVER );
 	}
 	delete hQuery;
 	delete hData;
@@ -62,6 +64,16 @@ public void Threaded_PrintRecordsPoints( Database hOwner, DBResultSet hQuery, co
 public int Handler_Points( Menu mMenu, MenuAction action, int client, int index )
 {
 	if ( action == MenuAction_End ) {  return 0; }
+
+	if (action == MenuAction_Cancel) 
+	{
+		if(index == MenuCancel_ExitBack) 
+		{
+			RemoveLastPrevMenu(client);
+			CallPrevMenu(client);
+		    return 0;
+		}
+	}
 	if ( action != MenuAction_Select ) return 0;
 	char szId[32];
 	char szQuery[192];
@@ -148,6 +160,7 @@ public void Threaded_ProfileInfo( Database hOwner, DBResultSet hQuery, const cha
 	}
 	mMenu.SetTitle("<User Details>\nPlayer: %s\n ", name );
 	mMenu.Display( client, MENU_TIME_FOREVER );
+	RemoveLastPrevMenu(client);
 
 	delete hQuery;
 }	
@@ -295,11 +308,8 @@ public void Threaded_PrintRecords( Database hOwner, DBResultSet hQuery, const ch
 				}
 		}
 		else
-		{
-			#define NO_RECS "No one has beaten the map yet... :("
-			
-			
-			mMenu.AddItem( "", NO_RECS, ITEMDRAW_DISABLED );
+		{	
+			mMenu.AddItem( "", "No Records D:", ITEMDRAW_DISABLED );
 
 			for (int i = 1; i < 6; i++)
 				{
@@ -320,8 +330,9 @@ public void Threaded_PrintRecords( Database hOwner, DBResultSet hQuery, const ch
 			}
 		}
 		mMenu.ExitBackButton = true;
+		SetNewPrevMenu(client, mMenu);
 		mMenu.DisplayAt( client, menu_page[client], MENU_TIME_FOREVER );
-
+		
 	}
 	delete hQuery;
 	delete hData;
@@ -336,7 +347,7 @@ public int Handler_top( Menu mMenu, MenuAction action, int client, int item )
 	{
 		char szQuery[192];
 		FormatEx(szQuery, sizeof( szQuery ), "SELECT run FROM "...TABLE_MAPINFO..." WHERE map_name = '%s'", db_map[client] );
-		g_hDatabase.Query( NormalTop, szQuery, client, DBPrio_Normal );
+		g_hDatabase.Query( NormalTop, szQuery, client );
 		return 0;
     }
 	}
@@ -348,11 +359,13 @@ public int Handler_top( Menu mMenu, MenuAction action, int client, int item )
 		GetMenuItem( mMenu, item, szItem, sizeof( szItem ) );
 		if ( StrEqual( szItem, "a" ) )
 		{
+			RemoveLastPrevMenu(client);
 			DB_PrintRecords0( client, RunPagep[client], MODE_DEMOMAN );
 			return;
 		}
 		if ( StrEqual( szItem, "s" ) )
 		{
+			RemoveLastPrevMenu(client);
 			DB_PrintRecords0( client, RunPagep[client], MODE_SOLDIER );
 			return;
 		}
@@ -637,6 +650,7 @@ public void Threaded_Completions( Database hOwner, DBResultSet hQuery, const cha
 
 	mMenu.ExitBackButton = true;
 	mMenu.SetTitle( "<Completions menu :: %s>\nPlayer: %s :: (%i total)\n ", g_szStyleName[NAME_LONG][style], DBS_Name[client], num );	
+	SetNewPrevMenu(client, mMenu);
 	mMenu.Display( client, MENU_TIME_FOREVER );
 
 }		

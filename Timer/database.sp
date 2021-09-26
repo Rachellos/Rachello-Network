@@ -336,8 +336,6 @@ public void OnProfileTxnSuccess(Database g_hDatabase, any client, int numQueries
 		return;
 	}
 
-	Panel hPanel = new Panel();
-
 	float overall_pts,
 		class_pts,
 		wr_points,
@@ -369,6 +367,9 @@ public void OnProfileTxnSuccess(Database g_hDatabase, any client, int numQueries
 
 	if (results[0].FetchRow())
 	{
+		Menu mMenu;
+		mMenu = new Menu(Handler_Prifile);
+
 		results[0].FetchString( 0, DBS_Name[client], sizeof( DBS_Name ) );
 		db_id[client] = results[0].FetchInt( 1 );
 		overall_rank = results[0].FetchInt( 2 );
@@ -407,37 +408,36 @@ public void OnProfileTxnSuccess(Database g_hDatabase, any client, int numQueries
 		}
 
 		FormatEx( szItem, sizeof( szItem ), "Overall rank: %s", szTxt3 );
-		hPanel.DrawItem( szItem );
+		mMenu.AddItem( "", szItem );
 
 		FormatEx( szItem3, sizeof( szItem3 ), "%s rank: %s", g_szModeName[NAME_LONG][class], szTxt1 );
-		hPanel.DrawItem( szItem3 );
+		mMenu.AddItem( "", szItem3 );
 
 		FormatEx(szItem6, sizeof(szItem6), "Records [%.0f pts]\n ", wr_points);
-		DrawPanelItem( hPanel, szItem6 );
+		mMenu.AddItem( "", szItem6 );
 
 		FormatEx(szItem7, sizeof(szItem7), "Top Times [%.0f pts]\n ", tt_points);
-		DrawPanelItem( hPanel, szItem7 );
+		mMenu.AddItem( "", szItem7 );
 
 		FormatEx( szItem8, sizeof( szItem8 ), "Completions (%.1f%c ) [%i/%i]\n ", completions_procent, prefix, completed_maps, maps_count );
-		DrawPanelItem( hPanel, szItem8 );
+		mMenu.AddItem( "", szItem8 );
 
 		FormatEx( szItem5, sizeof( szItem5 ), "Details\n \n    ");
-		DrawPanelItem( hPanel, szItem5 );
+		mMenu.AddItem( "", szItem5 );
 
-		hPanel.CurrentKey = 7;
 		FormatEx( szItem4, sizeof( szItem4 ), "[%s]\n \n ", g_szModeName[NAME_LONG][class]);
-		DrawPanelItem( hPanel, szItem4 );
+		mMenu.AddItem( "", szItem4 );
 
-		hPanel.CurrentKey = 10;
-		DrawPanelItem(hPanel,"[X]");
+		mMenu.ExitBackButton = (GetLastPrevMenuIndex(client) != -1) ? true : false;
 
 		if (IsOnline==1)
 			FormatEx( title, sizeof( title ), "<Profile Menu :: %s>\nPlayer: %s\nOnline\n ", g_szModeName[NAME_LONG][class], DBS_Name[client] );
 		else
 			FormatEx( title, sizeof( title ), "<Profile Menu :: %s>\nPlayer: %s\n ", g_szModeName[NAME_LONG][class], DBS_Name[client] );		
 
-		hPanel.SetTitle( title );
-		hPanel.Send( client, Handler_Prifile, MENU_TIME_FOREVER );
+		mMenu.SetTitle( title );
+		SetNewPrevMenu(client,mMenu);
+		mMenu.Display( client, MENU_TIME_FOREVER );
 	}
 	else
 	{
@@ -448,37 +448,47 @@ public void OnProfileTxnSuccess(Database g_hDatabase, any client, int numQueries
 
 public int Handler_Prifile( Menu mMenu, MenuAction action, int client, int item )
 {
-	if ( action == MenuAction_End ) { delete mMenu; return 0; }
+	if ( action == MenuAction_End ) { return 0; }
+	if (action == MenuAction_Cancel) 
+	{
+		if(item == MenuCancel_ExitBack) 
+		{
+			RemoveLastPrevMenu(client);
+			CallPrevMenu(client);
+		    return 0;
+		}
+	}
 	if ( action != MenuAction_Select ) { return 0; }
 	int args;
-	if (item == 1)
+	if (item == 0)
 	{
 		DB_PrintPoints( client, args, 0 );
 	}
-	if (item == 2)
+	if (item == 1)
 	{
 		DB_PrintPoints( client, args, (profile_mode[client] == MODE_SOLDIER) ? 2 : 1 );
 	}
-	if (item == 3)
+	if (item == 2)
 	{
 		DB_RecTimes(client, (profile_mode[client] == MODE_SOLDIER) ? STYLE_SOLLY : STYLE_DEMOMAN);
 	}
-	if (item == 4)
+	if (item == 3)
 	{
-		DB_TopTimes(client, profile_mode[client]);
+		DB_TopTimes(client, (profile_mode[client] == MODE_SOLDIER) ? STYLE_SOLLY : STYLE_DEMOMAN);
 	}
-	if (item == 5)
+	if (item == 4)
 	{
 		DB_Completions(client, db_id[client], 0);
 	}
-	if ( item == 6 )
+	if ( item == 5 )
 	{
 		char szQuery[192];
 		FormatEx( szQuery, sizeof( szQuery ), "SELECT country, lastseen, firstseen, uid, name, CURRENT_TIMESTAMP FROM "...TABLE_PLYDATA..." WHERE uid = %i", db_id[client] );
 		g_hDatabase.Query( Threaded_ProfileInfo, szQuery, GetClientUserId( client ), DBPrio_Normal );
 	}
-	if ( item == 7 )
+	if ( item == 6 )
 	{
+		RemoveLastPrevMenu(client);
 		DB_Profile( client, 0, 0, "", db_id[client], (profile_mode[client] == MODE_SOLDIER) ? MODE_DEMOMAN : MODE_SOLDIER );
 	}
 	return 0;
@@ -511,97 +521,97 @@ stock void DB_RecordInfo( int client, int id )
 
 public void Threaded_RecordInfo( Database hOwner, DBResultSet hQuery, const char[] szError, int client )
 {
-		if ( hQuery == null )
+	if ( hQuery == null )
+	{
+		DB_LogError( "Couldn't retrieve player's ranking!" );
+	
+		return;
+	}
+
+	if ( hQuery.FetchRow() )
+	{
+		char map[64];
+		char name[32];
+		int run, style, mode, uid;
+		float pts, time;
+		char szTime[TIME_SIZE_DEF];
+		char date[50];
+		char szId[20];
+		char szStyleFix[STYLEPOSTFIX_LENGTH];
+		char checkpoints[100];
+		GetStylePostfix( g_iClientMode[client], szStyleFix, true );
+		hQuery.FetchString( 1, map, sizeof(map));
+		hQuery.FetchString( 1, db_map[client], sizeof(db_map));
+		hQuery.FetchString( 1, profile_map[client], sizeof(profile_map));
+		hQuery.FetchString( 8, name, sizeof(name));
+		hQuery.FetchString( 8, profile_playername[client], sizeof(profile_playername));
+		run = hQuery.FetchInt( 2 );
+		RunPagep[client] = hQuery.FetchInt( 2 );
+		profile_run[client] = hQuery.FetchInt( 2 );
+		style = hQuery.FetchInt( 3 );
+		mode = hQuery.FetchInt( 4 );
+		RunClass[client] = hQuery.FetchInt( 4 );
+		profile_mode[client] = hQuery.FetchInt( 4 );
+		time = hQuery.FetchFloat( 5 );
+		pts = hQuery.FetchFloat( 6 );
+		hQuery.FetchString( 7, date, sizeof(date));
+		uid = hQuery.FetchInt( 0 );
+		FormatSeconds( time, szTime, FORMAT_3DECI );
+		int rank = hQuery.FetchInt(10);
+		int allranks = hQuery.FetchInt(11);
+		int s_id = hQuery.FetchInt(12);
+
+		FormatEx(checkpoints, sizeof(checkpoints), "Checkpoint Times (%s)", map);
+		DemoInfoId[client] = hQuery.FetchInt(9);
+
+		Panel panel = new Panel();
+		char buffer[64];
+		db_id[client] = uid;
+
+		DrawPanelText(panel,"<Expanded Record Info>\n ");
+		Format(buffer,sizeof(buffer),"Player: %s", name);
+		DrawPanelText(panel,buffer);
+		Format(buffer,sizeof(buffer),"Zone: %s/%s (%s%s)", map, g_szRunName[NAME_LONG][run], g_szStyleName[NAME_LONG][style], szStyleFix);
+		DrawPanelText(panel,buffer);
+		DrawPanelText(panel," ");
+		Format(buffer,sizeof(buffer),"Duration: %s",szTime);
+		DrawPanelText(panel,buffer);
+		Format(buffer,sizeof(buffer),"Rank: %i/%i", rank, allranks);
+		DrawPanelText(panel,buffer);
+		Format(buffer,sizeof(buffer),"Points Gained: %.1f", pts);
+		DrawPanelText(panel,buffer);
+		Format(buffer,sizeof(buffer),"Date: %s (Moscow)", date);
+		DrawPanelText(panel,buffer);
+		Format(buffer,sizeof(buffer),"Server: %s", server_name[NAME_LONG][s_id] );
+		DrawPanelText(panel,buffer);
+
+		DrawPanelText(panel," ");
+		DrawPanelItem(panel,"Open Player Menu");
+		if (run == 0)
 		{
-			DB_LogError( "Couldn't retrieve player's ranking!" );
-		
-			return;
+			DrawPanelItem(panel, checkpoints);
+		}
+		panel.CurrentKey = 3;
+		DrawPanelItem(panel, "Find Demo");
+		DrawPanelText(panel," ");
+
+		if (GetUserFlagBits(client) & ADMFLAG_ROOT)
+		{
+			panel.CurrentKey = 4;
+			DrawPanelItem(panel, "Remove Record");
+			DrawPanelText(panel," ");
 		}
 
-		if ( hQuery.FetchRow() )
-		{
-			char map[64];
-			char name[32];
-			int run, style, mode, uid;
-			float pts, time;
-			char szTime[TIME_SIZE_DEF];
-			char date[50];
-			char szId[20];
-			char szStyleFix[STYLEPOSTFIX_LENGTH];
-			char checkpoints[100];
-			GetStylePostfix( g_iClientMode[client], szStyleFix, true );
-			hQuery.FetchString( 1, map, sizeof(map));
-			hQuery.FetchString( 1, db_map[client], sizeof(db_map));
-			hQuery.FetchString( 1, profile_map[client], sizeof(profile_map));
-			hQuery.FetchString( 8, name, sizeof(name));
-			hQuery.FetchString( 8, profile_playername[client], sizeof(profile_playername));
-			run = hQuery.FetchInt( 2 );
-			RunPagep[client] = hQuery.FetchInt( 2 );
-			profile_run[client] = hQuery.FetchInt( 2 );
-			style = hQuery.FetchInt( 3 );
-			mode = hQuery.FetchInt( 4 );
-			RunClass[client] = hQuery.FetchInt( 4 );
-			profile_mode[client] = hQuery.FetchInt( 4 );
-			time = hQuery.FetchFloat( 5 );
-			pts = hQuery.FetchFloat( 6 );
-			hQuery.FetchString( 7, date, sizeof(date));
-			uid = hQuery.FetchInt( 0 );
-			FormatSeconds( time, szTime, FORMAT_3DECI );
-			int rank = hQuery.FetchInt(10);
-			int allranks = hQuery.FetchInt(11);
-			int s_id = hQuery.FetchInt(12);
+		panel.CurrentKey = 8;
+		DrawPanelItem(panel,"[<<]");
+		DrawPanelText(panel," ");
+		panel.CurrentKey = 10;
+		DrawPanelItem(panel,"[X]");
 
-			FormatEx(checkpoints, sizeof(checkpoints), "Checkpoint Times (%s)", map);
-			DemoInfoId[client] = hQuery.FetchInt(9);
+		Func = DB_RecordInfo;
 
-			Panel panel = new Panel();
-			char buffer[64];
-			db_id[client] = uid;
-
-			DrawPanelText(panel,"<Expanded Record Info>\n ");
-			Format(buffer,sizeof(buffer),"Player: %s", name);
-			DrawPanelText(panel,buffer);
-			Format(buffer,sizeof(buffer),"Zone: %s/%s (%s%s)", map, g_szRunName[NAME_LONG][run], g_szStyleName[NAME_LONG][style], szStyleFix);
-			DrawPanelText(panel,buffer);
-			DrawPanelText(panel," ");
-			Format(buffer,sizeof(buffer),"Duration: %s",szTime);
-			DrawPanelText(panel,buffer);
-			Format(buffer,sizeof(buffer),"Rank: %i/%i", rank, allranks);
-			DrawPanelText(panel,buffer);
-			Format(buffer,sizeof(buffer),"Points Gained: %.1f", pts);
-			DrawPanelText(panel,buffer);
-			Format(buffer,sizeof(buffer),"Date: %s (Moscow)", date);
-			DrawPanelText(panel,buffer);
-			Format(buffer,sizeof(buffer),"Server: %s", server_name[NAME_LONG][s_id] );
-			DrawPanelText(panel,buffer);
-
-			DrawPanelText(panel," ");
-			DrawPanelItem(panel,"Open Player Menu");
-			if (run == 0)
-			{
-				DrawPanelItem(panel, checkpoints);
-			}
-			panel.CurrentKey = 3;
-			DrawPanelItem(panel, "Find Demo");
-			DrawPanelText(panel," ");
-
-			if (GetUserFlagBits(client) & ADMFLAG_ROOT)
-			{
-				panel.CurrentKey = 4;
-				DrawPanelItem(panel, "Remove Record");
-				DrawPanelText(panel," ");
-			}
-
-			panel.CurrentKey = 8;
-			DrawPanelItem(panel,"[<<]");
-			DrawPanelText(panel," ");
-			panel.CurrentKey = 10;
-			DrawPanelItem(panel,"[X]");
-
-			Func = DB_RecordInfo;
-
-			SendPanelToClient(panel, client, record_control, MENU_TIME_FOREVER);
-		}
+		SendPanelToClient(panel, client, record_control, MENU_TIME_FOREVER);
+	}
 }
 
 public int record_control(Menu mMenu, MenuAction action, int client, int item) {
@@ -629,8 +639,7 @@ public int record_control(Menu mMenu, MenuAction action, int client, int item) {
 
 		}
 		else if(item == 8) {
-			//Back to top times
-			DB_PrintRecords0( client, RunPagep[client], RunClass[client] );
+			CallPrevMenu(client);
 		}
 	}
 }
@@ -640,7 +649,7 @@ public int Handler_RunRecordsDelete2_Confirmation( Menu mMenu, MenuAction action
 	if ( action == MenuAction_End ) { delete mMenu; return 0; }
 	if ( action != MenuAction_Select ) { return 0; }	
 				
-	if ( index != 0 ) { return 0; }
+	if ( index != 0 ) {DB_RecordInfo(iclient, DemoInfoId[iclient]); return 0; }
 
 	DB_DeleteRecord( iclient, profile_run[iclient], profile_mode[iclient], db_id[iclient], profile_map[iclient] );
 }
@@ -662,126 +671,126 @@ int server_id_database[MAXPLAYERS+1];
 
 public void Threaded_DemoInfo( Database hOwner, DBResultSet hQuery, const char[] szError, int client )
 {
-		if ( hQuery == null )
+	if ( hQuery == null )
+	{
+		DB_LogError( "Couldn't retrieve player's ranking!" );
+	
+		return;
+	}
+
+	// Has anybody even beaten the map in the first place?
+	if ( hQuery.FetchRow() )
+	{
+		hQuery.FetchString( 0, DemoUrlClient[client], sizeof(DemoUrlClient));
+		int start = hQuery.FetchInt( 1 );
+		int end = hQuery.FetchInt( 2 );
+		server_id_database[client] = hQuery.FetchInt( 3 );
+		int demo = hQuery.FetchInt( 4 );
+		bool not_exist = false;
+		Panel panel = new Panel();
+		char buffer[64], status[50], path[PLATFORM_MAX_PATH];
+
+		BuildPath(Path_SM, path, sizeof(path), "recordings/bz2/%s", DemoUrlClient[client]);
+
+		if (StrEqual(DemoUrlClient[client], ""))
 		{
-			DB_LogError( "Couldn't retrieve player's ranking!" );
-		
-			return;
+			not_exist = true;
+			FormatEx(status, sizeof(status), "Not exist");
+		}
+		else
+		{
+			FormatEx(status, sizeof(status), "%s", g_szDemoStatus[demo]);
 		}
 
-		// Has anybody even beaten the map in the first place?
-		if ( hQuery.FetchRow() )
+		DrawPanelText(panel,"<Demo Info>");
+
+		if (!not_exist)
 		{
-			hQuery.FetchString( 0, DemoUrlClient[client], sizeof(DemoUrlClient));
-			int start = hQuery.FetchInt( 1 );
-			int end = hQuery.FetchInt( 2 );
-			server_id_database[client] = hQuery.FetchInt( 3 );
-			int demo = hQuery.FetchInt( 4 );
-			bool not_exist = false;
-			Panel panel = new Panel();
-			char buffer[64], status[50], path[PLATFORM_MAX_PATH];
-
-			BuildPath(Path_SM, path, sizeof(path), "recordings/bz2/%s", DemoUrlClient[client]);
-
-			if (StrEqual(DemoUrlClient[client], ""))
-			{
-				not_exist = true;
-				FormatEx(status, sizeof(status), "Not exist");
-			}
-			else
-			{
-				FormatEx(status, sizeof(status), "%s", g_szDemoStatus[demo]);
-			}
-
-			DrawPanelText(panel,"<Demo Info>");
-
-			if (!not_exist)
-			{
-				Format(buffer,sizeof(buffer),"Demo: %s", DemoUrlClient[client]);
-				DrawPanelText(panel,buffer);
-			}
-			Format(buffer,sizeof(buffer),"Server: %s", server_name[NAME_LONG][server_id_database[client]]);
+			Format(buffer,sizeof(buffer),"Demo: %s", DemoUrlClient[client]);
 			DrawPanelText(panel,buffer);
-			if (!not_exist)
-			{
-				Format(buffer,sizeof(buffer),"Start tick: %i", start);
-				DrawPanelText(panel,buffer);
-				Format(buffer,sizeof(buffer),"End tick: %i", end);
-				DrawPanelText(panel,buffer);
-			}
-
-			Format(buffer,sizeof(buffer)," (Go to %s for Upload the demo)", server_name[NAME_SHORT][server_id_database[client]]);
-			Format(buffer,sizeof(buffer),"Status: %s%s", status, (server_id_database[client] != server_id && !not_exist && (demo == DEMO_READY || demo == DEMO_ERROR)) ? buffer : "" );
+		}
+		Format(buffer,sizeof(buffer),"Server: %s", server_name[NAME_LONG][server_id_database[client]]);
+		DrawPanelText(panel,buffer);
+		if (!not_exist)
+		{
+			Format(buffer,sizeof(buffer),"Start tick: %i", start);
 			DrawPanelText(panel,buffer);
+			Format(buffer,sizeof(buffer),"End tick: %i", end);
+			DrawPanelText(panel,buffer);
+		}
 
+		Format(buffer,sizeof(buffer)," (Go to %s for Upload the demo)", server_name[NAME_SHORT][server_id_database[client]]);
+		Format(buffer,sizeof(buffer),"Status: %s%s", status, (server_id_database[client] != server_id && !not_exist && (demo == DEMO_READY || demo == DEMO_ERROR)) ? buffer : "" );
+		DrawPanelText(panel,buffer);
+
+		DrawPanelText(panel," ");
+		if (demo == DEMO_UPLOADED)
+		{
+			DrawPanelItem(panel,"Print link");
+		}
+		DrawPanelText(panel," ");
+
+		if (demo == DEMO_UPLOADING || demo == DEMO_READY || demo == DEMO_RECORDING)
+		{
+			panel.CurrentKey = 2;
+			DrawPanelItem(panel,"Refresh");
 			DrawPanelText(panel," ");
-			if (demo == DEMO_UPLOADED)
-			{
-				DrawPanelItem(panel,"Print link");
-			}
-			DrawPanelText(panel," ");
+		}
+		char demosz[150];
+		strcopy(demosz, sizeof(demosz), DemoUrlClient[client]);
+		ReplaceString(demosz, sizeof(demosz), ".bz2", "");
 
-			if (demo == DEMO_UPLOADING || demo == DEMO_READY || demo == DEMO_RECORDING)
-			{
-				panel.CurrentKey = 2;
-				DrawPanelItem(panel,"Refresh");
-				DrawPanelText(panel," ");
-			}
-			char demosz[150];
-			strcopy(demosz, sizeof(demosz), DemoUrlClient[client]);
-			ReplaceString(demosz, sizeof(demosz), ".bz2", "");
-
-			if (!StrEqual(currentDemoFilename, demosz) && (demo == DEMO_RECORDING || demo == DEMO_ERROR)  && server_id_database[client] == server_id)
-			{
-				panel.CurrentKey = 4;
-				char way[PLATFORM_MAX_PATH];
-				BuildPath(Path_SM, way, sizeof(way), "recordings/%s", demosz);
+		if (!StrEqual(currentDemoFilename, demosz) && (demo == DEMO_RECORDING || demo == DEMO_ERROR)  && server_id_database[client] == server_id)
+		{
+			panel.CurrentKey = 4;
+			char way[PLATFORM_MAX_PATH];
+			BuildPath(Path_SM, way, sizeof(way), "recordings/%s", demosz);
+			if (FileExists(way))
+				DrawPanelItem(panel,"Retry Upload");
+			else{
+				BuildPath(Path_SM, way, sizeof(way), "recordings/bz2/%s.bz2", demosz);
 				if (FileExists(way))
-					DrawPanelItem(panel,"Retry Upload");
-				else{
-					BuildPath(Path_SM, way, sizeof(way), "recordings/bz2/%s.bz2", demosz);
-					if (FileExists(way))
-					{
-						panel.CurrentKey = 6;
-						DrawPanelItem(panel,"Retry Upload");
-					}
-					else
-					{
-						DrawPanelItem(panel,"Retry Upload (File does not exist)", ITEMDRAW_DISABLED);
-					}
-				}
-					
-				DrawPanelText(panel," ");
-			}
-			if (GetUserFlagBits(client) & ADMFLAG_ROOT)
-			{
-				if (demo == DEMO_READY && FileExists(path))
 				{
-					panel.CurrentKey = 3;
-					DrawPanelItem(panel,"Upload demo");
-
-					DrawPanelText(panel," ");
-
-					panel.CurrentKey = 5;
-					DrawPanelItem(panel,"Delete demo\n ");
-
+					panel.CurrentKey = 6;
+					DrawPanelItem(panel,"Retry Upload");
+				}
+				else
+				{
+					DrawPanelItem(panel,"Retry Upload (File does not exist)", ITEMDRAW_DISABLED);
 				}
 			}
-
-			panel.CurrentKey = 8;
-			DrawPanelItem(panel,"[<<]");
+				
 			DrawPanelText(panel," ");
-			panel.CurrentKey = 10;
-			DrawPanelItem(panel,"[X]");
-
-			SendPanelToClient(panel, client, demo_control, MENU_TIME_FOREVER);
 		}
+		if (GetUserFlagBits(client) & ADMFLAG_ROOT)
+		{
+			if (demo == DEMO_READY && FileExists(path))
+			{
+				panel.CurrentKey = 3;
+				DrawPanelItem(panel,"Upload demo");
+
+				DrawPanelText(panel," ");
+
+				panel.CurrentKey = 5;
+				DrawPanelItem(panel,"Delete demo\n ");
+
+			}
+		}
+
+		panel.CurrentKey = 8;
+		DrawPanelItem(panel,"[<<]");
+		DrawPanelText(panel," ");
+		panel.CurrentKey = 10;
+		DrawPanelItem(panel,"[X]");
+
+		SendPanelToClient(panel, client, demo_control, MENU_TIME_FOREVER);
+	}
 }
 
 public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
 		if(item == 1) {
-			CPrintToChat(client, CHAT_PREFIX... "{orange}http://54.219.84.106/demos/server_%i/%s", server_id_database[client], DemoUrlClient[client]);
+			CPrintToChat(client, CHAT_PREFIX... "{orange}http://game339233.ourserver.ru/demos/server_%i/%s", server_id_database[client], DemoUrlClient[client]);
 			DemoInfo(client, DemoInfoId[client] );
 		}
 		else if (item == 2)
@@ -846,7 +855,6 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 			DemoInfo(client, DemoInfoId[client] );
 		}
 		else if(item == 8) {
-			//Back to top times
 			Call_StartFunction(INVALID_HANDLE, Func);
 		    Call_PushCell(client);
 		    Call_PushCell(DemoInfoId[client]);

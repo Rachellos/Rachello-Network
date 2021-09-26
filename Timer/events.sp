@@ -281,6 +281,7 @@ public void Event_StartTouchPost_Block( int trigger, int ent )
 	
 	static int zone;
 	zone = GetTriggerIndex( trigger );
+	EnteredZone[ent] = zone;
 	
 	PRINTCHAT( ent, CHAT_PREFIX..."You are not allowed to go there!" );
 		
@@ -297,7 +298,8 @@ public void Event_StartTouchPost_NextCours( int trigger, int ent )
 	
 	static int zone;
 	zone = GetTriggerIndex( trigger );
-	
+	EnteredZone[ent] = zone;
+
 	if (g_iClientRun[ent]+1 < NUM_RUNS && RUN_COURSE1 < g_iClientRun[ent]+1 <= RUN_COURSE10 && g_bIsLoaded[g_iClientRun[ent]+1])
 		TeleportEntity( ent, g_vecSpawnPos[g_iClientRun[ent]+1], g_vecSpawnAngles[g_iClientRun[ent]+1], g_vecNull );
 	else
@@ -316,6 +318,7 @@ public void Event_StartTouchPost_Skip( int trigger, int ent )
 	
 	static int zone;
 	zone = GetTriggerIndex( trigger );
+	EnteredZone[ent] = zone;
 	
 	TeleportEntity( ent, g_vecSkipPos, g_vecSkipAngles, g_vecNull );
 }
@@ -323,6 +326,8 @@ public void Event_StartTouchPost_Skip( int trigger, int ent )
 public void Event_StartTouchPost_CheckPoint( int trigger, int ent )
 {
 	if ( ent < 1 || ent > MaxClients ) return;
+
+	EnteredZone[ent] = ZONE_CP;
 	
 	// I'm not even going to try get practising to work. It'll just be a major headache and nobody will notice it, anyway.
 	if ( g_bClientPractising[ent] ) return;

@@ -25,7 +25,7 @@
 #include <socket>
 #undef REQUIRE_PLUGIN
 #include <updater>
-#define UPDATE_URL    "http://website.com/myplugin/updatefile.txt"
+#define UPDATE_URL    "https://raw.githubusercontent.com/Rachellos/rachellos-tempus/master/Timer-Updater.txt"
 #include <tEasyFTP>
 #include <unixtime_sourcemod>
 
@@ -147,6 +147,8 @@ Handle CVAR_ServerTag;
 Handle CVAR_SendMessageTag;
 Handle CVAR_AdminFlag;
 Handle CVAR_MsgFormat;
+
+Menu PrevMenu[MAXPLAYERS+1][10];
 
 int gagState[MAXPLAYERS+1];
 
@@ -967,11 +969,6 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 
 public void OnPluginStart()
 {
-	if (LibraryExists("updater"))
-    {
-        Updater_AddPlugin(UPDATE_URL);
-    }
-
 	Handle pIterator = GetPluginIterator();
 	hPlugin = ReadPlugin(pIterator);
 	CloseHandle(pIterator);
@@ -1238,11 +1235,30 @@ public void OnPluginStart()
 	DB_InitializeDatabase();
 }
 
-public void OnLibraryAdded(const char[] name)
+public void OnAllPluginsLoaded()
 {
-    if (StrEqual(name, "updater"))
+    if (LibraryExists("updater"))
     {
         Updater_AddPlugin(UPDATE_URL);
+    }
+	g_ripext_loaded = LibraryExists("ripext");
+    RegServerCmd("sm_plugins_update", cmdPluginUpdate);
+}
+
+public Action cmdPluginUpdate(int args)
+{
+    if (LibraryExists("updater"))
+    {
+        Updater_ForceUpdate();
+    }
+}
+
+public int Updater_OnPluginUpdated()
+{
+
+    if (LibraryExists("updater"))
+    {
+        ReloadPlugin();
     }
 }
 
@@ -1348,7 +1364,9 @@ public void OnMapStart()
 			for (int d = 0; d < NUM_MODES; d++)
 				szOldTimePts[i][j][d] = TIME_INVALID;
 
-		TimerEye[i] = null;		
+		TimerEye[i] = null;	
+
+		RemoveAllPrevMenus(i);
 	}
 
 secure = false;
@@ -1419,7 +1437,7 @@ while ((iCP = FindEntityByClassname(iCP, "trigger_capture_area")) != -1)
 	for ( int run = 0; run < NUM_RUNS; run++ )
 		for ( int mode = 0; mode < NUM_MODES; mode++ )
 		{
-			g_Tiers[run][mode] = 0;
+			g_Tiers[run][mode] = -1;
 			szClass[run][mode] = 0;
 			g_CustomRespawnAng[run][0] = 0.0;
 			g_CustomRespawnAng[run][1] = 0.0;
@@ -1454,7 +1472,7 @@ while ((iCP = FindEntityByClassname(iCP, "trigger_capture_area")) != -1)
 
 	for ( i = 0; i < NUM_REALZONES; i++ )
 	{
-		for ( int b = 0; b < 10; b++ )
+		for ( int b = 0; b < 30; b++ )
 			g_bZoneExists[i][b] = false;
 	}
 
@@ -2092,6 +2110,7 @@ public void OnClientDisconnect( int client )
 
 	DB_SaveClientData(client);
 
+	RemoveAllPrevMenus(client);
 	
 
 	// Id can be 0 if quitting before getting authorized.
@@ -2123,24 +2142,37 @@ public void DB_Completions( int client, int uid, int style )
 public void DB_TopTimes( int client, int style )
 {
 	char szQuery[192];
-	Menu mMenu;
-	mMenu = new Menu( Handler_TopTimes );
-	mMenu.SetTitle("Top Times :: %s\nPlayer: %s\n ", g_szStyleName[NAME_LONG][style], DBS_Name[client] );
 
-	FormatEx( szQuery, sizeof( szQuery ), "SELECT map, style, run, `rank` FROM "...TABLE_RECORDS..." WHERE uid = %i AND style = %i AND `rank` > 1 AND `rank` < 11",
+	Transaction t = new Transaction();
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT %i", style);
+	t.AddQuery(szQuery);
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT map, style, run, `rank` FROM "...TABLE_RECORDS..." WHERE uid = %i AND style = %i AND `rank` > 1 AND `rank` < 11",
 	db_id[client],
 	style );
-	DBResultSet base = SQL_Query( g_hDatabase, szQuery );
+	t.AddQuery(szQuery);
+	g_hDatabase.Execute(t, Threaded_TopTimes, _, client);
+}
+
+public void Threaded_TopTimes(Database g_hDatabase, any client, int numQueries, DBResultSet[] results, any[] queryData)
+{
+	Menu mMenu;
+	mMenu = new Menu( Handler_TopTimes );
+
 	char map[32], info[50];
 	int run, rank, count=0, num=0;
+	
+	results[0].FetchRow();
+	int style = results[0].FetchInt(0);
 
-	while (base.FetchRow())
+	mMenu.SetTitle("<Top Times> :: %s\nPlayer: %s\n ", g_szStyleName[NAME_LONG][style], DBS_Name[client] );
+
+	while (results[1].FetchRow())
 	{
 		num++;
 		count++;
-		base.FetchString( 0, map, sizeof(map));
-		run = base.FetchInt(2);
-		rank = base.FetchInt(3);
+		results[1].FetchString( 0, map, sizeof(map));
+		run = results[1].FetchInt(2);
+		rank = results[1].FetchInt(3);
 		if (count != 6)
 		{
 			FormatEx(info, sizeof(info), "%s [#%i] [%s]", map, rank, g_szRunName[NAME_SHORT][run]);
@@ -2148,8 +2180,7 @@ public void DB_TopTimes( int client, int style )
 		}
 
 		if (count == 6)
-		{
-					
+		{	
 			FormatEx(info, sizeof(info), "%s [#%i] [%s]\n ", map, rank, g_szRunName[NAME_SHORT][run]);
 			mMenu.AddItem("", info, ITEMDRAW_DISABLED);
 
@@ -2195,9 +2226,9 @@ public void DB_TopTimes( int client, int style )
 			mMenu.AddItem("b", "[Demoman]", ITEMDRAW_CONTROL);
 		}
 	}	
-	mMenu.ExitBackButton = true;
+	mMenu.ExitBackButton = (GetLastPrevMenuIndex(client) != -1) ? true : false;
+	SetNewPrevMenu(client, mMenu);
 	mMenu.Display( client, MENU_TIME_FOREVER );
-	delete base;
 }
 
 public int Handler_TopTimes( Menu mMenu, MenuAction action, int client, int item )
@@ -2207,9 +2238,8 @@ public int Handler_TopTimes( Menu mMenu, MenuAction action, int client, int item
 	{
 	    if (item == MenuCancel_ExitBack)
 		{
-			int args;
-		   	DB_Profile( client, args, 1, DBS_Name[client], 0 );
-		   	delete mMenu;
+			RemoveLastPrevMenu(client);
+			CallPrevMenu(client);
 			return 0;
 	    }
 	}
@@ -2220,10 +2250,12 @@ public int Handler_TopTimes( Menu mMenu, MenuAction action, int client, int item
 		GetMenuItem( mMenu, item, szId, sizeof( szId ) );
 		if (StrEqual(szId, "a"))
 		{
+			RemoveLastPrevMenu(client);
 			DB_TopTimes(client, STYLE_DEMOMAN);
 		}
 		if (StrEqual(szId, "b"))
 		{
+			RemoveLastPrevMenu(client);
 			DB_TopTimes(client, STYLE_SOLLY);
 		}
 	}
@@ -2233,23 +2265,37 @@ public int Handler_TopTimes( Menu mMenu, MenuAction action, int client, int item
 public void DB_RecTimes( int client, int style )
 {
 	char szQuery[192];
-	Menu mMenu;
-	mMenu = new Menu( Handler_RecTimes );
-	mMenu.SetTitle("World Records :: %s\nPlayer: %s\n ", g_szStyleName[NAME_LONG][style], DBS_Name[client] );
 
-	FormatEx( szQuery, sizeof( szQuery ), "SELECT map, style, run FROM "...TABLE_RECORDS..." WHERE uid = %i AND style = %i AND `rank` = 1",
+	Transaction t = new Transaction();
+
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT %i", style);
+	t.AddQuery(szQuery);
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT map, run FROM "...TABLE_RECORDS..." WHERE uid = %i AND style = %i AND `rank` = 1",
 	db_id[client],
 	style );
-	DBResultSet base = SQL_Query( g_hDatabase, szQuery );
+	t.AddQuery(szQuery);
+	g_hDatabase.Execute(t, Threaded_WorldRecords, _, client);
+}
+
+public void Threaded_WorldRecords(Database g_hDatabase, any client, int numQueries, DBResultSet[] results, any[] queryData)
+{
+	Menu mMenu;
+	mMenu = new Menu( Handler_RecTimes );
 	char map[32], info[50];
-	int run, count = 0;
-	if (base.RowCount)
+	int run, style, count = 0;
+
+	results[0].FetchRow();
+	style = results[0].FetchInt(0);
+
+	mMenu.SetTitle("<World Records> :: %s\nPlayer: %s\n ", g_szStyleName[NAME_LONG][style], DBS_Name[client] );
+
+	if (results[1].RowCount)
 	{
-		while (base.FetchRow())
+		while (results[1].FetchRow())
 		{
 			count++;
-			base.FetchString( 0, map, sizeof(map));
-			run = base.FetchInt(2);
+			results[1].FetchString( 0, map, sizeof(map));
+			run = results[1].FetchInt(1);
 			if (count != 6)
 			{
 				FormatEx(info, sizeof(info), "%s [%s]", map, g_szRunName[NAME_SHORT][run]);
@@ -2304,9 +2350,9 @@ public void DB_RecTimes( int client, int style )
 			mMenu.AddItem("b", "[Demoman]");
 		}
 	}
-	mMenu.ExitBackButton = true;
+	mMenu.ExitBackButton = (GetLastPrevMenuIndex(client) != -1) ? true : false;
+	SetNewPrevMenu(client,mMenu);
 	mMenu.Display( client, MENU_TIME_FOREVER );
-	delete base;
 }
 
 public int Handler_RecTimes( Menu mMenu, MenuAction action, int client, int item )
@@ -2316,9 +2362,8 @@ public int Handler_RecTimes( Menu mMenu, MenuAction action, int client, int item
 	{
 	    if (item == MenuCancel_ExitBack)
 		{
-			int args;
-		   	DB_Profile( client, args, 1, DBS_Name[client], 0 ); 
-			return 0;
+			RemoveLastPrevMenu(client);
+			CallPrevMenu(client);
 	    }
 	}
 	if ( action != MenuAction_Select ) { return 0; }
@@ -2328,10 +2373,12 @@ public int Handler_RecTimes( Menu mMenu, MenuAction action, int client, int item
 		GetMenuItem( mMenu, item, szId, sizeof( szId ) );
 		if (StrEqual(szId, "a"))
 		{
+			RemoveLastPrevMenu(client);
 			DB_RecTimes(client, STYLE_DEMOMAN);
 		}
 		if (StrEqual(szId, "b"))
 		{
+			RemoveLastPrevMenu(client);
 			DB_RecTimes(client, STYLE_SOLLY);
 		}
 	}
@@ -2872,14 +2919,27 @@ stock void SetPrCpTime( int index, int mode, float flTime, int client  )
 
 stock void DeleteZoneBeams( int zone, int id = 0, int index = 0 )
 {
-	int len = g_hBeams.Length;
-
-	for ( int i = 0; i < len; i++ )
+	for ( int i = 0; i < GetArraySize(g_hBeams); i++ )
+	{
 		if ( g_hBeams.Get( i, view_as<int>( BEAM_TYPE ) ) == zone && g_hBeams.Get( i, view_as<int>( BEAM_ID ) ) == id && g_hBeams.Get( i, view_as<int>( BEAM_INDEX ) ) == index )
 		{
 			g_hBeams.Erase( i );
+			break;
+		}
+	}
+	
+	int ent = 0;
+	for (int i=0; i < GetArraySize(g_hZones); i++)
+	{
+		if ( g_hZones.Get( i, view_as<int>( ZONE_TYPE ) ) == zone
+			&& g_hZones.Get( i, view_as<int>( ZONE_ID ) ) == index )
+		{
+			ent = g_hZones.Get( i, view_as<int>( ZONE_ENT ) );
+			SDKUnhook( ent, SDKHook_TouchPost, Event_Touch_Zone );
+			SDKUnhook( ent, SDKHook_EndTouch, Event_EndTouchPost_Zone );
 			return;
 		}
+	}
 
 	LogError( CONSOLE_PREFIX..."Failed to remove zone beams!" );
 }
@@ -3170,7 +3230,6 @@ stock void DoRecordNotification( int client, char szName[MAX_NAME_LENGTH], int r
 			szName,
 			g_szRunName[NAME_LONG][run],
 			szFormTime );
-			requested = true;
 
 			if (RUN_COURSE1 <= run <= RUN_COURSE10)
 			{
@@ -3243,7 +3302,6 @@ stock void DoRecordNotification( int client, char szName[MAX_NAME_LENGTH], int r
 		}
 		else
 		{
-			requested = true;
 			Format(update_records, sizeof(update_records), "%supdate_records", socket_key);
 			if(isMasterServer)
 				SendToAllClients(update_records, sizeof(update_records), INVALID_HANDLE);

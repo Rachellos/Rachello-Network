@@ -972,7 +972,7 @@ public int Recent_records_handler( Menu mMenu, MenuAction action, int client, in
 	}
 	if (item == 3)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` > 1 and `rank` <= 10 and run >= %i and run <= %i order by date desc limit 100", RUN_COURSE1, RUN_COURSE10);
+		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` >= 2 and `rank` <= 10 and run >= %i and run <= %i order by date desc limit 100", RUN_COURSE1, RUN_COURSE10);
 		g_hDatabase.Query(RecentRecords_Course_Tt_Callback, query, GetClientUserId( client ));
 	}
 	if (item == 4)
@@ -982,7 +982,7 @@ public int Recent_records_handler( Menu mMenu, MenuAction action, int client, in
 	}
 	if (item == 5)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` > 1 and `rank` <= 10 and run >= %i and run <= %i order by date desc limit 100", RUN_BONUS1, RUN_BONUS10);
+		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` >= 2 and `rank` <= 10 and run >= %i and run <= %i order by date desc limit 100", RUN_BONUS1, RUN_BONUS10);
 		g_hDatabase.Query(RecentRecords_Bonus_Tt_Callback, query, GetClientUserId( client ));
 	}
 	return 0;
@@ -994,7 +994,7 @@ public void RecentRecords_Map_Wr_Callback( Database hOwner, DBResultSet hQuery, 
 	
 	if ( hQuery == null )
 	{
-		DB_LogError( "Couldn't retrieve player data!" );
+		DB_LogError( szError );
 		
 		return;
 	}
@@ -1026,6 +1026,7 @@ public void RecentRecords_Map_Wr_Callback( Database hOwner, DBResultSet hQuery, 
 			mMenu.AddItem(recordid, buffer);
 		}
 		mMenu.ExitBackButton = true;
+		SetNewPrevMenu(client, mMenu);
 		mMenu.Display(client, MENU_TIME_FOREVER);
 	}
 	delete hQuery;
@@ -1037,7 +1038,7 @@ public void RecentRecords_Map_Tt_Callback( Database hOwner, DBResultSet hQuery, 
 	
 	if ( hQuery == null )
 	{
-		DB_LogError( "Couldn't retrieve player data!" );
+		DB_LogError( szError );
 		
 		return;
 	}
@@ -1070,6 +1071,7 @@ public void RecentRecords_Map_Tt_Callback( Database hOwner, DBResultSet hQuery, 
 			mMenu.AddItem(recordid, buffer);
 		}
 		mMenu.ExitBackButton = true;
+		SetNewPrevMenu(client, mMenu);
 		mMenu.Display(client, MENU_TIME_FOREVER);
 	}
 	delete hQuery;
@@ -1081,7 +1083,7 @@ public void RecentRecords_Course_Wr_Callback( Database hOwner, DBResultSet hQuer
 	
 	if ( hQuery == null )
 	{
-		DB_LogError( "Couldn't retrieve player data!" );
+		DB_LogError( szError );
 		
 		return;
 	}
@@ -1114,6 +1116,7 @@ public void RecentRecords_Course_Wr_Callback( Database hOwner, DBResultSet hQuer
 			mMenu.AddItem(recordid, buffer);
 		}
 		mMenu.ExitBackButton = true;
+		SetNewPrevMenu(client, mMenu);
 		mMenu.Display(client, MENU_TIME_FOREVER);
 	}
 	delete hQuery;
@@ -1125,7 +1128,7 @@ public void RecentRecords_Course_Tt_Callback( Database hOwner, DBResultSet hQuer
 	
 	if ( hQuery == null )
 	{
-		DB_LogError( "Couldn't retrieve player data!" );
+		DB_LogError( szError );
 		
 		return;
 	}
@@ -1159,6 +1162,7 @@ public void RecentRecords_Course_Tt_Callback( Database hOwner, DBResultSet hQuer
 			mMenu.AddItem(recordid, buffer);
 		}
 		mMenu.ExitBackButton = true;
+		SetNewPrevMenu(client, mMenu);
 		mMenu.Display(client, MENU_TIME_FOREVER);
 	}
 	delete hQuery;
@@ -1170,7 +1174,7 @@ public void RecentRecords_Bonus_Wr_Callback( Database hOwner, DBResultSet hQuery
 	
 	if ( hQuery == null )
 	{
-		DB_LogError( "Couldn't retrieve player data!" );
+		DB_LogError( szError );
 		
 		return;
 	}
@@ -1203,6 +1207,7 @@ public void RecentRecords_Bonus_Wr_Callback( Database hOwner, DBResultSet hQuery
 			mMenu.AddItem(recordid, buffer);
 		}
 		mMenu.ExitBackButton = true;
+		SetNewPrevMenu(client, mMenu);
 		mMenu.Display(client, MENU_TIME_FOREVER);
 	}
 	delete hQuery;
@@ -1214,7 +1219,7 @@ public void RecentRecords_Bonus_Tt_Callback( Database hOwner, DBResultSet hQuery
 	
 	if ( hQuery == null )
 	{
-		DB_LogError( "Couldn't retrieve player data!" );
+		DB_LogError( szError );
 		
 		return;
 	}
@@ -1248,6 +1253,7 @@ public void RecentRecords_Bonus_Tt_Callback( Database hOwner, DBResultSet hQuery
 			mMenu.AddItem(recordid, buffer);
 		}
 		mMenu.ExitBackButton = true;
+		SetNewPrevMenu(client, mMenu);
 		mMenu.Display(client, MENU_TIME_FOREVER);
 	}
 	delete hQuery;
@@ -1535,6 +1541,7 @@ public void Threaded_ResentBrokenRecords(Database g_hDatabase, any client, int n
 		}
 	}
 	mMenu.SetTitle("<Recently Lost Jump Records>\nPlayer: %s\n ", my_name);
+	SetNewPrevMenu(client, mMenu);
 	mMenu.Display(client, MENU_TIME_FOREVER);
 }
 
@@ -2307,8 +2314,6 @@ public Action Command_RecordsMenuPoints( int client, int args )
 	
 	if ( IsSpammingCommand( client ) ) return Plugin_Handled;
 
-	
-	
 	DB_PrintPoints( client, args, 0 );
 	
 	return Plugin_Handled;
@@ -2347,6 +2352,7 @@ public Action Command_Profile( int client, int args )
 	
 	if ( IsSpammingCommand( client ) ) return Plugin_Handled;
 	
+	RemoveAllPrevMenus(client);
 	char szTarget[32];
 	GetCmdArgString( szTarget, sizeof( szTarget ) );
 	int target = FindTarget( client, szTarget, true, false );
@@ -2354,17 +2360,17 @@ public Action Command_Profile( int client, int args )
 	if ( args == 0 )
 	{
 		GetClientName(client, Name, sizeof( Name ) );
-		DB_Profile( client, args, 0, Name, g_iClientId[client] );
+		DB_Profile( client, args, 0, Name, g_iClientId[client], g_iClientMode[client] );
 		return Plugin_Handled;
 	}
 	if ( target != -1 )
 	{
-		DB_Profile( client, args, 0, Name, g_iClientId[target] );
+		DB_Profile( client, args, 0, Name, g_iClientId[target], g_iClientMode[client] );
 		return Plugin_Handled;
 	}
 	else
 	{
-		DB_Profile( client, args, 1, szTarget, 0 );
+		DB_Profile( client, args, 1, szTarget, 0, g_iClientMode[client] );
 		return Plugin_Handled;
 	}
 }
@@ -2386,8 +2392,8 @@ public Action Command_RecordsPrint( int client, int args )
 	}
 
 	FormatEx(db_map[client], sizeof( db_map ), "%s", (args == 0) ? g_szCurrentMap : displayName );
-	FormatEx(szQuery, sizeof( szQuery ), "SELECT run FROM map_info WHERE map_name = '%s' AND run > 0", (args == 0) ? g_szCurrentMap : displayName );
-	g_hDatabase.Query( NormalTop, szQuery, client, DBPrio_Normal );
+	FormatEx(szQuery, sizeof( szQuery ), "SELECT run FROM map_info WHERE map_name = '%s'", (args == 0) ? g_szCurrentMap : displayName );
+	g_hDatabase.Query( NormalTop, szQuery, client );
 	return Plugin_Handled;
 }
 
@@ -3144,11 +3150,14 @@ public void NormalTop( Database hOwner, DBResultSet hQuery, const char[] szError
 			char run_name[50];
 			char run[32];
 			bool courses = false;
-			mMenu.AddItem( "0", "Map Run\n " );
 			while ( hQuery.FetchRow())
 			{
 				index = hQuery.FetchInt( 0 );
-				if (index == 0)	continue;
+				if (index == 0)
+				{
+					mMenu.AddItem( "0", "Map Run\n " );
+					continue;
+				}
 
 				if (index < RUN_BONUS1)
 				{
@@ -3395,7 +3404,7 @@ public Action SWr( int client, int args)
 		GetCmdArg(1, map, sizeof(map));
 		if (GetMapDisplayName(map, displayName, sizeof(displayName)))
 		{
-			g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT (SELECT name FROM plydata where plydata.uid = maprecs.uid), time, map from maprecs where map = '%s' and run = 0 and mode = 1 order by time ASC", displayName);
+			g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT name, time, map from maprecs natural join plydata where map = '%s' and run = 0 and mode = 1 order by time ASC", displayName);
 		}
 		else 
 		{
@@ -3405,7 +3414,7 @@ public Action SWr( int client, int args)
 	}
 	else
 	{
-		g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT (SELECT name FROM plydata where plydata.uid = maprecs.uid), time, map from maprecs where map = '%s' and run = 0 and mode = 1 order by time ASC", g_szCurrentMap);
+		g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT name, time, map from maprecs natural join plydata where map = '%s' and run = 0 and mode = 1 order by time ASC", g_szCurrentMap);
 	}
 	g_hDatabase.Query( Threaded_SWr, szQuery, client, DBPrio_Normal );
 }
@@ -3464,7 +3473,7 @@ public Action ORank( int client, int args)
 			g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT name, orank, (SELECT max(orank) from plydata), (SELECT SUM(pts) from maprecs where uid = plydata.uid) FROM "...TABLE_PLYDATA..." WHERE orank = %i and orank > 0", arg_rank);
 		}
 		else {
-			g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT name, orank, (SELECT max(orank) from plydata), (SELECT SUM(pts) from maprecs where uid = plydata.uid) FROM "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' and orank > 0", arg_name);
+			g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT name, orank, (SELECT max(orank) from plydata), (SELECT SUM(pts) from maprecs where uid = plydata.uid) FROM "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' and orank > 0 order by orank asc", arg_name);
 		}
 	}
 	else
@@ -3519,7 +3528,7 @@ public Action DRank( int client, int args)
 			g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT name, drank, (SELECT max(drank) from plydata), (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = 3) FROM "...TABLE_PLYDATA..." WHERE drank = %i and drank > 0", arg_rank);
 		}
 		else {
-			g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT name, drank, (SELECT max(drank) from plydata), (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = 3) FROM "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' and drank > 0", arg_name);
+			g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT name, drank, (SELECT max(drank) from plydata), (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = 3) FROM "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' and drank > 0 order by drank asc", arg_name);
 		}
 	}
 	else
@@ -3581,7 +3590,7 @@ public Action SRank( int client, int args)
 			g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT name, srank, (SELECT max(srank) from plydata), (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = 1) FROM "...TABLE_PLYDATA..." WHERE srank = %i and srank > 0", arg_rank);
 		}
 		else {
-			g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT name, srank, (SELECT max(srank) from plydata), (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = 1) FROM "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' and srank > 0", arg_name);
+			g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT name, srank, (SELECT max(srank) from plydata), (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = 1) FROM "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' and srank > 0 order by srank asc", arg_name);
 		}
 	}
 	else
@@ -4184,6 +4193,8 @@ public Action Command_Practise_Noclip( int client, int args )
 		SetEntityMoveType( client, MOVETYPE_NOCLIP );
 	}
 	else SetEntityMoveType( client, MOVETYPE_WALK );
+
+	CPrintToChat(client, "Noclip \x0750DCFF%s", (GetEntityMoveType( client ) == MOVETYPE_WALK) ? "OFF" : "ON");
 	
 	return Plugin_Handled;
 }

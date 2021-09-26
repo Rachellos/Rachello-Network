@@ -117,7 +117,9 @@ public Action Command_Admin_ZoneEnd( int client, int args )
 			
 			g_bIsLoaded[i/2] = true;
 			PrintColorChatAll( client, CHAT_PREFIX...""...CLR_TEAM..."%s"...CLR_TEXT..." is now available!", g_szRunName[NAME_LONG][i/2] );
-			SetTier( client );
+			for (int r=0; r < NUM_RUNS; r++)
+				if (g_bIsLoaded[r] && g_Tiers[r][MODE_DEMOMAN] == -1)
+					CPrintToChat(client, CHAT_PREFIX..."No tiers set for the \x0764E664%s {white}(\x0750DCFF/settier{white})", g_szRunName[NAME_LONG][r]);
 		}
 	}
 	

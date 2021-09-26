@@ -436,11 +436,11 @@ public Action Timer_DrawZoneBeams( int client, int args )
 
         if (zone != ZONE_CP)
         {
-            CPrintToChat(client, CHAT_PREFIX..."Drawing \x0750DCFF%i {white}trigger(s) for \x0750DCFF%s!", (indexes > 0) ? indexes : 1, g_szZoneNames[zone]);    
+            CPrintToChat(client, CHAT_PREFIX..."Drawing \x0750DCFF%i {white}trigger%s for \x0750DCFF%s!", indexes, (indexes > 1) ? "s":"", g_szZoneNames[zone]);    
         }
         else
         {
-            CPrintToChat(client, CHAT_PREFIX..."Drawing \x0750DCFF1 {white}trigger(s) for \x0750DCFFCheckpoint %i!", Cp_Id+1);     
+            CPrintToChat(client, CHAT_PREFIX..."Drawing \x0750DCFF1 {white}trigger%s for \x0750DCFFCheckpoint %i!", (Cp_Id > 1) ? "s":"", Cp_Id+1);     
         }
     }
     return Plugin_Continue;

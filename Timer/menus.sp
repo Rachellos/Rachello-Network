@@ -1,3 +1,64 @@
+public int GetNewPrevMenuIndex(int client)
+{
+	for (int i=0; i < 10; i++)
+	{
+		if (PrevMenu[client][i] == null || PrevMenu[client][i] == INVALID_HANDLE)
+			return i;
+	}
+	return 9;
+}
+
+public int GetLastPrevMenuIndex(int client)
+{
+	for (int i=9; i >= 0; i--)
+	{
+		if (PrevMenu[client][i] != null && PrevMenu[client][i] != INVALID_HANDLE)
+			return i;
+	}
+	return -1;
+}
+
+public void SetNewPrevMenu(int client, Menu menu)
+{
+	PrevMenu[client][GetNewPrevMenuIndex(client)] = menu;
+	return;
+}
+
+public void RemoveLastPrevMenu(int client)
+{
+	if (GetLastPrevMenuIndex(client) != -1)
+	{
+		if (PrevMenu[client][GetLastPrevMenuIndex(client)] != null 
+			&& PrevMenu[client][GetLastPrevMenuIndex(client)] != INVALID_HANDLE)
+		{
+			PrevMenu[client][GetLastPrevMenuIndex(client)] = null;
+		}
+	}
+	return;
+}
+
+public void RemoveAllPrevMenus(int client)
+{
+	for (int i = 0; i < 10; i++)
+	{
+		if (PrevMenu[client][i] != null && PrevMenu[client][i] != INVALID_HANDLE)
+		{
+			PrevMenu[client][i] = null;
+		}
+	}
+	return;
+}
+
+public void CallPrevMenu(int client)
+{
+	if (GetLastPrevMenuIndex(client) != -1)
+		if (PrevMenu[client][GetLastPrevMenuIndex(client)] != null 
+			&& PrevMenu[client][GetLastPrevMenuIndex(client)] != INVALID_HANDLE)
+				PrevMenu[client][GetLastPrevMenuIndex(client)].Display(client, MENU_TIME_FOREVER);
+
+	return;
+}
+
 public Action Command_ToggleHUD( int client, int args )
 {
 	if ( client <= 0 ) return Plugin_Handled;
@@ -24,7 +85,6 @@ public Action Command_ToggleHUD( int client, int args )
 
 public void ShowHideMenuGen(int client)
 {
-
 	Menu mMenu = new Menu( Handler_HudGen );
 	
 	mMenu.SetTitle( "<Settings Menu> :: General\n " );
@@ -533,6 +593,7 @@ public int Handler_Completions( Menu mMenu, MenuAction action, int client, int i
 		GetMenuItem( mMenu, item, szItem, sizeof( szItem ) );
 		if ( szItem[0] == 'c' )
 		{
+			RemoveLastPrevMenu(client);
 			DB_Completions(client, db_id[client], (db_style[client] == STYLE_SOLLY) ? STYLE_DEMOMAN : STYLE_SOLLY);
 			return 0;
 		}

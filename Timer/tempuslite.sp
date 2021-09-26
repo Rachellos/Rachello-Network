@@ -792,9 +792,6 @@ public int RecordsMenuHandler(Menu mMenu, MenuAction action, int client, int ite
 	}
 }
 
-public void OnAllPluginsLoaded() {
-	g_ripext_loaded = LibraryExists("ripext");
-}
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	
