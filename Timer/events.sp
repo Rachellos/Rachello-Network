@@ -159,7 +159,7 @@ public void Event_Touch_Zone( int trigger, int client )
 			}
 			else
 			{
-				if (g_iClientRun[client] != RUN_MAIN)
+				if (g_iClientRun[client] != RUN_MAIN && !g_bClientPractising[client] )
 				{
 					EmitSoundToClient( client, g_szSoundsMissCp[0] );
 
