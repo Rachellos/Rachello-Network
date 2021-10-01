@@ -69,12 +69,6 @@ public Action Timer_Ad( Handle hTimer )
     return Plugin_Continue; 
 }
 
-public Action Timer_EmptyQuery( Handle hTimer, int data )
-{
-	g_hDatabase.Query(Threaded_Empty, "Select uid from plydata limit 1");
-	return Plugin_Continue;
-}
-
 // Main component of the HUD timer.
 public void OnGameFrame()
 {

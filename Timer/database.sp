@@ -788,22 +788,23 @@ public void Threaded_DemoInfo( Database hOwner, DBResultSet hQuery, const char[]
 
 public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
+		char query[400];
 		if(item == 1) {
 			CPrintToChat(client, CHAT_PREFIX... "{orange}http://game339233.ourserver.ru/demos/server_%i/%s", server_id_database[client], DemoUrlClient[client]);
 			DemoInfo(client, DemoInfoId[client] );
+			return 0;
 		}
 		else if (item == 2)
 		{
 			DemoInfo(client, DemoInfoId[client] );
+			return 0;
 		}
 		else if (item == 3)
 		{
 			char path[PLATFORM_MAX_PATH];
 			BuildPath(Path_SM, path, sizeof(path), "recordings/bz2/%s", DemoUrlClient[client]);
 			CPrintToChat(client, CHAT_PREFIX..."Uploading %s...", DemoUrlClient[client]);
-			char query[400];
 			g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_UPLOADING, DemoUrlClient[client]);
-			g_hDatabase.Query(Threaded_Empty, query);
 			EasyFTP_UploadFile("demos", path, "/", EasyFTP_CallBack);
 			DemoInfo(client, DemoInfoId[client] );
 		}
@@ -817,9 +818,7 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 			WritePackString(pack, demosz);
 			CreateTimer(0.5, Timer_CompressDemo, pack);
 			CPrintToChat(client, CHAT_PREFIX..."Compression %s...", DemoUrlClient[client]);
-			char query[400];
 			g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_UPLOADING, DemoUrlClient[client]);
-			g_hDatabase.Query(Threaded_Empty, query);
 			DemoInfo(client, DemoInfoId[client] );
 		}
 		else if (item == 5)
@@ -831,15 +830,14 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 			if (DeleteFile(path))
 			{
 				CPrintToChat(client, CHAT_PREFIX..."\x0750DCFFSuccess. {white}Demo {red}Deleted{white}!");
-				char query[400];
 				g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_DELETED, DemoUrlClient[client]);
-				g_hDatabase.Query(Threaded_Empty, query);
 				DemoInfo(client, DemoInfoId[client] );
 			}
 			else
 			{
 				CPrintToChat(client, CHAT_PREFIX..."{red}ERROR. {white}Demo deletion failed");
 				DemoInfo(client, DemoInfoId[client] );
+				return 0;
 			}
 		}
 		else if (item == 6)
@@ -847,9 +845,7 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 			char path[PLATFORM_MAX_PATH];
 			BuildPath(Path_SM, path, sizeof(path), "recordings/bz2/%s", DemoUrlClient[client]);
 			CPrintToChat(client, CHAT_PREFIX..."Uploading %s...", DemoUrlClient[client]);
-			char query[400];
 			g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_UPLOADING, DemoUrlClient[client]);
-			g_hDatabase.Query(Threaded_Empty, query);
 			EasyFTP_UploadFile("demos", path, "/", EasyFTP_CallBack);
 			DemoInfo(client, DemoInfoId[client] );
 		}
@@ -859,7 +855,11 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 		    Call_PushCell(DemoInfoId[client]);
 
 		    Call_Finish();
+			return 0;
 		}
+		SQL_LockDatabase(g_hDatabase);
+		SQL_FastQuery( g_hDatabase, query );
+		SQL_UnlockDatabase(g_hDatabase);
 	}
 }
 
@@ -1106,7 +1106,9 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 				
 				// Update game too.
 				
-				g_hDatabase.Query( Threaded_Empty, szQuery );
+				SQL_LockDatabase(g_hDatabase);
+				SQL_FastQuery( g_hDatabase, szQuery );
+				SQL_UnlockDatabase(g_hDatabase);
 			}
 		}
 	}	
@@ -1136,7 +1138,9 @@ stock bool DB_SaveClientData( int client )
 		szName,
 		szSteam );
 	
-	g_hDatabase.Query( Threaded_Empty, szQuery );
+	SQL_LockDatabase(g_hDatabase);
+	SQL_FastQuery( g_hDatabase, szQuery );
+	SQL_UnlockDatabase(g_hDatabase);
 	
 	return true;
 }
@@ -1199,7 +1203,9 @@ stock void DB_SaveMapZone( int zone, float vecMins[3], float vecMaxs[3], int id 
 			g_bZoneExists[zone][num] = true;
 	}
 	
-	g_hDatabase.Query( Threaded_Empty, szQuery);
+	SQL_LockDatabase(g_hDatabase);
+	SQL_FastQuery( g_hDatabase, szQuery );
+	SQL_UnlockDatabase(g_hDatabase);
 }
 
 stock void DB_EraseMapZone( int zone, int id = 0, int run = 0, int client = 0 )
@@ -1214,7 +1220,9 @@ stock void DB_EraseMapZone( int zone, int id = 0, int run = 0, int client = 0 )
 		g_hDatabase.Format( szQuery, sizeof( szQuery ), "DELETE FROM "...TABLE_ZONES..." WHERE map = '%s' AND zone = %i AND id = %i AND number = 0", g_szCurrentMap, zone, id );
 	}
 	
-	g_hDatabase.Query( Threaded_Empty, szQuery );
+	SQL_LockDatabase(g_hDatabase);
+	SQL_FastQuery( g_hDatabase, szQuery );
+	SQL_UnlockDatabase(g_hDatabase);
 }
 
 stock void DB_EraseRunRecords( int run, int client = 0 )
@@ -1222,7 +1230,9 @@ stock void DB_EraseRunRecords( int run, int client = 0 )
 	char szQuery[128];
 	FormatEx( szQuery, sizeof( szQuery ), "DELETE FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i", g_szCurrentMap, run );
 	
-	g_hDatabase.Query( Threaded_Empty, szQuery, client, DBPrio_Normal );
+	SQL_LockDatabase(g_hDatabase);
+	SQL_FastQuery( g_hDatabase, szQuery );
+	SQL_UnlockDatabase(g_hDatabase);
 }
 
 stock void DB_EraseRunCPRecords( int run, int client = 0 )
@@ -1230,7 +1240,9 @@ stock void DB_EraseRunCPRecords( int run, int client = 0 )
 	char szQuery[128];
 	FormatEx( szQuery, sizeof( szQuery ), "DELETE FROM "...TABLE_CP_RECORDS..." WHERE map = '%s' AND run = %i", g_szCurrentMap, run );
 	
-	g_hDatabase.Query( Threaded_Empty, szQuery, client, DBPrio_Normal );
+	SQL_LockDatabase(g_hDatabase);
+	SQL_FastQuery( g_hDatabase, szQuery );
+	SQL_UnlockDatabase(g_hDatabase);
 }
 
 stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )

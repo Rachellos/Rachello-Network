@@ -6,7 +6,9 @@ public Action Command_Admin_AddSkipLevel( int client, int args )
 	GetEntPropVector(client, Prop_Send, "m_vecOrigin", g_vecSkipPos );
 	GetClientAbsAngles(client, g_vecSkipAngles );
 	FormatEx(query, sizeof(query), "REPLACE INTO skip_zones VALUES('%s', '%i', '%.1f', '%.1f', '%.1f', '%.1f', '%.1f', '%.1f')", g_szCurrentMap, g_iClientMode[client], g_vecSkipPos[0], g_vecSkipPos[1], g_vecSkipPos[2], g_vecSkipAngles[0], g_vecSkipAngles[1], g_vecSkipAngles[2]);
-	g_hDatabase.Query( Threaded_Empty, query);
+	SQL_LockDatabase(g_hDatabase);
+	SQL_FastQuery( g_hDatabase, query );
+	SQL_UnlockDatabase(g_hDatabase);
 	CPrintToChatAll(CHAT_PREFIX... "Skip position {lightskyblue}Added{white}! <{green}%s{white}>", g_szCurrentMap); 
 	return Plugin_Handled;
 }
@@ -19,7 +21,9 @@ public Action Command_Admin_DelSkipLevel( int client, int args )
 	GetEntPropVector(client, Prop_Send, "m_vecOrigin", g_vecSkipPos );
 	GetClientAbsAngles(client, g_vecSkipAngles );
 	FormatEx(query, sizeof(query), "DELETE FROM levels WHERE map = '%s'", g_szCurrentMap);
-	g_hDatabase.Query( Threaded_Empty, query);
+	SQL_LockDatabase(g_hDatabase);
+	SQL_FastQuery( g_hDatabase, query );
+	SQL_UnlockDatabase(g_hDatabase);
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -521,7 +525,9 @@ public int Handler_LevelCreate( Menu mMenu, MenuAction action, int client, int i
 		GetClientAbsAngles(client, g_fClientLevelAng[levels_count] );
 
 		g_hDatabase.Format(query, sizeof(query), "INSERT INTO levels VALUES( %i, '%s', %.1f, %.1f, %.1f, %.1f, %.1f, %.1f )", levels_count, g_szCurrentMap, g_fClientLevelPos[levels_count][0], g_fClientLevelPos[levels_count][1], g_fClientLevelPos[levels_count][2], g_fClientLevelAng[levels_count][0], g_fClientLevelAng[levels_count][1], g_fClientLevelAng[levels_count][2]);
-		g_hDatabase.Query(Threaded_Empty, query);
+		SQL_LockDatabase(g_hDatabase);
+		SQL_FastQuery( g_hDatabase, query );
+		SQL_UnlockDatabase(g_hDatabase);
 
 		CPrintToChat(client, CHAT_PREFIX..."Level \x0750DCFF%i {white}has been created!", levels_count+1);
 		FakeClientCommand( client, "sm_startlevels" );
@@ -594,7 +600,9 @@ public int Handler_ChangeLevel( Menu mMenu, MenuAction action, int client, int i
 		GetClientAbsAngles(client, g_fClientLevelAng[lvl] );
 
 		g_hDatabase.Format(query, sizeof(query), "Update levels SET pos0 = %.1f, pos1 = %.1f, pos2 = %.1f, ang0 = %.1f, ang1 = %.1f, ang2 = %.1f WHERE level = %i AND map = '%s'", g_fClientLevelPos[lvl][0], g_fClientLevelPos[lvl][1], g_fClientLevelPos[lvl][2], g_fClientLevelAng[lvl][0], g_fClientLevelAng[lvl][1], g_fClientLevelAng[lvl][2], lvl, g_szCurrentMap);
-		g_hDatabase.Query(Threaded_Empty, query);
+		SQL_LockDatabase(g_hDatabase);
+		SQL_FastQuery( g_hDatabase, query );
+		SQL_UnlockDatabase(g_hDatabase);
 
 		CPrintToChat(client, CHAT_PREFIX..."Level \x0750DCFF%i {white}has been updated!", lvl+1);
 
@@ -664,7 +672,9 @@ public int Handler_MissLevel( Menu mMenu, MenuAction action, int client, int ite
 		GetClientAbsAngles(client, g_fClientLevelAng[lvl] );
 
 		g_hDatabase.Format(query, sizeof(query), "INSERT INTO levels VALUES( %i, '%s', %.1f, %.1f, %.1f, %.1f, %.1f, %.1f )", lvl, g_szCurrentMap, g_fClientLevelPos[lvl][0], g_fClientLevelPos[lvl][1], g_fClientLevelPos[lvl][2], g_fClientLevelAng[lvl][0], g_fClientLevelAng[lvl][1], g_fClientLevelAng[lvl][2]);
-		g_hDatabase.Query(Threaded_Empty, query);
+		SQL_LockDatabase(g_hDatabase);
+		SQL_FastQuery( g_hDatabase, query );
+		SQL_UnlockDatabase(g_hDatabase);
 
 		CPrintToChat(client, CHAT_PREFIX..."Level \x0750DCFF%i {white}has been created!", lvl+1);
 
@@ -721,7 +731,9 @@ public int Handler_DelLevels( Menu mMenu, MenuAction action, int client, int ite
 	char query[200];
 
 	g_hDatabase.Format(query, sizeof(query), "DELETE FROM levels WHERE map = '%s' and level = %i", g_szCurrentMap, lvl);
-	g_hDatabase.Query(Threaded_Empty, query);
+	SQL_LockDatabase(g_hDatabase);
+	SQL_FastQuery( g_hDatabase, query );
+	SQL_UnlockDatabase(g_hDatabase);
 
 	CPrintToChat(client, CHAT_PREFIX..."Level \x0750DCFF%i {white}has been Deleted!", lvl+1);
 	for (int i = 0; i<3; i++)
@@ -952,7 +964,9 @@ public int Handler_ZoneDeleteByIndex( Menu mMenu, MenuAction action, int client,
 
 		char query[100];
 		g_hDatabase.Format(query, sizeof(query), "DELETE FROM mapbounds WHERE map = '%s' AND zone = %i AND number = %i", g_szCurrentMap, zone, index);
-		g_hDatabase.Query(Threaded_Empty, query);
+		SQL_LockDatabase(g_hDatabase);
+		SQL_FastQuery( g_hDatabase, query );
+		SQL_UnlockDatabase(g_hDatabase);
 
 		DeleteZoneBeams( zone, 0, index );
 

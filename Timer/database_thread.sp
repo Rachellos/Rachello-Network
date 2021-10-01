@@ -340,7 +340,7 @@ public void Threaded_PrintRecords( Database hOwner, DBResultSet hQuery, const ch
 
 public int Handler_top( Menu mMenu, MenuAction action, int client, int item )
 {
-	if ( action == MenuAction_End ) { delete mMenu; return 0; }
+	if ( action == MenuAction_End ) { return 0; }
 	if (action == MenuAction_Cancel)
 	{
     if (item == MenuCancel_ExitBack)
@@ -566,7 +566,9 @@ public void Threaded_RetrieveClientData( Database hOwner, DBResultSet hQuery, co
 		rankdemo[client] = hQuery.FetchInt( 6 );
 		g_hDatabase.Format( szQuery, sizeof( szQuery ), "UPDATE plydata SET overall = (select sum(pts) from maprecs where uid = %i), solly = (select sum(pts) from maprecs where uid = %i and mode = 1), demo = (select sum(pts) from maprecs where uid = %i and mode = 3) WHERE uid = %i", g_iClientId[client], g_iClientId[client], g_iClientId[client], g_iClientId[client] );
 		
-		g_hDatabase.Query( Threaded_Empty, szQuery );
+		SQL_LockDatabase(g_hDatabase);
+		SQL_FastQuery( g_hDatabase, szQuery );
+		SQL_UnlockDatabase(g_hDatabase);
 	}
 	
 	// Then we get the times.
@@ -1061,16 +1063,17 @@ public void Threaded_NewID_Final( Database hOwner, DBResultSet hQuery, const cha
 	GetClientName(client, name, sizeof(name));
 	GetClientIP(client, IP, sizeof(IP), true);
 	if(!GeoipCountry(IP, Country, sizeof(Country)))
-		{
 			Country = "None";
-		}	
+
 	FormatTime(sTime, sizeof(sTime), "%Y-%m-%d %H:%M:%S", GetTime() ); 
 	g_hDatabase.Format( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET lastseen = CURRENT_TIMESTAMP, firstseen = CURRENT_TIMESTAMP, country = '%s', link = '%s', ip = '%s' WHERE steamid = '%s'",
 	Country,
 	szLink,
 	IP,
 	szSteam );
-	g_hDatabase.Query(Threaded_Empty, szQuery);
+	SQL_LockDatabase(g_hDatabase);
+	SQL_FastQuery( g_hDatabase, szQuery );
+	SQL_UnlockDatabase(g_hDatabase);
 	
 	
 	if ( hQuery.RowCount )

@@ -3917,47 +3917,42 @@ public int Handler_SetClassDEV( Menu mMenu, MenuAction action, int client, int i
 	if ( action != MenuAction_Select ) return 0;
 	if ( action == MenuAction_Select )
 	{
-	int args;
-	char szItem[5];
-	char szQuery[195];
-	if ( !GetMenuItem( mMenu, item, szItem, sizeof( szItem ) ) ) return 0;
-	StringToIntEx(szItem, args);
-	if (args == 1)
-	{
-		FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET demo = 0 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
-		g_hDatabase.Query( Threaded_Empty, szQuery);
-		FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET solly = 1 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
-		g_hDatabase.Query( Threaded_Empty, szQuery, GetClientUserId( client ), DBPrio_Normal );
-		CPrintToChatAll(CHAT_PREFIX..."Regen for Soldier have been \x0764E664Disabled {white}for \x0764E664%s {white}<\x0750DCFF%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
-		szClass[tier_run[client]][MODE_SOLDIER] = 1;
-		szClass[tier_run[client]][MODE_DEMOMAN] = 0;
-	}
-	else if (args == 2)
-	{
-		FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET solly = 0 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
-		g_hDatabase.Query( Threaded_Empty, szQuery);
-		FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET demo = 1 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
-		g_hDatabase.Query( Threaded_Empty, szQuery, GetClientUserId( client ), DBPrio_Normal );
-		CPrintToChatAll(CHAT_PREFIX..."Regen for Demoman have been \x0764E664Disabled {white}for \x0764E664%s {white}<\x0750DCFF%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
-		szClass[tier_run[client]][MODE_DEMOMAN] = 1;
-		szClass[tier_run[client]][MODE_SOLDIER] = 0;	
-	}
-	else if (args == 3)
-	{
-		FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET solly = 1, demo = 1 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
-		g_hDatabase.Query( Threaded_Empty, szQuery, GetClientUserId( client ), DBPrio_Normal );
-		CPrintToChatAll(CHAT_PREFIX..."Regen for both classes have been \x0764E664Disabled {white}for \x0764E664%s {white}<\x0750DCFF%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
-		szClass[tier_run[client]][MODE_DEMOMAN] = 1;
-		szClass[tier_run[client]][MODE_SOLDIER] = 1;
-	}
-	else if (args == 4)
-	{
-		FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET solly = 0, demo = 0 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
-		g_hDatabase.Query( Threaded_Empty, szQuery, GetClientUserId( client ), DBPrio_Normal );
-		CPrintToChatAll(CHAT_PREFIX..."Regen for both classes have been \x0764E664Enabled {white}for \x0764E664%s {white}<\x0750DCFF%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
-		szClass[tier_run[client]][MODE_DEMOMAN] = 0;
-		szClass[tier_run[client]][MODE_SOLDIER] = 0;
-	}
+		int args;
+		char szItem[5];
+		char szQuery[195];
+		if ( !GetMenuItem( mMenu, item, szItem, sizeof( szItem ) ) ) return 0;
+		StringToIntEx(szItem, args);
+		if (args == 1)
+		{
+			FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET solly = 1, demo = 0 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
+			CPrintToChatAll(CHAT_PREFIX..."Regen for Soldier have been \x0764E664Disabled {white}for \x0764E664%s {white}<\x0750DCFF%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
+			szClass[tier_run[client]][MODE_SOLDIER] = 1;
+			szClass[tier_run[client]][MODE_DEMOMAN] = 0;
+		}
+		else if (args == 2)
+		{
+			FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET solly = 0, demo = 1 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
+			CPrintToChatAll(CHAT_PREFIX..."Regen for Demoman have been \x0764E664Disabled {white}for \x0764E664%s {white}<\x0750DCFF%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
+			szClass[tier_run[client]][MODE_DEMOMAN] = 1;
+			szClass[tier_run[client]][MODE_SOLDIER] = 0;	
+		}
+		else if (args == 3)
+		{
+			FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET solly = 1, demo = 1 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
+			CPrintToChatAll(CHAT_PREFIX..."Regen for both classes have been \x0764E664Disabled {white}for \x0764E664%s {white}<\x0750DCFF%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
+			szClass[tier_run[client]][MODE_DEMOMAN] = 1;
+			szClass[tier_run[client]][MODE_SOLDIER] = 1;
+		}
+		else if (args == 4)
+		{
+			FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET solly = 0, demo = 0 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
+			CPrintToChatAll(CHAT_PREFIX..."Regen for both classes have been \x0764E664Enabled {white}for \x0764E664%s {white}<\x0750DCFF%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
+			szClass[tier_run[client]][MODE_DEMOMAN] = 0;
+			szClass[tier_run[client]][MODE_SOLDIER] = 0;
+		}
+		SQL_LockDatabase(g_hDatabase);
+		SQL_FastQuery( g_hDatabase, szQuery );
+		SQL_UnlockDatabase(g_hDatabase);
 	}
 }
 
@@ -4044,7 +4039,9 @@ public int Handler_SetTierDEV( Menu mMenu, MenuAction action, int client, int it
 	if (tier_block[client] > 0)
 	{
 		FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET dtier = %i WHERE map_name = '%s' AND run = %i", args, g_szCurrentMap, tier_run[client] );
-		g_hDatabase.Query( Threaded_Empty, szQuery, GetClientUserId( client ), DBPrio_Normal );
+		SQL_LockDatabase(g_hDatabase);
+		SQL_FastQuery( g_hDatabase, szQuery );
+		SQL_UnlockDatabase(g_hDatabase);
 		CPrintToChatAll(CHAT_PREFIX..."\x0764E664Demoman {white}Tier {lightskyblue}%i {white}have been set for \x0764E664%s {white}<\x0750DCFF%s{white}>", args, g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
 		SetClassDEV(client, tier_run[client]);
 		g_Tiers[tier_run[client]][MODE_DEMOMAN] = args;
@@ -4055,7 +4052,9 @@ public int Handler_SetTierDEV( Menu mMenu, MenuAction action, int client, int it
 		if (!SQL_Query( g_hDatabase, szQuery))
 		{
 			g_hDatabase.Format(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET stier = %i WHERE map_name = '%s' AND run = %i", args, g_szCurrentMap, tier_run[client]);
-			SQL_Query( g_hDatabase, szQuery);
+			SQL_LockDatabase(g_hDatabase);
+			SQL_FastQuery( g_hDatabase, szQuery );
+			SQL_UnlockDatabase(g_hDatabase);
 		}
 		SetTierDEV( client, tier_run[client], 1 );
 		CPrintToChatAll(CHAT_PREFIX..."\x0764E664Soldier {white}Tier {lightskyblue}%i {white}have been set for \x0764E664%s {white}<\x0750DCFF%s{white}>", args, g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
@@ -4167,16 +4166,19 @@ public int Handler_SetCustimStartAdv(Menu mMenu, MenuAction action, int client, 
 		{
 			isSetCustomStart[SetCustZone[client]] = true;
 			FormatEx(query, sizeof(query), "INSERT INTO startpos VALUES('%s', '%i', '%.1f', '%.1f', '%.1f', '%.1f', '%.1f', '%.1f')", g_szCurrentMap, SetCustZone[client], g_CustomRespawnPos[SetCustZone[client]][0], g_CustomRespawnPos[SetCustZone[client]][1], g_CustomRespawnPos[SetCustZone[client]][2], g_CustomRespawnAng[SetCustZone[client]][0], g_CustomRespawnAng[SetCustZone[client]][1], g_CustomRespawnAng[SetCustZone[client]][2]);
-			g_hDatabase.Query( Threaded_Empty, query);
 			CPrintToChatAll(CHAT_PREFIX... "Start Position {lightskyblue}Updated{white}! <{green}%s{white}>", g_szRunName[NAME_LONG][SetCustZone[client]]);
 		}
 		else if (item == 1)
 		{
 			isSetCustomStart[SetCustZone[client]] = false;
 			FormatEx(query, sizeof(query), "DELETE FROM startpos WHERE map = '%s' AND run = %i", g_szCurrentMap, SetCustZone[client]);
-			g_hDatabase.Query(Threaded_Empty, query);
 			CPrintToChatAll(CHAT_PREFIX... "Start Position {lightskyblue}Deleted{white}! <{green}%s{white}>", g_szRunName[NAME_LONG][SetCustZone[client]]);
 		}
+
+		SQL_LockDatabase(g_hDatabase);
+		SQL_FastQuery( g_hDatabase, query );
+		SQL_UnlockDatabase(g_hDatabase);
+
 		SetupZoneSpawns();
 
 		SetCustomStartAdv( client, SetCustZone[client] );
