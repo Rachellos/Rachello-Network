@@ -957,32 +957,32 @@ public int Recent_records_handler( Menu mMenu, MenuAction action, int client, in
 
 	if (item == 0)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` = 1 and run = 0 order by date desc limit 100");
+		g_hDatabase.Format(query, sizeof(query), "SELECT recordid, map, mode, date, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` = 1 and run = 0 order by date desc limit 100");
 		g_hDatabase.Query(RecentRecords_Map_Wr_Callback, query, GetClientUserId( client ));
 	}
 	if (item == 1)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` > 1 and `rank` <= 10 and run = 0 order by date desc limit 100");
+		g_hDatabase.Format(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` > 1 and `rank` <= 10 and run = 0 order by date desc limit 100");
 		g_hDatabase.Query(RecentRecords_Map_Tt_Callback, query, GetClientUserId( client ));
 	}
 	if (item == 2)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` = 1 and run >= %i and run <= %i order by date desc limit 100", RUN_COURSE1, RUN_COURSE10);
+		g_hDatabase.Format(query, sizeof(query), "SELECT recordid, map, mode, date, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` = 1 and run >= %i and run <= %i order by date desc limit 100", RUN_COURSE1, RUN_COURSE10);
 		g_hDatabase.Query(RecentRecords_Course_Wr_Callback, query, GetClientUserId( client ));
 	}
 	if (item == 3)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` >= 2 and `rank` <= 10 and run >= %i and run <= %i order by date desc limit 100", RUN_COURSE1, RUN_COURSE10);
+		g_hDatabase.Format(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` >= 2 and `rank` <= 10 and run >= %i and run <= %i order by date desc limit 100", RUN_COURSE1, RUN_COURSE10);
 		g_hDatabase.Query(RecentRecords_Course_Tt_Callback, query, GetClientUserId( client ));
 	}
 	if (item == 4)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` = 1 and run >= %i and run <= %i order by date desc limit 100", RUN_BONUS1, RUN_BONUS10);
+		g_hDatabase.Format(query, sizeof(query), "SELECT recordid, map, mode, date, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` = 1 and run >= %i and run <= %i order by date desc limit 100", RUN_BONUS1, RUN_BONUS10);
 		g_hDatabase.Query(RecentRecords_Bonus_Wr_Callback, query, GetClientUserId( client ));
 	}
 	if (item == 5)
 	{
-		FormatEx(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` >= 2 and `rank` <= 10 and run >= %i and run <= %i order by date desc limit 100", RUN_BONUS1, RUN_BONUS10);
+		g_hDatabase.Format(query, sizeof(query), "SELECT recordid, map, mode, date, `rank`, run, (select name from plydata where uid = maprecs.uid), CURRENT_TIMESTAMP FROM maprecs where `rank` >= 2 and `rank` <= 10 and run >= %i and run <= %i order by date desc limit 100", RUN_BONUS1, RUN_BONUS10);
 		g_hDatabase.Query(RecentRecords_Bonus_Tt_Callback, query, GetClientUserId( client ));
 	}
 	return 0;
@@ -1261,7 +1261,7 @@ public void RecentRecords_Bonus_Tt_Callback( Database hOwner, DBResultSet hQuery
 
 public int RecentRecords_Runs_Handler( Menu mMenu, MenuAction action, int client, int item )
 {
-	if ( action == MenuAction_End ) { delete mMenu; return 0; }
+	if ( action == MenuAction_End ) { return 0; }
 
 	if ( action == MenuAction_Cancel )
 	{
@@ -2357,20 +2357,22 @@ public Action Command_Profile( int client, int args )
 	GetCmdArgString( szTarget, sizeof( szTarget ) );
 	int target = FindTarget( client, szTarget, true, false );
 	char Name[32];
+
+	int mode = (g_iClientMode[client] == MODE_SOLDIER) ? MODE_SOLDIER : MODE_DEMOMAN;
 	if ( args == 0 )
 	{
 		GetClientName(client, Name, sizeof( Name ) );
-		DB_Profile( client, args, 0, Name, g_iClientId[client], g_iClientMode[client] );
+		DB_Profile( client, args, 0, Name, g_iClientId[client], mode );
 		return Plugin_Handled;
 	}
 	if ( target != -1 )
 	{
-		DB_Profile( client, args, 0, Name, g_iClientId[target], g_iClientMode[client] );
+		DB_Profile( client, args, 0, Name, g_iClientId[target], mode );
 		return Plugin_Handled;
 	}
 	else
 	{
-		DB_Profile( client, args, 1, szTarget, 0, g_iClientMode[client] );
+		DB_Profile( client, args, 1, szTarget, 0, mode );
 		return Plugin_Handled;
 	}
 }
@@ -2721,6 +2723,9 @@ public int Handler_IncompleteMenu( Menu mMenu, MenuAction action, int client, in
 		char sort[60];
 		char szItem[30];
 
+		int mode = (g_iClientMode[client] == MODE_DEMOMAN) ? MODE_DEMOMAN:MODE_SOLDIER;
+		RunClass[client] = mode;
+
 		if ( !GetMenuItem( mMenu, item, szItem, sizeof( szItem ) ) ) return 0;
 
 		FormatEx(SortRun[client], sizeof(SortRun), "%s", szItem);
@@ -2746,18 +2751,18 @@ public int Handler_IncompleteMenu( Menu mMenu, MenuAction action, int client, in
 				g_hDatabase.Format(query, sizeof(query), "SELECT map_name, run, stier, dtier, \
 				(SELECT %i), \	
 				(SELECT name from plydata where uid = %i) \
-				from map_info where NOT EXISTS(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = 1 and uid = %i) \
+				from map_info where NOT EXISTS(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i) \
 				and EXISTS(SELECT zone from mapbounds where map = map_info.map_name and zone = (map_info.run * 2) and number = 0) \
-				and run = 0 and stier > 0 %s", Incomplete_uid[client], Incomplete_uid[client], Incomplete_uid[client], sort);
+				and run = 0 and stier > 0 %s", Incomplete_uid[client], Incomplete_uid[client], mode, Incomplete_uid[client], sort);
 			}
 			else
 			{
 				g_hDatabase.Format(query, sizeof(query), "SELECT map_name, run, stier, dtier, \
 				(SELECT uid from plydata where name LIKE '%s%%' limit 1), \
 				(SELECT name from plydata where name LIKE '%s%%' limit 1) \
-				from map_info where NOT EXISTS(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = 1 and uid = (select uid from plydata where name LIKE '%s%%' limit 1)) \
+				from map_info where NOT EXISTS(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = (select uid from plydata where name LIKE '%s%%' limit 1)) \
 				and EXISTS(SELECT zone from mapbounds where map = map_info.map_name and zone = (map_info.run * 2) and number = 0) \
-				and run = 1 and stier > 0 %s", profile_playername[client], profile_playername[client], profile_playername[client], sort);
+				and run = 1 and stier > 0 %s", profile_playername[client], profile_playername[client], mode, profile_playername[client], sort);
 			}
 			g_hDatabase.Query(IncompleteRecordsCallBack, query, client);
 		}
@@ -2768,18 +2773,18 @@ public int Handler_IncompleteMenu( Menu mMenu, MenuAction action, int client, in
 				g_hDatabase.Format(query, sizeof(query), "SELECT map_name, run, stier, dtier, \
 				(SELECT %i), \	
 				(SELECT name from plydata where uid = %i) \
-				from map_info where NOT EXISTS(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = 1 and uid = %i) \
+				from map_info where NOT EXISTS(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i) \
 				and EXISTS(SELECT zone from mapbounds where map = map_info.map_name and zone = (map_info.run * 2) and number = 0) \
-				and run BETWEEN %i and %i and stier > 0 %s", Incomplete_uid[client], Incomplete_uid[client], Incomplete_uid[client], RUN_COURSE1, RUN_COURSE10, sort);
+				and run BETWEEN %i and %i and stier > 0 %s", Incomplete_uid[client], Incomplete_uid[client], mode, Incomplete_uid[client], RUN_COURSE1, RUN_COURSE10, sort);
 			}
 			else
 			{
 				g_hDatabase.Format(query, sizeof(query), "SELECT map_name, run, stier, dtier, \
 				(SELECT uid from plydata where name LIKE '%s%%' limit 1), \
 				(SELECT name from plydata where name LIKE '%s%%' limit 1) \
-				from map_info where NOT EXISTS(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = 1 and uid = (select uid from plydata where name LIKE '%s%%' limit 1)) \
+				from map_info where NOT EXISTS(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = (select uid from plydata where name LIKE '%s%%' limit 1)) \
 				and EXISTS(SELECT zone from mapbounds where map = map_info.map_name and zone = (map_info.run * 2) and number = 0) \
-				and run BETWEEN %i and %i and stier > 0 %s", profile_playername[client], profile_playername[client], profile_playername[client], RUN_COURSE1, RUN_COURSE10, sort);
+				and run BETWEEN %i and %i and stier > 0 %s", profile_playername[client], profile_playername[client], mode, profile_playername[client], RUN_COURSE1, RUN_COURSE10, sort);
 			}
 			g_hDatabase.Query(IncompleteRecordsCallBack, query, client);
 		}
@@ -2791,18 +2796,18 @@ public int Handler_IncompleteMenu( Menu mMenu, MenuAction action, int client, in
 				g_hDatabase.Format(query, sizeof(query), "SELECT map_name, run, stier, dtier, \
 				(SELECT %i), \	
 				(SELECT name from plydata where uid = %i) \
-				from map_info where NOT EXISTS(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = 1 and uid = %i) \
+				from map_info where NOT EXISTS(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i) \
 				and EXISTS(SELECT zone from mapbounds where map = map_info.map_name and zone = (map_info.run * 2) and number = 0) \
-				and run BETWEEN %i and %i and stier > 0 %s", Incomplete_uid[client], Incomplete_uid[client], Incomplete_uid[client], RUN_BONUS1, RUN_BONUS10, sort);
+				and run BETWEEN %i and %i and stier > 0 %s", Incomplete_uid[client], Incomplete_uid[client], mode, Incomplete_uid[client], RUN_BONUS1, RUN_BONUS10, sort);
 			}
 			else
 			{
 				g_hDatabase.Format(query, sizeof(query), "SELECT map_name, run, stier, dtier, \
 				(SELECT uid from plydata where name LIKE '%s%%' limit 1), \
 				(SELECT name from plydata where name LIKE '%s%%' limit 1) \
-				from map_info where NOT EXISTS(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = 1 and uid = (select uid from plydata where name LIKE '%s%%' limit 1)) \
+				from map_info where NOT EXISTS(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = (select uid from plydata where name LIKE '%s%%' limit 1)) \
 				and EXISTS(SELECT zone from mapbounds where map = map_info.map_name and zone = (map_info.run * 2) and number = 0) \
-				and run BETWEEN %i and %i and stier > 0 %s", profile_playername[client], profile_playername[client], profile_playername[client], RUN_BONUS1, RUN_BONUS10, sort);
+				and run BETWEEN %i and %i and stier > 0 %s", profile_playername[client], profile_playername[client], mode, profile_playername[client], RUN_BONUS1, RUN_BONUS10, sort);
 			}
 			g_hDatabase.Query(IncompleteRecordsCallBack, query, client);
 		}

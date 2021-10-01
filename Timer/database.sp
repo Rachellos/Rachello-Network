@@ -287,7 +287,6 @@ stock void DB_PrintPoints( int client, int args, int top )
 
 stock void DB_Profile( int client, int args, int how, char[] Name, int id, int mode = MODE_SOLDIER )
 {
-	
 	static char szQuery[4000];
 
 	Panel hPanel = new Panel();
@@ -431,7 +430,7 @@ public void OnProfileTxnSuccess(Database g_hDatabase, any client, int numQueries
 		mMenu.ExitBackButton = (GetLastPrevMenuIndex(client) != -1) ? true : false;
 
 		if (IsOnline==1)
-			FormatEx( title, sizeof( title ), "<Profile Menu :: %s>\nPlayer: %s\nOnline\n ", g_szModeName[NAME_LONG][class], DBS_Name[client] );
+			FormatEx( title, sizeof( title ), "<Profile Menu :: %s>\nPlayer: %s\nOnline now\n ", g_szModeName[NAME_LONG][class], DBS_Name[client] );
 		else
 			FormatEx( title, sizeof( title ), "<Profile Menu :: %s>\nPlayer: %s\n ", g_szModeName[NAME_LONG][class], DBS_Name[client] );		
 
