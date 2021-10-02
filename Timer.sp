@@ -1922,9 +1922,7 @@ public void OnClientPutInServer( int client )
 	szLink,
 	IP,
 	szSteam );
-	SQL_LockDatabase(g_hDatabase);
-	SQL_FastQuery( g_hDatabase, szQuery );
-	SQL_UnlockDatabase(g_hDatabase);
+	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 	g_flClientStartTime[client] = TIME_INVALID;
 	g_flClientCourseStartTime[client] = TIME_INVALID;
 
@@ -2056,9 +2054,7 @@ public void OnClientPostAdminCheck( int client )
 		g_hDatabase.Query( Threaded_Init_CP_PR_Times, query, client, DBPrio_High );
 
 		g_hDatabase.Format(query, sizeof(query), "Update plydata set online = 1 where steamid = '%s'", szSteam);
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, query );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
 		// Get their Id and other settings from DB.
 	}	
 }
@@ -2110,9 +2106,7 @@ public void OnClientDisconnect( int client )
 
 	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET lastseen = CURRENT_TIMESTAMP, online = 0 WHERE steamid = '%s'",
 	szSteam );
-	SQL_LockDatabase(g_hDatabase);
-	SQL_FastQuery( g_hDatabase, szQuery );
-	SQL_UnlockDatabase(g_hDatabase);
+	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 
 	DB_SaveClientData(client);
 
@@ -3155,13 +3149,9 @@ public int Handler_Wipe( Menu mMenu, MenuAction action, int client, int item )
 		{
 			char szQuery[192];
 			FormatEx( szQuery, sizeof( szQuery ), "DELETE FROM "...TABLE_RECORDS..." WHERE uid = '%s'", szId );
-			SQL_LockDatabase(g_hDatabase);
-			SQL_FastQuery( g_hDatabase, szQuery );
-			SQL_UnlockDatabase(g_hDatabase);
+			SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 			FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET solly = 0.0, demo = 0.0, overall = 0.0, srank = -1, drank = -1, orank = -1 WHERE uid = '%s'", szId );
-			SQL_LockDatabase(g_hDatabase);
-			SQL_FastQuery( g_hDatabase, szQuery );
-			SQL_UnlockDatabase(g_hDatabase);
+			SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 			CPrintToChat(client, CHAT_PREFIX..."User has been {lightskyblue}wiped{white}!");
 			for (int i = 1; i <= MaxClients; i++)
 				if (IsClientInGame(i) && g_iClientId[i] == id)

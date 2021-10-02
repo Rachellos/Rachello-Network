@@ -36,9 +36,7 @@ public Action:Timer_CompressDemo(Handle:timer, any:pack) {
 	if (FileSize(input) < 100)
 	{
 		g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s.bz2'", DEMO_ERROR, filename);
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, query );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, query);
 		CloseHandle(pack);
 		return Plugin_Handled;
 	}
@@ -71,9 +69,7 @@ public OnDemoCompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:
 		Format(suffix, sizeof(suffix), "while compressing %s", filename);
 		LogBZ2Error(iError, suffix);
 		g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s.bz2'", DEMO_ERROR, filename);
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, query );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, query);
 		for (int client = 1; client <= MaxClients; client++)
 		{
 			if (IsClientInGame(client) && IsClientConnected(client) && (GetUserFlagBits(client) & ADMFLAG_ROOT))
@@ -89,9 +85,7 @@ public OnDemoCompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:
 	if ( FileExists(path) && FileSize(path) < 10)
 	{
 		g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s.bz2'", DEMO_ERROR, filename);
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, query );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, query);
 
 		DeleteFile(path);
 
@@ -126,9 +120,7 @@ public OnDemoCompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:
 		return;
 	}
 	g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s.bz2'", DEMO_READY, filename);
-	SQL_LockDatabase(g_hDatabase);
-	SQL_FastQuery( g_hDatabase, query );
-	SQL_UnlockDatabase(g_hDatabase);
+	SQL_TQuery(g_hDatabase, Threaded_Empty, query);
 
 	
 
@@ -148,9 +140,7 @@ public OnDemoCompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:
 
 		
 		g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s.bz2'", DEMO_UPLOADING, filename);
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, query );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, query);
 		for (int client = 1; client <= MaxClients; client++)
 		{
 			if (IsClientInGame(client) && IsClientConnected(client) && (GetUserFlagBits(client) & ADMFLAG_ROOT))
@@ -175,9 +165,7 @@ public EasyFTP_CallBack(const String:sTarget[], const String:sLocalFile[], const
     	FormatEx(demo, sizeof(demo), "%s", sLocalFile);
     	ReplaceString(demo, sizeof(demo), "addons/sourcemod/recordings/bz2/", "");
     	g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_UPLOADED, demo);
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, query );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, query);
         PrintToServer("Success. File %s uploaded.", sLocalFile);
         for (int client = 1; client <= MaxClients; client++)
 		{

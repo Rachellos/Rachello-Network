@@ -857,9 +857,7 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 		    Call_Finish();
 			return 0;
 		}
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, query );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
 	}
 }
 
@@ -1106,9 +1104,7 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 				
 				// Update game too.
 				
-				SQL_LockDatabase(g_hDatabase);
-				SQL_FastQuery( g_hDatabase, szQuery );
-				SQL_UnlockDatabase(g_hDatabase);
+				SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 			}
 		}
 	}	
@@ -1138,9 +1134,7 @@ stock bool DB_SaveClientData( int client )
 		szName,
 		szSteam );
 	
-	SQL_LockDatabase(g_hDatabase);
-	SQL_FastQuery( g_hDatabase, szQuery );
-	SQL_UnlockDatabase(g_hDatabase);
+	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 	
 	return true;
 }
@@ -1203,9 +1197,7 @@ stock void DB_SaveMapZone( int zone, float vecMins[3], float vecMaxs[3], int id 
 			g_bZoneExists[zone][num] = true;
 	}
 	
-	SQL_LockDatabase(g_hDatabase);
-	SQL_FastQuery( g_hDatabase, szQuery );
-	SQL_UnlockDatabase(g_hDatabase);
+	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 }
 
 stock void DB_EraseMapZone( int zone, int id = 0, int run = 0, int client = 0 )
@@ -1220,9 +1212,7 @@ stock void DB_EraseMapZone( int zone, int id = 0, int run = 0, int client = 0 )
 		g_hDatabase.Format( szQuery, sizeof( szQuery ), "DELETE FROM "...TABLE_ZONES..." WHERE map = '%s' AND zone = %i AND id = %i AND number = 0", g_szCurrentMap, zone, id );
 	}
 	
-	SQL_LockDatabase(g_hDatabase);
-	SQL_FastQuery( g_hDatabase, szQuery );
-	SQL_UnlockDatabase(g_hDatabase);
+	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 }
 
 stock void DB_EraseRunRecords( int run, int client = 0 )
@@ -1230,9 +1220,7 @@ stock void DB_EraseRunRecords( int run, int client = 0 )
 	char szQuery[128];
 	FormatEx( szQuery, sizeof( szQuery ), "DELETE FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i", g_szCurrentMap, run );
 	
-	SQL_LockDatabase(g_hDatabase);
-	SQL_FastQuery( g_hDatabase, szQuery );
-	SQL_UnlockDatabase(g_hDatabase);
+	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 }
 
 stock void DB_EraseRunCPRecords( int run, int client = 0 )
@@ -1240,9 +1228,7 @@ stock void DB_EraseRunCPRecords( int run, int client = 0 )
 	char szQuery[128];
 	FormatEx( szQuery, sizeof( szQuery ), "DELETE FROM "...TABLE_CP_RECORDS..." WHERE map = '%s' AND run = %i", g_szCurrentMap, run );
 	
-	SQL_LockDatabase(g_hDatabase);
-	SQL_FastQuery( g_hDatabase, szQuery );
-	SQL_UnlockDatabase(g_hDatabase);
+	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 }
 
 stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )

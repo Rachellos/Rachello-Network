@@ -179,9 +179,7 @@ public int Handler_Hud( Menu mMenu, MenuAction action, int client, int item )
 		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
 		g_fClientHideFlags[client],
 		szSteam);
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, szQuery );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 		PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 	}
 
@@ -210,9 +208,7 @@ public int Handler_Hud( Menu mMenu, MenuAction action, int client, int item )
 			FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
 			g_fClientHideFlags[client],
 			szSteam);
-			SQL_LockDatabase(g_hDatabase);
-			SQL_FastQuery( g_hDatabase, szQuery );
-			SQL_UnlockDatabase(g_hDatabase);
+			SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 			PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		}
 	}
@@ -242,9 +238,7 @@ public int Handler_HudRHud( Menu mMenu, MenuAction action, int client, int item 
 		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
 		g_fClientHideFlags[client],
 		szSteam);
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, szQuery );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 		PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		return 0;
 	}
@@ -336,9 +330,7 @@ public int Handler_HudCHud( Menu mMenu, MenuAction action, int client, int item 
 		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
 		g_fClientHideFlags[client],
 		szSteam);
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, szQuery );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 		CPrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		return 0;
 	}
@@ -407,9 +399,7 @@ public int Handler_HudGen( Menu mMenu, MenuAction action, int client, int item )
 		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
 		g_fClientHideFlags[client],
 		szSteam);
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, szQuery );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 		CPrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		return 0;
 	}
@@ -473,9 +463,7 @@ public int Handler_HudChat( Menu mMenu, MenuAction action, int client, int item 
 		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
 		g_fClientHideFlags[client],
 		szSteam);
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, szQuery );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 		PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		return 0;
 	}

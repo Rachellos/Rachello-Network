@@ -3950,9 +3950,7 @@ public int Handler_SetClassDEV( Menu mMenu, MenuAction action, int client, int i
 			szClass[tier_run[client]][MODE_DEMOMAN] = 0;
 			szClass[tier_run[client]][MODE_SOLDIER] = 0;
 		}
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, szQuery );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 	}
 }
 
@@ -4039,9 +4037,7 @@ public int Handler_SetTierDEV( Menu mMenu, MenuAction action, int client, int it
 	if (tier_block[client] > 0)
 	{
 		FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET dtier = %i WHERE map_name = '%s' AND run = %i", args, g_szCurrentMap, tier_run[client] );
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, szQuery );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 		CPrintToChatAll(CHAT_PREFIX..."\x0764E664Demoman {white}Tier {lightskyblue}%i {white}have been set for \x0764E664%s {white}<\x0750DCFF%s{white}>", args, g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
 		SetClassDEV(client, tier_run[client]);
 		g_Tiers[tier_run[client]][MODE_DEMOMAN] = args;
@@ -4052,9 +4048,7 @@ public int Handler_SetTierDEV( Menu mMenu, MenuAction action, int client, int it
 		if (!SQL_Query( g_hDatabase, szQuery))
 		{
 			g_hDatabase.Format(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET stier = %i WHERE map_name = '%s' AND run = %i", args, g_szCurrentMap, tier_run[client]);
-			SQL_LockDatabase(g_hDatabase);
-			SQL_FastQuery( g_hDatabase, szQuery );
-			SQL_UnlockDatabase(g_hDatabase);
+			SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 		}
 		SetTierDEV( client, tier_run[client], 1 );
 		CPrintToChatAll(CHAT_PREFIX..."\x0764E664Soldier {white}Tier {lightskyblue}%i {white}have been set for \x0764E664%s {white}<\x0750DCFF%s{white}>", args, g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
@@ -4175,9 +4169,7 @@ public int Handler_SetCustimStartAdv(Menu mMenu, MenuAction action, int client, 
 			CPrintToChatAll(CHAT_PREFIX... "Start Position {lightskyblue}Deleted{white}! <{green}%s{white}>", g_szRunName[NAME_LONG][SetCustZone[client]]);
 		}
 
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, query );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
 
 		SetupZoneSpawns();
 

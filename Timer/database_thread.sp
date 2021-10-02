@@ -347,7 +347,7 @@ public int Handler_top( Menu mMenu, MenuAction action, int client, int item )
 	{
 		char szQuery[192];
 		FormatEx(szQuery, sizeof( szQuery ), "SELECT run FROM "...TABLE_MAPINFO..." WHERE map_name = '%s'", db_map[client] );
-		g_hDatabase.Query( NormalTop, szQuery, client );
+		FakeClientCommand(client, "sm_top %s", db_map[client]);
 		return 0;
     }
 	}
@@ -566,9 +566,7 @@ public void Threaded_RetrieveClientData( Database hOwner, DBResultSet hQuery, co
 		rankdemo[client] = hQuery.FetchInt( 6 );
 		g_hDatabase.Format( szQuery, sizeof( szQuery ), "UPDATE plydata SET overall = (select sum(pts) from maprecs where uid = %i), solly = (select sum(pts) from maprecs where uid = %i and mode = 1), demo = (select sum(pts) from maprecs where uid = %i and mode = 3) WHERE uid = %i", g_iClientId[client], g_iClientId[client], g_iClientId[client], g_iClientId[client] );
 		
-		SQL_LockDatabase(g_hDatabase);
-		SQL_FastQuery( g_hDatabase, szQuery );
-		SQL_UnlockDatabase(g_hDatabase);
+		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 	}
 	
 	// Then we get the times.
@@ -1071,9 +1069,7 @@ public void Threaded_NewID_Final( Database hOwner, DBResultSet hQuery, const cha
 	szLink,
 	IP,
 	szSteam );
-	SQL_LockDatabase(g_hDatabase);
-	SQL_FastQuery( g_hDatabase, szQuery );
-	SQL_UnlockDatabase(g_hDatabase);
+	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 	
 	
 	if ( hQuery.RowCount )
@@ -1487,7 +1483,7 @@ public void Threaded_DeleteCpRecord( Database hOwner, DBResultSet hQuery, const 
 }
 
 // No special callback is needed.
-public void Threaded_Empty( Database hOwner, DBResultSet hQuery, const char[] szError, int client )
+public void Threaded_Empty( Handle hOwner, Handle hQuery, char[] szError, any client )
 {
 	if ( hQuery == null )
 	{
