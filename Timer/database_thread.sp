@@ -755,6 +755,11 @@ public void Threaded_GetRank( Database hOwner, DBResultSet hQuery, const char[] 
 	delete hQuery;
 }
 
+public void OnTxnFail( Database g_hDatabase, any data, int numQueries, const char[] error, int failIndex, any[] queryData )
+{
+	DB_LogError( error[failIndex] );
+}
+
 public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int numQueries, DBResultSet[] hQuery, any[] queryData )
 {
 	int client;
@@ -877,7 +882,7 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				points3 = points + points2;
 				CPrintToChat(client, CHAT_PREFIX..."Gained "...CLR_CUSTOM1..."%.1f {white}%s points!", points3, (style == STYLE_DEMOMAN) ? "Demoman" : "Soldier" );
 				
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = %.1f,%s WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? " beaten = 0," : "", g_szCurrentMap, g_iClientId[client], run, mode);
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = %.1f%s WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? ", beaten = 0" : "", g_szCurrentMap, g_iClientId[client], run, mode);
 				transaction.AddQuery(szTrans);
 
 				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i AND mode = %i) WHERE uid = %i;", (mode == MODE_SOLDIER) ? "solly" : "demo", g_iClientId[client], mode, g_iClientId[client]);
@@ -934,7 +939,7 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				transaction.AddQuery(szTrans);
 			}
 
-			SQL_ExecuteTransaction(g_hDatabase, transaction);
+			SQL_ExecuteTransaction(g_hDatabase, transaction, _, OnTxnFail);
 
 			DB_RetrieveClientData( client );
 		}

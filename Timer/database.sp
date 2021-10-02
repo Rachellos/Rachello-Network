@@ -937,7 +937,7 @@ stock void DB_DisplayClientRank( int client, int run = RUN_MAIN, int style = STY
 	ArrayList hData = new ArrayList( sizeof( iData ) );
 	hData.PushArray( iData, sizeof( iData ) );
 
-	SQL_ExecuteTransaction(g_hDatabase, t, OnDisplayRankTxnSuccess, _, hData);
+	SQL_ExecuteTransaction(g_hDatabase, t, OnDisplayRankTxnSuccess, OnTxnFail, hData);
 }
 
 stock bool DB_SaveClientRecord( int client, float flNewTime )
