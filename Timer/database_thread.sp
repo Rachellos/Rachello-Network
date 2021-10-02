@@ -877,7 +877,7 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				points3 = points + points2;
 				CPrintToChat(client, CHAT_PREFIX..."Gained "...CLR_CUSTOM1..."%.1f {white}%s points!", points3, (style == STYLE_DEMOMAN) ? "Demoman" : "Soldier" );
 				
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = %.1f,%s allranks = %i WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? " beaten = 0," : "", outof, g_szCurrentMap, g_iClientId[client], run, mode);
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = %.1f,%s WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? " beaten = 0," : "", g_szCurrentMap, g_iClientId[client], run, mode);
 				transaction.AddQuery(szTrans);
 
 				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i AND mode = %i) WHERE uid = %i;", (mode == MODE_SOLDIER) ? "solly" : "demo", g_iClientId[client], mode, g_iClientId[client]);
@@ -917,12 +917,6 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 			transaction.AddQuery(szTrans);
 
 			g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET orank = (@curOverRank := @curOverRank + 1) where solly > 0.0 or demo > 0.0 ORDER BY overall DESC;" );
-			transaction.AddQuery(szTrans);
-
-			g_hDatabase.Format(szTrans, sizeof(szTrans), "SELECT @curAllRank := (select max(`rank`) from maprecs where `map` = '%s' and `run` = %i and `mode` = %i);", g_szCurrentMap, run, mode );
-			transaction.AddQuery(szTrans);
-
-			g_hDatabase.Format(szTrans, sizeof(szTrans), "update maprecs set allranks = @curAllRank where map = '%s' and run = %i and mode = %i;", g_szCurrentMap, run, mode );
 			transaction.AddQuery(szTrans);
 
 			if (rank == 1 && outof > 1)

@@ -512,7 +512,7 @@ stock void DB_RecordInfo( int client, int id )
 	
 	static char szQuery[512];
 	hPanel.Send( client, Handler_Empty, MENU_TIME_FOREVER );
-	FormatEx( szQuery, sizeof( szQuery ),  "SELECT uid, map, run, style, mode, time, pts, date, name, recordid, `rank`, allranks, server_id FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE recordid = %i", id );	
+	FormatEx( szQuery, sizeof( szQuery ),  "SELECT uid, map, run, style, mode, time, pts, date, name, recordid, `rank`, (select `rank` from maprecs where map = record.map and run = record.run and mode = record.mode order by `rank` desc limit 1), server_id FROM "...TABLE_RECORDS..." as record NATURAL JOIN "...TABLE_PLYDATA..." WHERE recordid = %i", id );	
 	
 	g_hDatabase.Query( Threaded_RecordInfo, szQuery, client, DBPrio_Normal );
 	delete hPanel;
@@ -1258,12 +1258,6 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 	g_hDatabase.Format(szT8, sizeof(szT8), "(SELECT @curRank := 0);");
 	g_hDatabase.Format(szT9, sizeof(szT9), "UPDATE "...TABLE_PLYDATA..." SET orank = (@curRank := @curRank + 1) where (select sum(pts) from maprecs where uid = plydata.uid) > 0.0 ORDER BY (select sum(pts) from maprecs where uid = plydata.uid) DESC;" );
 
-	Transaction t4s = new Transaction();
-	g_hDatabase.Format(szT10, sizeof(szT10), "(SELECT @curRank := (select max(rank) from maprecs where `map` = '%s' and `run` = %i and `mode` = %i));", map, run, mode );
-	g_hDatabase.Format(szT11, sizeof(szT11), "update maprecs set allranks = @curRank where map = '%s' and run = %i and mode = %i", map, run, mode );
-
-
-
 	t1s.AddQuery(szT4);
 	t1s.AddQuery(szT5);
 	t1s.AddQuery(szT12);
@@ -1272,13 +1266,10 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 	t2s.AddQuery(szT7);
 	t3s.AddQuery(szT8);
 	t3s.AddQuery(szT9);
-	t4s.AddQuery(szT10);
-	t4s.AddQuery(szT11);
 
 	SQL_ExecuteTransaction(g_hDatabase, t1s);
 	SQL_ExecuteTransaction(g_hDatabase, t2s);
 	SQL_ExecuteTransaction(g_hDatabase, t3s);
-	SQL_ExecuteTransaction(g_hDatabase, t4s);
 
 	char socket_key[20];
 	GetConVarString(CVAR_MessageKey, socket_key, sizeof(socket_key));

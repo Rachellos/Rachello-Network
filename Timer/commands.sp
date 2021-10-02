@@ -2414,9 +2414,9 @@ public Action Command_PersonalRecords( int client, int args )
 		g_hDatabase.Format(query, sizeof(query), "SELECT map_name, run, \
 		(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i), \
 		(SELECT `rank` from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i), \
-		(SELECT allranks from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i), \
+		(SELECT `rank` from maprecs where map = map_info.map_name and run = map_info.run and mode = %i order by `rank` desc limit 1), \
 		(SELECT pts from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i) \
-		from map_info where map_name = '%s' ORDER BY run ASC", RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], g_szCurrentMap);
+		from map_info where map_name = '%s' ORDER BY run ASC", RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], RunClass[client], RunClass[client], g_iClientId[client], g_szCurrentMap);
 	}
 	else
 	{
@@ -2426,9 +2426,9 @@ public Action Command_PersonalRecords( int client, int args )
 			g_hDatabase.Format(query, sizeof(query), "SELECT map_name, run, \
 			(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i), \
 			(SELECT `rank` from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i), \
-			(SELECT allranks from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i), \
+			(SELECT `rank` from maprecs where map = map_info.map_name and run = map_info.run and mode = %i order by `rank` desc limit 1), \
 			(SELECT pts from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i) \
-			from map_info where map_name = '%s' ORDER BY run ASC", RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], displayName);
+			from map_info where map_name = '%s' ORDER BY run ASC", RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], RunClass[client], RunClass[client], g_iClientId[client], displayName);
 		}
 		else
 		{
@@ -3129,9 +3129,9 @@ public int Handler_PrMenu( Menu mMenu, MenuAction action, int client, int item )
 			g_hDatabase.Format(query, sizeof(query), "SELECT map_name, run, \
 			(SELECT time from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i), \
 			(SELECT `rank` from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i), \
-			(SELECT allranks from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i), \
+			(SELECT `rank` from maprecs where map = map_info.map_name and run = map_info.run and mode = %i order by `rank` desc limit 1), \
 			(SELECT pts from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i) \
-			from map_info where map_name = '%s' ORDER BY run ASC", RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], profile_map[client]);
+			from map_info where map_name = '%s' ORDER BY run ASC", RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], RunClass[client], RunClass[client], g_iClientId[client], profile_map[client]);
 
 			g_hDatabase.Query(PersonalRecordsCallBack, query, client);
 		}
@@ -3635,13 +3635,13 @@ public void Threaded_SRank( Database hOwner, DBResultSet hQuery, const char[] sz
 
 public Action STime( int client, int args )
 {
-	char name[32], map[32], szQuery[192], displayName[32];
+	char name[32], map[32], szQuery[300], displayName[32];
 	int target, rank;
 	bool is_rank;
 	GetCmdArg(1, map, sizeof(map));
 	GetCmdArg(2, name, sizeof(name));
 	if (StrEqual(name, "") && StrEqual(map, ""))
-		FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 1", g_iClientId[client], g_szCurrentMap);
+		FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 1 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 1", g_szCurrentMap, g_iClientId[client], g_szCurrentMap);
 	else if (StrEqual(name, "") && !StrEqual(map, "") )
 	{	
 		for (int i=0; i<strlen(map); i++)
@@ -3659,27 +3659,27 @@ public Action STime( int client, int args )
 		if (is_rank)
 		{
 			StringToIntEx(map, rank);
-			FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE `rank` = %i AND map = '%s' AND run = 0 AND mode = 1", rank, g_szCurrentMap);
+			FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 1 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE `rank` = %i AND map = '%s' AND run = 0 AND mode = 1", g_szCurrentMap, rank, g_szCurrentMap);
 		}
 		else
 		{
 			target = FindTarget( client, map, true, false );
 			if (target != -1)
 			{
-				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 1", g_iClientId[target], g_szCurrentMap);
+				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 1 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 1", g_szCurrentMap, g_iClientId[target], g_szCurrentMap);
 			}	
 			else
 			{
-				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' AND map = '%s' AND run = 0 AND mode = 1", map, g_szCurrentMap);
+				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 1 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' AND map = '%s' AND run = 0 AND mode = 1", g_szCurrentMap, map, g_szCurrentMap);
 			}
 			if ( GetMapDisplayName(map, displayName, sizeof(displayName)) )
 			{
-				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 1", g_iClientId[client], displayName);
+				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 1 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 1", displayName, g_iClientId[client], displayName);
 			}
 			else
 			{
 				if (target > -1)
-					FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 1", g_iClientId[target], g_szCurrentMap);
+					FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 1 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 1", g_szCurrentMap, g_iClientId[target], g_szCurrentMap);
 			}
 		}
 	}
@@ -3704,14 +3704,14 @@ public Action STime( int client, int args )
 			if (is_rank)
 			{
 				StringToIntEx(name, rank);
-				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE `rank` = %i AND map = '%s' AND run = 0 AND mode = 1", rank, displayName);
+				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 1 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE `rank` = %i AND map = '%s' AND run = 0 AND mode = 1", displayName, rank, displayName);
 			}
 			else
 			{
 				if (target != -1)
-					FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 1", g_iClientId[target], displayName);
+					FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 1 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 1", displayName, g_iClientId[target], displayName);
 				else
-					FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' AND map = '%s' AND run = 0 AND mode = 1", name, displayName);	
+					FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 1 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' AND map = '%s' AND run = 0 AND mode = 1", displayName, name, displayName);	
 			}
 		}
 	}
@@ -3747,13 +3747,13 @@ public void Threaded_STime( Database hOwner, DBResultSet hQuery, const char[] sz
 
 public Action DTime( int client, int args )
 {
-	char name[32], map[32], szQuery[192], displayName[32];
+	char name[32], map[32], szQuery[300], displayName[32];
 	int target, rank;
 	bool is_rank;
 	GetCmdArg(1, map, sizeof(map));
 	GetCmdArg(2, name, sizeof(name));
 	if (StrEqual(name, "") && StrEqual(map, ""))
-		FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 3", g_iClientId[client], g_szCurrentMap);
+		FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 3 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 3", g_szCurrentMap, g_iClientId[client], g_szCurrentMap);
 	else if (StrEqual(name, "") && !StrEqual(map, "") )
 	{	
 		for (int i=0; i<strlen(map); i++)
@@ -3771,27 +3771,27 @@ public Action DTime( int client, int args )
 		if (is_rank)
 		{
 			StringToIntEx(map, rank);
-			FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE `rank` = %i AND map = '%s' AND run = 0 AND mode = 3", rank, g_szCurrentMap);
+			FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 3 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE `rank` = %i AND map = '%s' AND run = 0 AND mode = 3", g_szCurrentMap, rank, g_szCurrentMap);
 		}
 		else
 		{
 			target = FindTarget( client, map, true, false );
 			if (target != -1)
 			{
-				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 3", g_iClientId[target], g_szCurrentMap);
+				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 3 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 3", g_szCurrentMap, g_iClientId[target], g_szCurrentMap);
 			}	
 			else
 			{
-				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' AND map = '%s' AND run = 0 AND mode = 3", map, g_szCurrentMap);
+				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 3 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' AND map = '%s' AND run = 0 AND mode = 3", g_szCurrentMap, map, g_szCurrentMap);
 			}
 			if ( GetMapDisplayName(map, displayName, sizeof(displayName)) )
 			{
-				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 3", g_iClientId[client], displayName);
+				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 3 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 3", displayName, g_iClientId[client], displayName);
 			}
 			else
 			{
 				if (target > -1)
-					FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 3", g_iClientId[target], g_szCurrentMap);
+					FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 3 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 3", g_szCurrentMap, g_iClientId[target], g_szCurrentMap);
 			}
 		}
 	}
@@ -3816,14 +3816,14 @@ public Action DTime( int client, int args )
 			if (is_rank)
 			{
 				StringToIntEx(name, rank);
-				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE `rank` = %i AND map = '%s' AND run = 0 AND mode = 3", rank, displayName);
+				FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 3 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE `rank` = %i AND map = '%s' AND run = 0 AND mode = 3", displayName, rank, displayName);
 			}
 			else
 			{
 				if (target != -1)
-					FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 3", g_iClientId[target], displayName);
+					FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 3 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE uid = %i AND map = '%s' AND run = 0 AND mode = 3", displayName, g_iClientId[target], displayName);
 				else
-					FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, allranks, map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' AND map = '%s' AND run = 0 AND mode = 3", name, displayName);	
+					FormatEx(szQuery, sizeof(szQuery), "SELECT uid, time, `rank`, (select `rank` from maprecs where map = '%s' and run = 0 and mode = 3 order by `rank` desc limit 1), map, name FROM "...TABLE_RECORDS..." NATURAL JOIN "...TABLE_PLYDATA..." WHERE name LIKE '%s%%' AND map = '%s' AND run = 0 AND mode = 3", displayName, name, displayName);	
 			}
 		}
 	}
