@@ -229,6 +229,18 @@ public bool RunIsCourse(int run)
 }
 
 // Used for players and other entities.
+stock bool IsInsideBounds( int ent, float vecMins[3], float vecMaxs[3] )
+{
+	static float vecPos[3];
+	GetEntPropVector( ent, Prop_Send, "m_vecOrigin", vecPos );
+	
+	// As of 1.4.4, we correct zone mins and maxs.
+	if ( (vecMins[0] <= vecPos[0] <= vecMaxs[0] ) && ( vecMins[1] <= vecPos[1] <= vecMaxs[1] ) && ( vecMins[2] <= vecPos[2] <= vecMaxs[2] ) )
+		return true;
+	else
+		return false;
+}
+
 stock bool IsInsideBoundsPlayer( int client, float vecMins[3], float vecMaxs[3] )
 {
 	if (IsClientInGame(client) && IsClientConnected(client) && IsPlayerAlive(client))

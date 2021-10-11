@@ -75,7 +75,7 @@ public OnDemoCompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:
 		return;
 	}
 	decl String:path[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, path, sizeof(path), "recordings/bz2/%s.bz2", filename);
+	BuildPath(Path_SM, path, sizeof(path), "recordings\\bz2\\%s.bz2", filename);
 	
 	if ( FileExists(path) && FileSize(path) < 10)
 	{
@@ -84,7 +84,7 @@ public OnDemoCompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:
 
 		DeleteFile(path);
 
-		BuildPath(Path_SM, path, sizeof(path), "recordings/%s", filename);
+		BuildPath(Path_SM, path, sizeof(path), "recordings\\%s", filename);
 
 		if (!FileExists(path) || FileSize(path) < 10)
 		{
@@ -92,7 +92,7 @@ public OnDemoCompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:
 			return;
 		}
 
-		BuildPath(Path_SM, path, sizeof(path), "recordings/%s", filename);
+		BuildPath(Path_SM, path, sizeof(path), "recordings\\%s", filename);
 		pack = CreateDataPack();
 		WritePackString(pack, path);
 		CreateTimer(0.5, Timer_CompressDemo, pack);
@@ -101,12 +101,12 @@ public OnDemoCompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:
 	g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s.bz2'", DEMO_READY, filename);
 	SQL_TQuery(g_hDatabase, Threaded_Empty, query);
 
-	BuildPath(Path_SM, path, sizeof(path), "recordings/%s", filename);
+	BuildPath(Path_SM, path, sizeof(path), "recordings\\%s", filename);
 	DeleteFile(path);
 
 	if (requested || requestedByMenu)
 	{
-		BuildPath(Path_SM, path, sizeof(path), "recordings/bz2/%s.bz2", filename);
+		BuildPath(Path_SM, path, sizeof(path), "recordings\\bz2\\%s.bz2", filename);
 		
 		EasyFTP_UploadFile("demos", path, "/", EasyFTP_CallBack);
 
@@ -135,13 +135,23 @@ public EasyFTP_CallBack(const String:sTarget[], const String:sLocalFile[], const
     {
     	char demo[400], query[400];
     	FormatEx(demo, sizeof(demo), "%s", sLocalFile);
-    	ReplaceString(demo, sizeof(demo), "addons/sourcemod/recordings/bz2/", "");
+		if (System2_GetOS() == OS_WINDOWS)
+    		ReplaceString(demo, sizeof(demo), "addons\\sourcemod\\recordings\\bz2\\", "");
+		else
+			ReplaceString(demo, sizeof(demo), "addons/sourcemod/recordings/bz2/", "");
     	g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_UPLOADED, demo);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, query);
+
+		if (System2_GetOS() == OS_WINDOWS)
+		{
+			g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demourl = '%s' WHERE demourl = '%s'", DEMO_UPLOADED, sLocalFile);
+			SQL_TQuery(g_hDatabase, Threaded_Empty, query);
+		}
+
         PrintToServer("Success. File %s uploaded.", sLocalFile);
 		PrintToAdmins("{lightskyblue}Success. {white}Demo Uploaded!");
 
-    } else { 
+    } else {
         PrintToServer("Failed uploading %s.", sLocalFile);   
 
 		PrintToAdmins("{red}ERROR {white}| Failed uploading demo");

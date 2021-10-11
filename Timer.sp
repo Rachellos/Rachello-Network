@@ -2771,7 +2771,7 @@ stock void SetupZoneSpawns()
 	{
 		for (int i = 0; i < NUM_RUNS+20; i+=2 )
 		{
-			if ( g_bZoneExists[i][0] && !bFoundAng[i/2] && IsInsideBoundsPlayer( ent, g_vecZoneMins[i][0], g_vecZoneMaxs[i][0] ) )
+			if ( g_bZoneExists[i][0] && !bFoundAng[i/2] && IsInsideBounds( ent, g_vecZoneMins[i][0], g_vecZoneMaxs[i][0] ) )
 			{
 				GetEntPropVector( ent, Prop_Data, "m_angRotation", vecAngle );
 

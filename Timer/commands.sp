@@ -2695,11 +2695,9 @@ public void ChooseSortMethod(int client, bool incomplete, char[] run)
 	menu.AddItem(run, "Sort in descending order (T6s-T1s)\n ");
 
 	menu.AddItem(run, "Sort by map name\n ");
-	
+
 	menu.ExitBackButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
-
-	
 }
 
 public int Handler_IncompleteMenu( Menu mMenu, MenuAction action, int client, int item )
