@@ -790,9 +790,6 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 		if ( 99999999999 > rank > outof )
 			outof = rank;
 
-		if (rank <= 10)
-			requested=true;
-
 		float CompletionPoints[3][6] = 
 		{
 			//Map
@@ -858,7 +855,7 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 		float points = CompletionPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1], points2 = 0.0;
 		
 		char db_run[40];
-		char szTrans[200];
+		char szTrans[1024];
 
 		Transaction transaction = new Transaction();
 
@@ -882,13 +879,14 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				points3 = points + points2;
 				CPrintToChat(client, CHAT_PREFIX..."Gained "...CLR_CUSTOM1..."%.1f {white}%s points!", points3, (style == STYLE_DEMOMAN) ? "Demoman" : "Soldier" );
 				
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = %.1f%s WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? ", beaten = 0" : "", g_szCurrentMap, g_iClientId[client], run, mode);
-				transaction.AddQuery(szTrans);
+				g_hDatabase.Format(szTrans, sizeof(szTrans), 
+				"UPDATE "...TABLE_RECORDS..." SET pts = %.1f%s WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i; \
+				UPDATE "...TABLE_PLYDATA..." SET %s = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i AND mode = %i) WHERE uid = %i; \
+				UPDATE "...TABLE_PLYDATA..." SET overall = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i) WHERE uid = %i;"
+				, points3, (rank == 1) ? ", beaten = 0" : "", g_szCurrentMap, g_iClientId[client], run, mode
+				, (mode == MODE_SOLDIER) ? "solly" : "demo", g_iClientId[client], mode, g_iClientId[client]
+				, g_iClientId[client], g_iClientId[client]);
 
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i AND mode = %i) WHERE uid = %i;", (mode == MODE_SOLDIER) ? "solly" : "demo", g_iClientId[client], mode, g_iClientId[client]);
-				transaction.AddQuery(szTrans);
-
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET overall = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i) WHERE uid = %i;", g_iClientId[client], g_iClientId[client]);
 				transaction.AddQuery(szTrans);
 			}
 

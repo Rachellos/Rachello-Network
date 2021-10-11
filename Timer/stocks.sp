@@ -13,6 +13,15 @@ stock any ArrayGet( any[] Array, int index )
 	return Array[index];
 }
 
+stock void PrintToAdmins(const char[] msg, any...)
+{
+	for (int client = 1; client <= MaxClients; client++)
+		if (IsClientInGame(client) &&
+		 	IsClientConnected(client) && 
+			(GetUserFlagBits(client) & ADMFLAG_ROOT))
+			CPrintToChat(client, "{orange}ADMIN MSG {white}::\n%s", msg);
+}
+
 stock void CorrectMinsMaxs( float vecMins[3], float vecMaxs[3] )
 {
 	// Corrects map zones.
@@ -106,8 +115,6 @@ stock void FormatSeconds( float flSeconds, char szTarget[TIME_SIZE_DEF], int fFl
 	{
 	FormatEx( szTarget, TIME_SIZE_DEF, "%id:%i:%02i:%s", iDay, iHours, iMins, szSec );
     }
-	
-	
 }
 
 public int FormatTimeDuration(char[] buffer, int maxlen, int time)
@@ -190,19 +197,6 @@ stock int FindSlotByWeapon( int client, int weapon )
 	return -1;
 }
 
-stock void SetClientPredictedAirAcceleration( int client, float aa )
-{
-	char szValue[8];
-	FormatEx( szValue, sizeof( szValue ), "%0.f", aa );
-	
-	SendConVarValue( client, g_ConVar_AirAccelerate, szValue );
-}
-
-stock void SetClientFrags( int client, int frags )
-{
-	SetEntProp( client, Prop_Data, "m_iFrags", frags );
-}
-
 stock int GetActivePlayers( int ignore = 0 )
 {
 	int clients;
@@ -235,28 +229,8 @@ public bool RunIsCourse(int run)
 }
 
 // Used for players and other entities.
-stock bool IsInsideBounds( int ent, float vecMins[3], float vecMaxs[3] )
-{
-	static float vecPos[3];
-	GetEntPropVector( ent, Prop_Send, "m_vecOrigin", vecPos );
-	
-	// As of 1.4.4, we correct zone mins and maxs.
-	if ( (vecMins[0] <= vecPos[0] <= vecMaxs[0] ) && ( vecMins[1] <= vecPos[1] <= vecMaxs[1] ) && ( vecMins[2] <= vecPos[2] <= vecMaxs[2] ) )
-		return true;
-	else
-		return false;
-}
-
 stock bool IsInsideBoundsPlayer( int client, float vecMins[3], float vecMaxs[3] )
 {
-	/*static float vecPos[3];
-	GetEntPropVector( ent, Prop_Send, "m_vecOrigin", vecPos );
-	
-	// As of 1.4.4, we correct zone mins and maxs.
-	if ( (vecMins[0] <= vecPos[0] <= vecMaxs[0] ) && ( vecMins[1] <= vecPos[1] <= vecMaxs[1] ) && ( vecMins[2] <= vecPos[2] <= vecMaxs[2] ) )
-		return true;
-	else
-		return false;*/
 	if (IsClientInGame(client) && IsClientConnected(client) && IsPlayerAlive(client))
 	{
 		float eyePos[3];

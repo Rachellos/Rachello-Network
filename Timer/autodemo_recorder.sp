@@ -14,13 +14,12 @@ public OnLockedConVarChanged(Handle:convar, const String:oldValue[], const Strin
 
 public Action:Timer_Delay(Handle:timer) {
 
-	decl String:time[64], String:map[64];
-	FormatTime(time, sizeof(time), "%Y-%m-%d_%H-%M-%S", GetTime());
-	decl String:time2[64];
-
-	strcopy(time2, sizeof(time2), time);
+	decl String:date[64], String:map[64];
+	FormatTime(date, sizeof(date), "%Y-%m-%d_%H-%M-%S", GetTime());
+	
 	GetCurrentMap(map, sizeof(map));
-	Format(currentDemoFilename, sizeof(currentDemoFilename), "%s__%s.dem", time2, map);
+	Format(currentDemoFilename, sizeof(currentDemoFilename), "%s__%s.dem", date, map);
+	FormatEx(DemoUrl, sizeof(DemoUrl), "%s__%s.dem.bz2", date, map);
 	decl String:path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), "recordings/%s", currentDemoFilename);
 	ServerCommand("tv_record %s", path);
@@ -33,7 +32,7 @@ public Action:Timer_CompressDemo(Handle:timer, any:pack) {
 	ReadPackString(pack, filename, sizeof(filename));
 	decl String:input[PLATFORM_MAX_PATH], String:output[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, input, sizeof(input), "recordings/%s", filename);
-	if (FileSize(input) < 100)
+	if (FileSize(input) < 10)
 	{
 		g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s.bz2'", DEMO_ERROR, filename);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, query);
@@ -70,13 +69,9 @@ public OnDemoCompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:
 		LogBZ2Error(iError, suffix);
 		g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s.bz2'", DEMO_ERROR, filename);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, query);
-		for (int client = 1; client <= MaxClients; client++)
-		{
-			if (IsClientInGame(client) && IsClientConnected(client) && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			{
-				CPrintToChat(client, CHAT_PREFIX..."{red}Failed {white}compressing %s.bz2...", filename);
-			}
-		}
+
+		PrintToAdmins("{red}Failed {white}compressing %s.bz2...", filename);
+
 		return;
 	}
 	decl String:path[PLATFORM_MAX_PATH];
@@ -91,25 +86,9 @@ public OnDemoCompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:
 
 		BuildPath(Path_SM, path, sizeof(path), "recordings/%s", filename);
 
-		if (FileExists(path) && FileSize(path) > 10)
+		if (!FileExists(path) || FileSize(path) < 10)
 		{
-			for (int client = 1; client <= MaxClients; client++)
-			{
-				if (IsClientInGame(client) && IsClientConnected(client) && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-				{
-					CPrintToChat(client, CHAT_PREFIX..."{red}An error occurred{white}. Repeat compression...");
-				}
-			}
-		}
-		else
-		{
-			for (int client = 1; client <= MaxClients; client++)
-			{
-				if (IsClientInGame(client) && IsClientConnected(client) && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-				{
-					CPrintToChat(client, CHAT_PREFIX..."{red}Fatal Error{white}. The file is corrupted or deleted");
-				}
-			}
+			PrintToAdmins("{red}Fatal Error{white}. The file is corrupted or deleted");
 			return;
 		}
 
@@ -121,8 +100,6 @@ public OnDemoCompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:
 	}
 	g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s.bz2'", DEMO_READY, filename);
 	SQL_TQuery(g_hDatabase, Threaded_Empty, query);
-
-	
 
 	BuildPath(Path_SM, path, sizeof(path), "recordings/%s", filename);
 	DeleteFile(path);
@@ -141,13 +118,8 @@ public OnDemoCompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:
 		
 		g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s.bz2'", DEMO_UPLOADING, filename);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, query);
-		for (int client = 1; client <= MaxClients; client++)
-		{
-			if (IsClientInGame(client) && IsClientConnected(client) && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			{
-				CPrintToChat(client, CHAT_PREFIX..."Uploading %s.bz2...", currentDemoFilename);
-			}
-		}
+
+		PrintToAdmins("Uploading %s.bz2...", currentDemoFilename);
 	}
 }
 
@@ -167,23 +139,11 @@ public EasyFTP_CallBack(const String:sTarget[], const String:sLocalFile[], const
     	g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_UPLOADED, demo);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, query);
         PrintToServer("Success. File %s uploaded.", sLocalFile);
-        for (int client = 1; client <= MaxClients; client++)
-		{
-			if (IsClientInGame(client) && IsClientConnected(client) && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			{
-				CPrintToChat(client, CHAT_PREFIX..."{lightskyblue}Success. {white}Demo Uploaded!");
-			}
-		}
+		PrintToAdmins("{lightskyblue}Success. {white}Demo Uploaded!");
 
     } else { 
         PrintToServer("Failed uploading %s.", sLocalFile);   
 
-        for (int client = 1; client <= MaxClients; client++)
-		{
-			if (IsClientInGame(client) && IsClientConnected(client) && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			{
-				CPrintToChat(client, "{red}ERROR {white}| Failed uploading demo");
-			}
-		}
+		PrintToAdmins("{red}ERROR {white}| Failed uploading demo");
     }
 }  

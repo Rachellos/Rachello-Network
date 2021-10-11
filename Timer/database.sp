@@ -727,13 +727,21 @@ public void Threaded_DemoInfo( Database hOwner, DBResultSet hQuery, const char[]
 		{
 			DrawPanelItem(panel,"Print link");
 		}
-		DrawPanelText(panel," ");
-
-		if (demo == DEMO_UPLOADING || demo == DEMO_READY || demo == DEMO_RECORDING)
+		else if (demo == DEMO_UPLOADING || demo == DEMO_RECORDING)
 		{
 			panel.CurrentKey = 2;
 			DrawPanelItem(panel,"Refresh");
 			DrawPanelText(panel," ");
+		}
+		else if (demo == DEMO_READY && FileExists(path))
+		{
+			panel.CurrentKey = 3;
+			DrawPanelItem(panel,"Upload demo");
+
+			DrawPanelText(panel," ");
+
+			panel.CurrentKey = 5;
+			DrawPanelItem(panel,"Delete demo\n ");
 		}
 		char demosz[150];
 		strcopy(demosz, sizeof(demosz), DemoUrlClient[client]);
@@ -760,20 +768,6 @@ public void Threaded_DemoInfo( Database hOwner, DBResultSet hQuery, const char[]
 			}
 				
 			DrawPanelText(panel," ");
-		}
-		if (GetUserFlagBits(client) & ADMFLAG_ROOT)
-		{
-			if (demo == DEMO_READY && FileExists(path))
-			{
-				panel.CurrentKey = 3;
-				DrawPanelItem(panel,"Upload demo");
-
-				DrawPanelText(panel," ");
-
-				panel.CurrentKey = 5;
-				DrawPanelItem(panel,"Delete demo\n ");
-
-			}
 		}
 
 		panel.CurrentKey = 8;

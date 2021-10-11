@@ -975,7 +975,7 @@ public void OnPluginStart()
 
 	requested = false;
 	char path[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, path, sizeof(path), "recordings/bz2");
+	BuildPath(Path_SM, path, sizeof(path), "recordings/bz2/");
 	if(!DirExists(path)) {
 		CreateDirectory(path, FPERM_U_READ|FPERM_U_WRITE|FPERM_U_EXEC|FPERM_G_READ|FPERM_G_EXEC|FPERM_O_READ|FPERM_O_EXEC);
 	}
@@ -2021,7 +2021,6 @@ public void OnClientConnected(int client) {
 			char map3[64];
 			FormatTime(time3, sizeof(time3), "%Y-%m-%d_%H-%M-%S", GetTime());
 			GetCurrentMap(map3, sizeof(map3));
-			FormatEx(DemoUrl, sizeof(DemoUrl), "%s__%s.dem.bz2", time3, map3);
 			CreateTimer(0.0, Timer_Delay, _);
 			STVTickStart = GetGameTickCount();
 		}
@@ -2772,7 +2771,7 @@ stock void SetupZoneSpawns()
 	{
 		for (int i = 0; i < NUM_RUNS+20; i+=2 )
 		{
-			if ( g_bZoneExists[i][0] && !bFoundAng[i/2] && IsInsideBounds( ent, g_vecZoneMins[i][0], g_vecZoneMaxs[i][0] ) )
+			if ( g_bZoneExists[i][0] && !bFoundAng[i/2] && IsInsideBoundsPlayer( ent, g_vecZoneMins[i][0], g_vecZoneMaxs[i][0] ) )
 			{
 				GetEntPropVector( ent, Prop_Data, "m_angRotation", vecAngle );
 
