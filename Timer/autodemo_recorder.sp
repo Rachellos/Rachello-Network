@@ -144,7 +144,7 @@ public EasyFTP_CallBack(const String:sTarget[], const String:sLocalFile[], const
 
 		if (System2_GetOS() == OS_WINDOWS)
 		{
-			g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demourl = '%s' WHERE demourl = '%s'", DEMO_UPLOADED, sLocalFile);
+			g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demourl = '%s' WHERE demourl = '%s'", sLocalFile, demo);
 			SQL_TQuery(g_hDatabase, Threaded_Empty, query);
 		}
 

@@ -259,7 +259,7 @@ int g_fClientHideFlags[MAXPLAYERS+1];
 int RunClass[MAXPLAYERS+1];
 
 char DemoUrl[400];
-char DemoUrlClient[MAXPLAYERS+1][300];
+char DemoUrlClient[MAXPLAYERS+1][500];
 float points3;
 int db_id[MAXPLAYERS+1];
 ConVar gHostPort;
