@@ -784,13 +784,10 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
 		char query[900];
 		if(item == 1) {
-			if (DemoUrlClient[client][0] != 'a'){
-				CPrintToChat(client, CHAT_PREFIX..."\n{orange}game339233.ourserver.ru/demos/server_%i/%s", server_id_database[client], DemoUrlClient[client]);
-			}
-			else{
-				CPrintToChat(client, CHAT_PREFIX..."\n{orange}game339233.ourserver.ru/demos/server_%i", server_id_database[client]);
-				CPrintToChat(client, "{orange}/%s", DemoUrlClient[client]);
-			}
+			char link[256];
+			FormatEx(link, sizeof(link), DemoUrlClient[client]);
+			ReplaceString(link, sizeof(link), "\\", "%5c");
+			CPrintToChat(client, CHAT_PREFIX..."\n{orange}game339233.ourserver.ru/demos/server_%i/%s", server_id_database[client], link);
 			DemoInfo(client, DemoInfoId[client] );
 			return 0;
 		}

@@ -15,14 +15,15 @@ public OnLockedConVarChanged(Handle:convar, const String:oldValue[], const Strin
 public Action:Timer_Delay(Handle:timer) {
 
 	decl String:date[64], String:map[64];
-	FormatTime(date, sizeof(date), "%Y-%m-%d_%H-%M-%S", GetTime());
 	GetCurrentMap(map, sizeof(map));
 
 	if (System2_GetOS() == OS_WINDOWS) {
+		FormatTime(date, sizeof(date), "%Y-%m-%d_%H-%S", GetTime());
 		Format(currentDemoFilename, sizeof(currentDemoFilename), "%s.dem", date);
 		FormatEx(DemoUrl, sizeof(DemoUrl), "%s.dem.bz2", date);
 	}
 	else {
+		FormatTime(date, sizeof(date), "%Y-%m-%d_%H-%M-%S", GetTime());
 		Format(currentDemoFilename, sizeof(currentDemoFilename), "%s__%s.dem", date, map);
 		FormatEx(DemoUrl, sizeof(DemoUrl), "%s__%s.dem.bz2", date, map);
 	}
