@@ -16,10 +16,16 @@ public Action:Timer_Delay(Handle:timer) {
 
 	decl String:date[64], String:map[64];
 	FormatTime(date, sizeof(date), "%Y-%m-%d_%H-%M-%S", GetTime());
-	
 	GetCurrentMap(map, sizeof(map));
-	Format(currentDemoFilename, sizeof(currentDemoFilename), "%s__%s.dem", date, map);
-	FormatEx(DemoUrl, sizeof(DemoUrl), "%s__%s.dem.bz2", date, map);
+
+	if (System2_GetOS() == OS_WINDOWS) {
+		Format(currentDemoFilename, sizeof(currentDemoFilename), "%s.dem", date);
+		FormatEx(DemoUrl, sizeof(DemoUrl), "%s.dem.bz2", date);
+	}
+	else {
+		Format(currentDemoFilename, sizeof(currentDemoFilename), "%s__%s.dem", date, map);
+		FormatEx(DemoUrl, sizeof(DemoUrl), "%s__%s.dem.bz2", date, map);
+	}
 	decl String:path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), "recordings/%s", currentDemoFilename);
 	ServerCommand("tv_record %s", path);

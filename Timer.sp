@@ -183,7 +183,7 @@ int rank;
 // Running
 int SortMethod[MAXPLAYERS+1];
 char SortRun[MAXPLAYERS+1][10];
-char currentDemoFilename[200];
+char currentDemoFilename[400];
 int CpBlock[MAXPLAYERS+1];
 char szWrName[MAX_NAME_LENGTH][NUM_RUNS][NUM_MODES];
 PlayerState g_iClientState[MAXPLAYERS+1]; // Player's previous state (in start/end/running?)

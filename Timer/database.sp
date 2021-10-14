@@ -806,7 +806,6 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 			CPrintToChat(client, CHAT_PREFIX..."Uploading %s...", DemoUrlClient[client]);
 			g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_UPLOADING, DemoUrlClient[client]);
 			EasyFTP_UploadFile("demos", path, "/", EasyFTP_CallBack);
-			DemoInfo(client, DemoInfoId[client] );
 		}
 		else if (item == 4)
 		{
@@ -819,7 +818,6 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 			CreateTimer(0.5, Timer_CompressDemo, pack);
 			CPrintToChat(client, CHAT_PREFIX..."Compression %s...", DemoUrlClient[client]);
 			g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_UPLOADING, DemoUrlClient[client]);
-			DemoInfo(client, DemoInfoId[client] );
 		}
 		else if (item == 5)
 		{
@@ -831,7 +829,6 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 			{
 				CPrintToChat(client, CHAT_PREFIX..."\x0750DCFFSuccess. {white}Demo {red}Deleted{white}!");
 				g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_DELETED, DemoUrlClient[client]);
-				DemoInfo(client, DemoInfoId[client] );
 			}
 			else
 			{
@@ -847,7 +844,6 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 			CPrintToChat(client, CHAT_PREFIX..."Uploading %s...", DemoUrlClient[client]);
 			g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_UPLOADING, DemoUrlClient[client]);
 			EasyFTP_UploadFile("demos", path, "/", EasyFTP_CallBack);
-			DemoInfo(client, DemoInfoId[client] );
 		}
 		else if(item == 8) {
 			Call_StartFunction(INVALID_HANDLE, Func);
@@ -858,6 +854,7 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 			return 0;
 		}
 		SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
+		DemoInfo(client, DemoInfoId[client] );
 	}
 }
 
