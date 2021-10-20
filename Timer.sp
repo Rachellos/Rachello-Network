@@ -99,6 +99,7 @@
 #define HIDEHUD_PERSONALREC		( 1 << 22 )
 #define HIDEHUD_WORLDREC		( 1 << 23 )
 #define HIDEHUD_TIMER			( 1 << 24 )
+#define HIDEHUD_FAST_HUD		( 1 << 25 )
 
 // HUD flags to hide specific objects.
 #define HIDE_FLAGS				3946
@@ -185,7 +186,7 @@ int SortMethod[MAXPLAYERS+1];
 char SortRun[MAXPLAYERS+1][10];
 char currentDemoFilename[400];
 int CpBlock[MAXPLAYERS+1];
-char szWrName[MAX_NAME_LENGTH][NUM_RUNS][NUM_MODES];
+char szWrName[NUM_RUNS][NUM_MODES][32];
 PlayerState g_iClientState[MAXPLAYERS+1]; // Player's previous state (in start/end/running?)
 int g_iClientRun[MAXPLAYERS+1]; // Which run client is doing (main/bonus)?
 int g_iClientStyle[MAXPLAYERS+1]; // Styles W-ONLY/HSW/RHSW etc.
@@ -233,7 +234,7 @@ int g_iClientId[MAXPLAYERS+1]; // IMPORTANT!!
 int g_tier_MapMenu[MAXPLAYERS+1];
 char db_map[MAXPLAYERS+1][100];
 
-bool isHudDrawing[MAXPLAYERS+1];
+bool isHudDrawed[MAXPLAYERS+1];
 float TimeToDrawHud[MAXPLAYERS+1];
 float LastHudDrawing[MAXPLAYERS+1];
 
@@ -1898,7 +1899,7 @@ public void OnClientPutInServer( int client )
 {
 	IsMapMode[client] = true;
 	LastUsage[client] = 0;
-	isHudDrawing[client] = false;
+	isHudDrawed[client] = false;
 	TimeToDrawHud[client] = TIME_INVALID;
 	LastHudDrawing[client] = GetEngineTime();
 	char szSteam[100];
@@ -3168,7 +3169,7 @@ public int Handler_Wipe( Menu mMenu, MenuAction action, int client, int item )
 	return 0;
 }	
 
-stock void DoRecordNotification( int client, char szName[MAX_NAME_LENGTH], int run, int style, int mode, float flNewTime, float flOldBestTime, float flPrevMapBest )
+stock void DoRecordNotification( int client, int run, int style, int mode, float flNewTime, float flOldBestTime, float flPrevMapBest )
 {
 	static char		szTxt[256];
 	char			szImproveTime[TIME_SIZE_DEF];
@@ -3177,7 +3178,7 @@ stock void DoRecordNotification( int client, char szName[MAX_NAME_LENGTH], int r
 	char update_records[200];
 	char socket_key[20], server_tag[15];
 	GetStylePostfix( mode, szStyleFix, true );
-	char			szFormTime[TIME_SIZE_DEF];
+	char			szFormTime[TIME_SIZE_DEF], szName[32];
 	GetClientName( client, szName, sizeof( szName ) );
 	FormatSeconds( flNewTime, szFormTime, FORMAT_2DECI );
 	GetConVarString(CVAR_MessageKey, socket_key, sizeof(socket_key));

@@ -58,7 +58,7 @@ public Action Event_ClientSpawn( Handle hEvent, const char[] szEvent, bool bDont
 	if (g_bClientPractising[client])
 		g_bClientPractising[client] = false;
 	
-	isHudDrawing[client] = false;
+	isHudDrawed[client] = false;
 	TimeToDrawHud[client] = GetEngineTime();
 	LastHudDrawing[client] = GetEngineTime();
 

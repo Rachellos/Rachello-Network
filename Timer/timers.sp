@@ -72,27 +72,28 @@ public Action Timer_Ad( Handle hTimer )
 // Main component of the HUD timer.
 public void OnGameFrame()
 {
-    int client
-        , target
-        , prefix
-        , run
-        , mode;
-
-    float flCurTime, TimeSplit;
-
-    char hintOutput[256]
-        , speed[32]
-        , CpSplit[100]
-        , szCurTime[TIME_SIZE_DEF]
-        , szTimeSplit[TIME_SIZE_DEF];
-
-    for ( client = 1; client <= MaxClients; client++ )
+    static float TimeToDrawRightHud[MAXPLAYERS+1];
+    for ( int client = 1; client <= MaxClients; client++ )
     {
         if ( !IsClientInGame( client ) || !IsClientConnected(client) || IsFakeClient( client ) || IsClientSourceTV( client )) continue;
 
-        target = client;
+        if (TimeToDrawRightHud[client] <= 0.0)
+            TimeToDrawRightHud[client] = GetEngineTime() - 0.5;
 
-        //Handle userMessage = StartMessageOne("HintText", client);
+        int target
+            , prefix
+            , run
+            , mode;
+
+        float flCurTime, TimeSplit;
+
+        char hintOutput[256]
+            , speed[32]
+            , CpSplit[100]
+            , szCurTime[TIME_SIZE_DEF]
+            , szTimeSplit[TIME_SIZE_DEF];
+
+        target = client;
 
         // Dead? Find the player we're spectating.
         if ( GetClientTeam( client ) == TFTeam_Spectator)
@@ -114,32 +115,24 @@ public void OnGameFrame()
 				continue;
         }
 
-        
-		if ( TF2_GetPlayerClass(target) != TFClass_DemoMan && TF2_GetPlayerClass(target) != TFClass_Soldier && GetClientTeam( target ) != TFTeam_Spectator ) { isHudDrawing[target] = false; TimeToDrawHud[target] = TIME_INVALID; continue; }
-        
-        if ( !(g_fClientHideFlags[client] & HIDEHUD_SIDEINFO) )
-        {
-            ShowKeyHintText( client, target );
-        }
+		if ( TF2_GetPlayerClass(target) != TFClass_DemoMan && TF2_GetPlayerClass(target) != TFClass_Soldier && GetClientTeam( target ) != TFTeam_Spectator ) { isHudDrawed[target] = false; TimeToDrawHud[target] = TIME_INVALID; continue; }
 
-        if ( g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD) { isHudDrawing[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue; }
+        if ( g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD
+            && g_fClientHideFlags[client] & HIDEHUD_SIDEINFO )
+            { isHudDrawed[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue; }
         
         run = g_iClientRun[target];
         mode = g_iClientMode[target];
         
-        if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_INVALID || g_iClientRun[target] == RUN_SETSTART ) {isHudDrawing[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue;}
+        if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_INVALID ) {isHudDrawed[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue;}
 
         if (DisplayCpTime[target])
             FormatEx(CpSplit, sizeof(CpSplit), "(%s %c%s)\n", g_fClientHideFlags[target] & HIDEHUD_PRTIME ? "PR" : "WR", CpPlusSplit[target], CpTimeSplit[target]);
 
         if ( szClass[g_iClientRun[target]][g_iClientMode[target]] <= 0 || RegenOn[target])
-        {
             FormatEx(szAmmo[target], sizeof(szAmmo), "+regen");
-        }
         else
-        {
             FormatEx(szAmmo[target], sizeof(szAmmo), "");
-        }
 
         if ( g_fClientHideFlags[client] & HIDEHUD_SPEED )
             FormatEx(speed, sizeof( speed ), "\n(%.0f u/s)\n ", GetEntitySpeed(target));
@@ -151,11 +144,7 @@ public void OnGameFrame()
             FormatEx( szTimerMode[target], sizeof(szTimerMode), "%s", (IsMapMode[target]) ?
                 ((RunIsCourse(g_iClientRun[target])) ? "Map" : "Linear") : "Course" );     
 
-        if ( g_iClientRun[target] == RUN_SETSTART )
-        {
-            continue;
-        }
-        else if (g_iClientState[target] == STATE_END)
+        if (g_iClientState[target] == STATE_END)
         {
             if ( RUN_COURSE1 <= run < RUN_COURSE10 && g_bIsLoaded[run + 1] && IsMapMode[target])
                 flCurTime = GetEngineTime() - g_flClientStartTime[target];
@@ -202,9 +191,6 @@ public void OnGameFrame()
         else
         {
             flCurTime = GetEngineTime() - g_flClientStartTime[target];
-        
-            static float flBestTime;
-            flBestTime = g_flMapBestTime[ g_iClientRun[target] ][ g_iClientStyle[target] ][ g_iClientMode[target] ];
 
             if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER) )
             {
@@ -226,19 +212,43 @@ public void OnGameFrame()
             Format(hintOutput, 256, "Timer Disabled Mode %s", szAmmo[target] );
         }
 
-        //PrintHintText( client, hintOutput);
-        //PrintHintText( client, "");
-        if (!isHudDrawing[client] && (GetEngineTime() - LastHudDrawing[client]) > 0.5)
+        if ( (g_iClientRun[target] != RUN_SETSTART || g_bClientPractising[target]) &&
+            !(g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD))
         {
-            isHudDrawing[client] = true;
-            PrintHintText( client, hintOutput);
-            TimeToDrawHud[client] = GetEngineTime() + 0.6;
-            LastHudDrawing[client] = GetEngineTime();
+            if ( !(g_fClientHideFlags[client] & HIDEHUD_FAST_HUD) )
+            {
+                if (!isHudDrawed[client] && (GetEngineTime() - LastHudDrawing[client]) > 0.5)
+                {
+                    isHudDrawed[client] = true;
+                    PrintHintText( client, hintOutput);
+                    TimeToDrawHud[client] = GetEngineTime() + 0.6;
+                    LastHudDrawing[client] = GetEngineTime();
+                }
+                else if ( isHudDrawed[client] && (GetEngineTime() - TimeToDrawHud[client]) > 0.0 )
+                {
+                    LastHudDrawing[client] = GetEngineTime();
+                    PrintHintText( client, hintOutput);
+                }
+            }
+            else
+            {
+                if ((GetEngineTime() - LastHudDrawing[client]) >= 0.5)
+                {
+                    isHudDrawed[client] = true;
+                    PrintHintText( client, hintOutput);
+                    TimeToDrawHud[client] = GetEngineTime() + 0.5;
+                    LastHudDrawing[client] = GetEngineTime();
+                }
+            }
         }
-        else if ( isHudDrawing[client] && (GetEngineTime() - TimeToDrawHud[client]) > 0.0 )
+        //Right side hud
+        if ( !(g_fClientHideFlags[client] & HIDEHUD_SIDEINFO) )
         {
-            LastHudDrawing[client] = GetEngineTime();
-            PrintHintText( client, hintOutput);
+            if ((GetEngineTime() - TimeToDrawRightHud[client]) >= 0.5)
+            {
+                ShowKeyHintText( client, target );
+                TimeToDrawRightHud[client] = GetEngineTime();
+            }
         }
     }
 }

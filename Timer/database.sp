@@ -1040,7 +1040,7 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 	flPrevMapBest = g_flMapBestTime[run][style][mode];
 	szOldTimeWr = flPrevMapBest;
 	
-	static char szName[MAX_NAME_LENGTH];
+	static char szName[32];
 	GetClientName( client, szName, sizeof( szName ) );
 	
 	// Is best?
@@ -1103,7 +1103,7 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 		}
 	}	
 	
-	DoRecordNotification( client, szName, run, style, mode, flNewTime, flOldBestTime, flPrevMapBest );
+	DoRecordNotification( client, run, style, mode, flNewTime, flOldBestTime, flPrevMapBest );
 
 	return true;
 }

@@ -124,6 +124,7 @@ public void ShowHideMenuCHud(int client)
 	mMenu.SetTitle( "<Settings Menu> :: Central Hud\n " );
 
 	mMenu.AddItem( "hud", ( g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD )			? "Central Hud: [OFF]" : "Central Hud: [ON]" );
+	mMenu.AddItem( "tick", ( g_fClientHideFlags[client] & HIDEHUD_FAST_HUD ) 		? "Hud Rendering Frequency: [0.5 sec]" : "Hud Rendering Frequency: [every tick]" );
 	mMenu.AddItem( "time", ( g_fClientHideFlags[client] & HIDEHUD_TIMER )			? "Timer: [OFF]" : "Timer: [ON]" );
 	mMenu.AddItem( "speed", ( g_fClientHideFlags[client] & HIDEHUD_SPEED )		? "Speedometer: [ON]" : "Speedometer: [OFF]" );
 	
@@ -351,7 +352,19 @@ public int Handler_HudCHud( Menu mMenu, MenuAction action, int client, int item 
 				g_fClientHideFlags[client] |= HIDEHUD_CENTRAL_HUD;
 			}
 		}
-		if ( StrEqual( szItem, "time" ) )
+		else if ( StrEqual( szItem, "tick" ) )
+		{
+			if ( g_fClientHideFlags[client] & HIDEHUD_FAST_HUD )
+			{
+				g_fClientHideFlags[client] &= ~HIDEHUD_FAST_HUD;
+			}
+			else
+			{
+				g_fClientHideFlags[client] |= HIDEHUD_FAST_HUD;
+				
+			}
+		}
+		else if ( StrEqual( szItem, "time" ) )
 		{
 			if ( g_fClientHideFlags[client] & HIDEHUD_TIMER )
 			{
