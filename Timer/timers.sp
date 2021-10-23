@@ -207,10 +207,11 @@ public void OnGameFrame()
                 szAmmo[target]
                 );
         }
-        if(g_bClientPractising[target])
-        {
+        if ((g_Tiers[run][MODE_SOLDIER] + g_Tiers[run][MODE_DEMOMAN]) <= 0)
+            Format(hintOutput, 256, "No info about tiers :(\nYou cannot set runs or earn points.\nUse /calladmin to report this.", szAmmo[target] );
+        
+        if (g_bClientPractising[target])
             Format(hintOutput, 256, "Timer Disabled Mode %s", szAmmo[target] );
-        }
 
         if ( (g_iClientRun[target] != RUN_SETSTART || g_bClientPractising[target]) &&
             !(g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD))

@@ -31,6 +31,80 @@ public Action Command_Admin_DelSkipLevel( int client, int args )
 	return Plugin_Handled;
 }
 
+public Action Command_Admin_UnzonedMenu(int client, int args)
+{
+	UnzonedMaps(client);
+	return Plugin_Handled;
+}
+
+public void UnzonedMaps(int client)
+{
+	char query[] = "SELECT map, \
+					(select(EXISTS(select map from mapbounds where map = maplist.map))), \
+					(select(EXISTS(select map_name from map_info where map_name = maplist.map))) \
+					FROM maplist \
+					WHERE NOT EXISTS(SELECT map FROM mapbounds \
+								WHERE map = maplist.map) \
+							OR NOT EXISTS(SELECT map_name FROM map_info \
+								WHERE map_name = maplist.map)";
+
+	g_hDatabase.Query(Threaded_UnzonedMaps, query, client);
+	return;
+}
+
+public void Threaded_UnzonedMaps( Database hOwner, DBResultSet hQuery, const char[] szError, int client )
+{
+	if ( hQuery == null )
+	{
+		DB_LogError( szError );
+		return;
+	}
+	
+	char buffer[130], map[50];
+	char not_exists[] = "No Zones & Tiers";
+	Menu mMenu = new Menu( Handler_RecordDelete );
+	mMenu.SetTitle( "Unzoned Maps :: List\n ");
+	
+	if ( hQuery.RowCount )
+	{
+		while ( hQuery.FetchRow() )
+		{
+			hQuery.FetchString( 0, map, sizeof(map) );
+
+			if ((hQuery.FetchInt( 1 ) + hQuery.FetchInt( 2 )) == 0) //no zones and tiers
+				not_exists = "No Zones & Tiers";
+			else if (hQuery.FetchInt( 1 ) == 0) //no zones
+				not_exists = "No Zones";
+			else if (hQuery.FetchInt( 2 ) == 0) //no tiers
+				not_exists = "No Tiers";
+
+			FormatEx( buffer, sizeof( buffer ), "%s (%s)", map, not_exists );
+			
+			mMenu.AddItem( "", buffer, ITEMDRAW_DISABLED );
+		}
+	}
+	else
+	{
+		FormatEx( buffer, sizeof( buffer ), "All maps zonned! :)" );
+		mMenu.AddItem( "", buffer, ITEMDRAW_DISABLED );
+	}
+	
+	mMenu.ExitBackButton = true;
+	mMenu.Display( client, MENU_TIME_FOREVER );
+
+	delete hQuery;
+}
+
+public int Handler_UnzonedMaps( Menu mMenu, MenuAction action, int client, int item )
+{
+	if ( action == MenuAction_End ) { delete mMenu; return 0; }
+	if (action == MenuAction_Cancel)
+	    if (item == MenuCancel_ExitBack)
+			FakeClientCommand( client, "sm_zone" );
+
+	return 0;
+}
+
 public Action Command_Admin_ZoneMenu( int client, int args )
 {
 	if ( !client ) return Plugin_Handled;
@@ -51,6 +125,8 @@ public Action Command_Admin_ZoneMenu( int client, int args )
 		mMenu.AddItem( "", "Cancel Zone" );
 		
 		mMenu.AddItem( "", "Delete Zone\n ", ITEMDRAW_DISABLED );
+
+		mMenu.AddItem( "", "View Unzoned Maps\n ", ITEMDRAW_DISABLED );
 	}
 	else
 	{
@@ -60,12 +136,12 @@ public Action Command_Admin_ZoneMenu( int client, int args )
 		mMenu.AddItem( "", "End Zone", ITEMDRAW_DISABLED );
 		mMenu.AddItem( "", "Cancel Zone\n ", ITEMDRAW_DISABLED );
 	
-		
 		mMenu.AddItem( "", "Delete Zone\n " );
+
+		mMenu.AddItem( "", "View Unzoned Maps\n ");
 	}
 	
 	mMenu.Display( client, MENU_TIME_FOREVER );
-
 	
 	return Plugin_Handled;
 }
@@ -91,6 +167,8 @@ public int Handler_ZoneMain( Menu mMenu, MenuAction action, int client, int inde
 			case 4 : FakeClientCommand( client, "sm_cancelzone" );
 
 			case 5 : FakeClientCommand( client, "sm_deletezone" );
+			
+			case 6 : UnzonedMaps(client);
 		}
 	}
 	else
@@ -103,6 +181,7 @@ public int Handler_ZoneMain( Menu mMenu, MenuAction action, int client, int inde
 			case 3 : FakeClientCommand( client, "sm_cancelzone" );
 
 			case 4 : FakeClientCommand( client, "sm_deletezone" );
+			case 5 : UnzonedMaps(client);
 		}
 	}
 	

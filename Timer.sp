@@ -1187,6 +1187,8 @@ public void OnPluginStart()
 	
 
 	RegAdminCmd( "sm_zone", Command_Admin_ZoneMenu, ZONE_EDIT_ADMFLAG, "Zone menu." ); // Menu
+	RegAdminCmd( "sm_unzoned", Command_Admin_UnzonedMenu, ZONE_EDIT_ADMFLAG, "Zone menu." ); // Menu
+	RegAdminCmd( "sm_unzonedmaps", Command_Admin_UnzonedMenu, ZONE_EDIT_ADMFLAG, "Zone menu." ); // Menu
 	RegAdminCmd( "sm_changezone", Change_zone_pints, ZONE_EDIT_ADMFLAG, "Zone menu." ); // Menu
 	RegAdminCmd( "sm_cz", Change_zone_pints, ZONE_EDIT_ADMFLAG, "Zone menu." ); // Menu
 	RegAdminCmd( "sm_z", Command_Admin_ZoneMenu, ZONE_EDIT_ADMFLAG, "Zone menu." );

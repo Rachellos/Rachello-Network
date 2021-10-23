@@ -183,6 +183,7 @@ public void Event_Touch_Zone( int trigger, int client )
 		if ( g_iClientRun[client] != run ) return;
 		if ( g_bClientPractising[client] ) return;
 		if (g_iClientState[client] == STATE_END) return;
+		if ((g_Tiers[run][MODE_SOLDIER] + g_Tiers[run][MODE_DEMOMAN]) <= 0) return;
 		
 		ChangeClientState( client, STATE_END );
 

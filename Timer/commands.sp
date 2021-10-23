@@ -2325,8 +2325,6 @@ public Action Command_SetTier( int client, int args )
 	
 	if ( IsSpammingCommand( client ) ) return Plugin_Handled;
 
-	
-	
 	SetTier( client );
 	
 	return Plugin_Handled;
