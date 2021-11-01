@@ -2381,7 +2381,6 @@ public Action Command_RecordsPrint( int client, int args )
 
 	char szTarget[32];
 	char displayName[100];
-	char szQuery[192];
 	GetCmdArg(1, szTarget, sizeof( szTarget ) );
 	menu_page[client] = 0;
 
@@ -2391,10 +2390,64 @@ public Action Command_RecordsPrint( int client, int args )
 		return Plugin_Handled;
 	}
 
-	FormatEx(db_map[client], sizeof( db_map ), "%s", (args == 0) ? g_szCurrentMap : displayName );
-	FormatEx(szQuery, sizeof( szQuery ), "SELECT run FROM map_info WHERE map_name = '%s'", (args == 0) ? g_szCurrentMap : displayName );
-	g_hDatabase.Query( NormalTop, szQuery, client );
+	ShowMapTop(client, (args == 0) ? g_szCurrentMap : displayName, MAP_RUN);
+
 	return Plugin_Handled;
+}
+
+public Action Command_CoursesRecordsPrint( int client, int args )
+{
+	if ( !client ) return Plugin_Handled;
+
+	char szTarget[32];
+	char displayName[100];
+	GetCmdArg(1, szTarget, sizeof( szTarget ) );
+	menu_page[client] = 0;
+
+	if ( args > 0 && !GetMapDisplayName(szTarget, displayName, sizeof(displayName)) )
+	{
+		PrintToChat(client, CHAT_PREFIX..."Map not found");
+		return Plugin_Handled;
+	}
+
+	ShowMapTop(client, (args == 0) ? g_szCurrentMap : displayName, COURSE_RUN);
+
+	return Plugin_Handled;
+}
+
+public Action Command_BonusesRecordsPrint( int client, int args )
+{
+	if ( !client ) return Plugin_Handled;
+
+	char szTarget[32];
+	char displayName[100];
+	GetCmdArg(1, szTarget, sizeof( szTarget ) );
+	menu_page[client] = 0;
+
+	if ( args > 0 && !GetMapDisplayName(szTarget, displayName, sizeof(displayName)) )
+	{
+		PrintToChat(client, CHAT_PREFIX..."Map not found");
+		return Plugin_Handled;
+	}
+
+	ShowMapTop(client, (args == 0) ? g_szCurrentMap : displayName, BONUS_RUN);
+
+	return Plugin_Handled;
+}
+
+public void ShowMapTop(int client, const char[] map, RunType run_type)
+{
+	char run_type_query[50], query[120];
+	last_usage_run_type[client] = run_type;
+	FormatEx(db_map[client], sizeof( db_map ), "%s", map);
+	switch (run_type)
+	{
+		case MAP_RUN: {}
+		case COURSE_RUN: FormatEx(run_type_query, sizeof(run_type_query), "AND run BEETWEEN %i AND %i", RUN_COURSE1, RUN_COURSE10);
+		case BONUS_RUN: FormatEx(run_type_query, sizeof(run_type_query), "AND run BEETWEEN %i AND %i", RUN_BONUS1, RUN_BONUS10);
+	}
+	FormatEx(query, sizeof( query ), "SELECT run FROM map_info WHERE map_name = '%s' %s", map, run_type_query );
+	g_hDatabase.Query( NormalTop, query, client );
 }
 
 public Action Command_PersonalRecords( int client, int args )

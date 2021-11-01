@@ -258,6 +258,7 @@ bool g_bClientPractising[MAXPLAYERS+1];
 // Client settings (bonus stuff);
 int g_fClientHideFlags[MAXPLAYERS+1];
 int RunClass[MAXPLAYERS+1];
+int last_usage_run_type[MAXPLAYERS+1];
 
 char DemoUrl[400];
 char DemoUrlClient[MAXPLAYERS+1][500];
@@ -1108,6 +1109,9 @@ public void OnPluginStart()
 
 	// RECORDS
 	RegConsoleCmd( "sm_top", Command_RecordsPrint );
+	RegConsoleCmd( "sm_btop", Command_BonusesRecordsPrint );
+	RegConsoleCmd( "sm_ctop", Command_CoursesRecordsPrint );
+
 	RegConsoleCmd( "sm_ptop", Command_RecordsMenuPoints );
 	RegConsoleCmd( "sm_pointstop", Command_RecordsMenuPoints );
 	RegConsoleCmd( "sm_toppoints", Command_RecordsMenuPoints );

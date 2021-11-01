@@ -343,13 +343,11 @@ public int Handler_top( Menu mMenu, MenuAction action, int client, int item )
 	if ( action == MenuAction_End ) { return 0; }
 	if (action == MenuAction_Cancel)
 	{
-    if (item == MenuCancel_ExitBack)
-	{
-		char szQuery[192];
-		FormatEx(szQuery, sizeof( szQuery ), "SELECT run FROM "...TABLE_MAPINFO..." WHERE map_name = '%s'", db_map[client] );
-		FakeClientCommand(client, "sm_top %s", db_map[client]);
-		return 0;
-    }
+		if (item == MenuCancel_ExitBack)
+		{
+			ShowMapTop(client, db_map[client], last_usage_run_type[client]);
+			return 0;
+		}
 	}
 	if ( action != MenuAction_Select ) return 0;
 
