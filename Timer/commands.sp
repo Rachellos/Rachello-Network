@@ -2729,11 +2729,11 @@ public int Handler_IncompleteMenu( Menu mMenu, MenuAction action, int client, in
 
 		if (item == 0)
 		{
-			FormatEx(sort, sizeof(sort), "ORDER BY stier ASC");
+			FormatEx(sort, sizeof(sort), "ORDER BY %stier ASC", (mode == MODE_DEMOMAN) ? "d":"s");
 		}
 		else if (item == 1)
 		{
-			FormatEx(sort, sizeof(sort), "ORDER BY stier DESC");
+			FormatEx(sort, sizeof(sort), "ORDER BY %stier DESC", (mode == MODE_DEMOMAN) ? "d":"s");
 		}
 		else if (item == 2)
 		{

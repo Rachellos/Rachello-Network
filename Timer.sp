@@ -322,11 +322,11 @@ char server_name[NUM_NAMES][6][120] =
 {
 	{ 
 		"N/A",
-	 	"RG #1488 - Finland | Rachello Network",
+	 	"RG #1488 - Europe | Rachello Network",
 		"RG #1488 - Russia | Rachello Network", 
 		"RG #1488 - US East | Rachello Network", 
 		"RG #1488 US West California | Rachello Network",
-	 	"RG #1488 US West California | Rachello Network" 
+	 	"RG #1488 Asia Singapore | Rachello Network" 
 	},
 	{ 
 		"N/A", 
