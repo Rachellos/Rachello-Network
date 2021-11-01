@@ -332,7 +332,7 @@ stock void DisconnectFromMasterServer()
 	{
 		SocketSend(globalClientSocket, finalMessage, sizeof(finalMessage));
 		CloseHandle(globalClientSocket);
-		globalClientSocket = null;	
+		globalClientSocket = null;
 	}
 }
 

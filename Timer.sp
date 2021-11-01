@@ -318,10 +318,24 @@ int prev_random_msg;
 
 int g_ZoneMethod[MAXPLAYERS+1];
 
-char server_name[NUM_NAMES][5][120] =
+char server_name[NUM_NAMES][6][120] =
 {
-	{ "N/A", "RG #1488 - Finland | Rachello Network", "RG #1488 - Russia | Rachello Network", "RG #1488 - Australia | Rachello Network", "US West California | Rachello Network" },
-	{ "N/A", "EU", "RU", "AU", "US" }
+	{ 
+		"N/A",
+	 	"RG #1488 - Finland | Rachello Network",
+		"RG #1488 - Russia | Rachello Network", 
+		"RG #1488 - US East | Rachello Network", 
+		"RG #1488 US West California | Rachello Network",
+	 	"RG #1488 US West California | Rachello Network" 
+	},
+	{ 
+		"N/A", 
+		"EU", 
+		"RU", 
+		"US-East", 
+		"US-West", 
+		"SG" 
+	}
 };
 
 Handle hPlugin = INVALID_HANDLE;

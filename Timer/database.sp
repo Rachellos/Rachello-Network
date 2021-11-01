@@ -850,8 +850,10 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 		    Call_Finish();
 			return 0;
 		}
-		SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
-		DemoInfo(client, DemoInfoId[client] );
+		if (item != 10) {
+			SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
+			DemoInfo(client, DemoInfoId[client] );
+		}
 	}
 }
 
