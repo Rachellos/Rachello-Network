@@ -2437,14 +2437,14 @@ public Action Command_BonusesRecordsPrint( int client, int args )
 
 public void ShowMapTop(int client, const char[] map, RunType run_type)
 {
-	char run_type_query[50], query[120];
+	char run_type_query[50], query[160];
 	last_usage_run_type[client] = run_type;
 	FormatEx(db_map[client], sizeof( db_map ), "%s", map);
 	switch (run_type)
 	{
 		case MAP_RUN: {}
-		case COURSE_RUN: FormatEx(run_type_query, sizeof(run_type_query), "AND run BEETWEEN %i AND %i", RUN_COURSE1, RUN_COURSE10);
-		case BONUS_RUN: FormatEx(run_type_query, sizeof(run_type_query), "AND run BEETWEEN %i AND %i", RUN_BONUS1, RUN_BONUS10);
+		case COURSE_RUN: FormatEx(run_type_query, sizeof(run_type_query), "AND run BETWEEN %i AND %i", RUN_COURSE1, RUN_COURSE10);
+		case BONUS_RUN: FormatEx(run_type_query, sizeof(run_type_query), "AND run BETWEEN %i AND %i", RUN_BONUS1, RUN_BONUS10);
 	}
 	FormatEx(query, sizeof( query ), "SELECT run FROM map_info WHERE map_name = '%s' %s", map, run_type_query );
 	g_hDatabase.Query( NormalTop, query, client );
