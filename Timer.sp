@@ -135,10 +135,8 @@
 #define SERVERTAG		"[SERVER TAG]"
 #define SENDERMSG		"[MESSAGE]"
 
-Handle serverSocket;
-Socket globalClientSocket;
+Socket ClientSocket;
 Handle COOKIE_ClientGaged;
-Handle ARRAY_Connections;
 Handle CVAR_MessageKey;
 Handle CVAR_ConnectionPort;
 Handle CVAR_ReconnectTime;
@@ -153,9 +151,7 @@ Menu PrevMenu[MAXPLAYERS+1][10];
 
 int gagState[MAXPLAYERS+1];
 
-bool isMasterServer;
-bool processing[MAXPLAYERS+1];
-bool connected;
+bool IRC_Connected;
 bool requested = false;
 
 // Zones
@@ -649,15 +645,8 @@ public Plugin myinfo = // Note: must be 'myinfo'. Compiler accepts everything bu
 };
 
 public void OnPluginEnd() {
-	if(connected && !isMasterServer)
-	{
-		DisconnectFromMasterServer();
-	}
-	else if(isMasterServer)
-	{
-		CloseHandle(serverSocket);
-		serverSocket = INVALID_HANDLE;
-	}
+	/*if (IRC_Connected)
+		DisconnectFromMasterServer();*/
 
 	if (secure)
 	{
@@ -1033,8 +1022,6 @@ public void OnPluginStart()
 	
 	COOKIE_ClientGaged = RegClientCookie("sm_csc_client_gaged", "Store the gag state of the player.", CookieAccess_Private);
 	
-	ARRAY_Connections = CreateArray();
-	
 	for(int i = MaxClients; i > 0; --i)
 	{
 		if(!AreClientCookiesCached(i))
@@ -1205,8 +1192,8 @@ public void OnPluginStart()
 	
 
 	RegAdminCmd( "sm_zone", Command_Admin_ZoneMenu, ZONE_EDIT_ADMFLAG, "Zone menu." ); // Menu
-	RegAdminCmd( "sm_unzoned", Command_Admin_UnzonedMenu, ZONE_EDIT_ADMFLAG, "Zone menu." ); // Menu
-	RegAdminCmd( "sm_unzonedmaps", Command_Admin_UnzonedMenu, ZONE_EDIT_ADMFLAG, "Zone menu." ); // Menu
+	RegConsoleCmd( "sm_unzoned", Command_Admin_UnzonedMenu); // Menu
+	RegConsoleCmd( "sm_unzonedmaps", Command_Admin_UnzonedMenu); // Menu
 	RegAdminCmd( "sm_changezone", Change_zone_pints, ZONE_EDIT_ADMFLAG, "Zone menu." ); // Menu
 	RegAdminCmd( "sm_cz", Change_zone_pints, ZONE_EDIT_ADMFLAG, "Zone menu." ); // Menu
 	RegAdminCmd( "sm_z", Command_Admin_ZoneMenu, ZONE_EDIT_ADMFLAG, "Zone menu." );
@@ -1352,12 +1339,8 @@ public void OnConfigsExecuted()
             SDKHook(i, SDKHook_GetMaxHealth, OnGetMaxHealth);
         }
     }
-    isMasterServer = GetConVarBool(CVAR_MasterChatServer);
 	//SetupTimeleftTimer();
-	if(isMasterServer)
-		CreateServer();	//This server is actually the MCS
-	else
-		ConnecToMasterServer(); //This server is a client server and want to connect to the MCS
+	ConnecToMasterServer(); //This server is a client server and want to connect to the MCS
 }
 
 public OnClientCookiesCached(int client)
@@ -1911,8 +1894,8 @@ public void OnMapEnd()
 		}
 		delete g_hZones; g_hZones = null;
 	}
-
-	DisconnectFromMasterServer();
+	/*if (IRC_Connected)
+		DisconnectFromMasterServer();*/
 }
 
 public void OnClientPutInServer( int client )
@@ -3237,11 +3220,7 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 
 			Format(wr_notify, sizeof(wr_notify), "%swrnotifycode| {lightskyblue}(%s) {white}:: (%s) \x0764E664%N {white}broke the \x0750DCFF%s {white}:: \x0764E664%s {white}(\x0750DCFFWR -%s{white})!", socket_key, server_tag, g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime, wr_improve);
 	
-			if(isMasterServer)
-				SendToAllClients(wr_notify, sizeof(wr_notify), INVALID_HANDLE);
-			else
-				if (connected)
-					SocketSend(globalClientSocket, wr_notify, sizeof(wr_notify));
+			SocketSend(ClientSocket, wr_notify, sizeof(wr_notify));
 		}
 		else
 		{
@@ -3266,13 +3245,8 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 			}
 
 			Format(update_records, sizeof(update_records), "%supdate_records", socket_key);
-			if(isMasterServer)
-				SendToAllClients(update_records, sizeof(update_records), INVALID_HANDLE);
-			else
-			{
-				if (connected)
-					SocketSend(globalClientSocket, update_records, sizeof(update_records));
-			}
+			if (IRC_Connected)
+				SocketSend(ClientSocket, update_records, sizeof(update_records));
 		}
 	}
 	else if (run == RUN_MAIN)
@@ -3315,19 +3289,14 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 
 			Format(wr_notify, sizeof(wr_notify), "%swrnotifycode| {lightskyblue}(%s) {white}:: \x0764E664%N {white}set the \x0750DCFF%s {white}:: \x0764E664%s{white}!", socket_key, server_tag, client, g_szCurrentMap, szFormTime);
 			
-			if(isMasterServer)
-				SendToAllClients(wr_notify, sizeof(wr_notify), INVALID_HANDLE);
-			else
-				SocketSend(globalClientSocket, wr_notify, sizeof(wr_notify));
+			if (IRC_Connected)
+				SocketSend(ClientSocket, wr_notify, sizeof(wr_notify));
 		}
 		else
 		{
 			Format(update_records, sizeof(update_records), "%supdate_records", socket_key);
-			if(isMasterServer)
-				SendToAllClients(update_records, sizeof(update_records), INVALID_HANDLE);
-			else
-				if (connected)
-					SocketSend(globalClientSocket, update_records, sizeof(update_records));
+			if (IRC_Connected)
+				SocketSend(ClientSocket, update_records, sizeof(update_records));
 		}
 	}
 

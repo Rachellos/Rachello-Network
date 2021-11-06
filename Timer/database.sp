@@ -1270,10 +1270,8 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 	char socket_key[20];
 	GetConVarString(CVAR_MessageKey, socket_key, sizeof(socket_key));
 	Format(update_records, sizeof(update_records), "%supdate_records", socket_key);
-	if(isMasterServer)
-		SendToAllClients(update_records, sizeof(update_records), INVALID_HANDLE);
-	else
-		SocketSend(globalClientSocket, update_records, sizeof(update_records));
+	if (IRC_Connected)
+		SocketSend(ClientSocket, update_records, sizeof(update_records));
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
