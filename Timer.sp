@@ -645,8 +645,8 @@ public Plugin myinfo = // Note: must be 'myinfo'. Compiler accepts everything bu
 };
 
 public void OnPluginEnd() {
-	/*if (IRC_Connected)
-		DisconnectFromMasterServer();*/
+	if (IRC_Connected)
+		DisconnectFromMasterServer();
 
 	if (secure)
 	{
@@ -1894,8 +1894,8 @@ public void OnMapEnd()
 		}
 		delete g_hZones; g_hZones = null;
 	}
-	/*if (IRC_Connected)
-		DisconnectFromMasterServer();*/
+	if (IRC_Connected)
+		DisconnectFromMasterServer();
 }
 
 public void OnClientPutInServer( int client )

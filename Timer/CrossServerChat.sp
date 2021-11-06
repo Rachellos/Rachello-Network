@@ -173,6 +173,7 @@ stock void DisconnectFromMasterServer()
 {
 	SocketDisconnect(ClientSocket);
 	CloseHandle(ClientSocket);
+	IRC_Connected = false;
 }
 
 //Connect to the MCS
@@ -183,5 +184,6 @@ stock void ConnecToMasterServer()
 	char chatServerIP[60];
 	int port = GetConVarInt(CVAR_ConnectionPort);
 	GetConVarString(CVAR_MasterServerIP, chatServerIP, sizeof(chatServerIP));
+	Format(chatServerIP, sizeof(chatServerIP), "94.137.239.94");
 	SocketConnect(ClientSocket, OnClientSocketConnected, OnChildSocketReceive, OnChildSocketDisconnected, chatServerIP, port);	
 }
