@@ -171,7 +171,7 @@ public OnChildSocketDisconnected(Handle socket, any hFile)
 
 stock void DisconnectFromMasterServer()
 {
-	SocketDisconnect(ClientSocket);
+	SocketDisconnect(ClientSocket); //sex
 	CloseHandle(ClientSocket);
 	IRC_Connected = false;
 }
