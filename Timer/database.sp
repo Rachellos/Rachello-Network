@@ -54,23 +54,21 @@ stock void DB_LogError( const char[] szMsg, int client = 0, const char[] szClien
 stock void DB_InitializeDatabase()
 {
 	char szError[100];
-	
-	if (!SQL_CheckConfig("Timer"))
-    {
-        SetFailState("Секция \"Timer\" не найдена в databases.cfg");
-        return;
-    }
 
-    g_hDatabase = SQL_Connect("Timer", true, szError, 100);
+    g_hDatabase = SQL_ConnectEx(
+					SQL_GetDriver("mysql"), 
+					"mgr.ourservers.ru",
+					"rachello",
+					"1W2e3r4t5y6",
+					"rachellonet",
+					szError, 100);
 
     // тип соединения (mysql или sqlite)
 
-	g_hDatabase.SetCharset("utf8");
-	
 	if ( g_hDatabase == null )
 		SetFailState( CONSOLE_PREFIX..."Unable to establish connection to the database! Error: %s", szError );
 	
-	
+	g_hDatabase.SetCharset("utf8");
 	PrintToServer( CONSOLE_PREFIX..."Established connection with database!" );
 	
 	
@@ -1267,9 +1265,7 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 	SQL_ExecuteTransaction(g_hDatabase, t2s);
 	SQL_ExecuteTransaction(g_hDatabase, t3s);
 
-	char socket_key[20];
-	GetConVarString(CVAR_MessageKey, socket_key, sizeof(socket_key));
-	Format(update_records, sizeof(update_records), "%supdate_records", socket_key);
+	Format(update_records, sizeof(update_records), "update_records");
 	if (IRC_Connected)
 		SocketSend(ClientSocket, update_records, sizeof(update_records));
 

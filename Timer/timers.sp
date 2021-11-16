@@ -41,10 +41,11 @@ public Action Timer_regencheck( Handle hTimer )
 
 public Action Timer_Ad( Handle hTimer )
 {
-	char ad[8][300] = 
+	char ad[9][300] = 
     {
     	"Use \x0750DCFF/settings {white}to customise your HUD, chat and more!",
     	"Welcome to the \x0750DCFFRachello Jump Network{white}!",
+        "You can activate fast rendering of the HUD in \x0750DCFF/settings {white}-> Central HUD",
     	"Join us on Discord at {lightskyblue}discord.gg/8khRBCEu5C",
     	"Does your game freeze sometimes when another player joins? Try setting \x0750DCFFcl_allowdownload 0 {white}to disable downloading player sprays.",
     	"Type \x0750DCFF/p {white}to view your stats!",

@@ -6,7 +6,6 @@
 #include <ripext>
 #include <tf2_stocks>
 #include <regex>
-#include <jse_api>
 #include <geoip>
 #include <sdktools>
 #include <sdkhooks>
@@ -14,14 +13,11 @@
 #include <stocks>
 #include <tEasyFTP>
 #include <system2>
-#include <smac>
 #include <Timer_core>
 #include <smlib/entities>
 #include <SteamWorks>
 #include <idlesystem>
 #include <discord>
-#include <clientprefs>
-#include <scp>
 #include <socket>
 #undef REQUIRE_PLUGIN
 #include <updater>
@@ -136,16 +132,6 @@
 #define SENDERMSG		"[MESSAGE]"
 
 Socket ClientSocket;
-Handle COOKIE_ClientGaged;
-Handle CVAR_MessageKey;
-Handle CVAR_ConnectionPort;
-Handle CVAR_ReconnectTime;
-Handle CVAR_MasterServerIP;
-Handle CVAR_MasterChatServer;
-Handle CVAR_ServerTag;
-Handle CVAR_SendMessageTag;
-Handle CVAR_AdminFlag;
-Handle CVAR_MsgFormat;
 
 Menu PrevMenu[MAXPLAYERS+1][10];
 
@@ -628,7 +614,6 @@ Handle g_hForward_Timer_OnStateChanged;
 #include "Timer/timers.sp"
 #include "Timer/menus.sp"
 #include "Timer/menus_admin.sp"
-#include "Timer/MapInfo.sp"
 #include "Timer/tempuslite.sp"
 #include "Timer/CrossServerChat.sp"
 #include "Timer/autodemo_recorder.sp"
@@ -974,11 +959,13 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 
 public void OnPluginStart()
 {
+	ServerCommand("sv_hudhint_sound 0");
 	Handle pIterator = GetPluginIterator();
 	hPlugin = ReadPlugin(pIterator);
 	CloseHandle(pIterator);
 
 	ClientSocket = SocketCreate(SOCKET_TCP, OnClientSocketError);
+	ConnecToMasterServer();
 
 	requested = false;
 	char path[PLATFORM_MAX_PATH];
@@ -1011,30 +998,6 @@ public void OnPluginStart()
 
 	LoadTranslations("sourceirc.phrases");
 	g_cvColor.GetString(g_sColor, sizeof(g_sColor));*/
-
-	CVAR_MasterChatServer = CreateConVar("sm_csc_is_master_server", "0", "Is this server the master chat server ? 1 = yes | 0 = no", _, true, 0.0, true, 1.0);
-	CVAR_MasterServerIP = CreateConVar("sm_csc_master_chat_server_ip", "123.467.89.10", "IP of the master chat server");
-	CVAR_ConnectionPort = CreateConVar("sm_csc_connection_port", "2001", "On wich port should the plugin read & send the messages ?", _, true, 1025.0);
-	CVAR_MessageKey = CreateConVar("sm_csc_message_key", "[PASSWORD]", "Wich key should the plugin use to send messages, KEEP PRIVATE !!!");
-	CVAR_ReconnectTime = CreateConVar("sm_csc_reconnect_time", "45.00", "After how much time a connection should try to reconnect disconnected sockets ?", _, true, 5.0);
-	CVAR_ServerTag = CreateConVar("sm_csc_server_tag", "[REMOTE MSG]", "Tag before messages coming from outside of the actual server");
-	CVAR_SendMessageTag = CreateConVar("sm_csc_mark_to_send", "+", "Tag before chat messages to send to all other servers");
-	CVAR_AdminFlag = CreateConVar("sm_csc_admin_flag", "NONE", "Putting a flag as value will restrict the usage to all players who hvae this flag, putting NONE don't restrict the acces.");
-	CVAR_MsgFormat = CreateConVar("sm_csc_message_format", "{red}[SERVER TAG] {purple}->{default} {pink}[SENDER NAME]{default} {purple}said{default} [MESSAGE]", "Format of the message. Use the tag [SERVER TAG] to represent the value of 'CVAR_ServerTag', [SENDER NAME] for the player name who send the message, and [MESSAGE] to represent the message of teh player.");
-	
-	COOKIE_ClientGaged = RegClientCookie("sm_csc_client_gaged", "Store the gag state of the player.", CookieAccess_Private);
-	
-	for(int i = MaxClients; i > 0; --i)
-	{
-		if(!AreClientCookiesCached(i))
-			continue;
-		
-		OnClientCookiesCached(i);
-	}
-	
-	AutoExecConfig(true, "CrossServerChat");
-
-	g_hJoinMessageHold = CreateConVar("jse_mapinfo_joinmsg", "8", "Seconds to show join message panel (set to 0 to keep open until dismissed, -1 to disable)", 0, true, -1.0);
 
 	srv_id = CreateConVar("server_id", "0", "Server id");
 
@@ -1086,8 +1049,6 @@ public void OnPluginStart()
 
 	RegConsoleCmd("sm_m", Command_PrintMapTier, "sm_m <mapname> - Show map tier");
 
-	RegConsoleCmd("sm_mi", cmdMapInfo, "Show the map info");
-	RegConsoleCmd("sm_mapinfo", cmdMapInfo, "Show the map info");
 	RegConsoleCmd("sm_maplist", cmdMapList, "Show the map list");
 	RegConsoleCmd("sm_ml", cmdMapList, "Show the map list");
 	RegConsoleCmd("sm_maps", cmdMapList, "Show the map list");
@@ -1342,15 +1303,6 @@ public void OnConfigsExecuted()
         }
     }
 	//SetupTimeleftTimer();
-	ConnecToMasterServer(); //This server is a client server and want to connect to the MCS
-}
-
-public OnClientCookiesCached(int client)
-{
-	//Get value of cookie and store it inside gagState[]
-	char cookieValue[10];
-	GetClientCookie(client, COOKIE_ClientGaged, cookieValue, sizeof(cookieValue));
-	gagState[client] = StringToInt(cookieValue);
 }
 
 public void OnMapStart()
@@ -1872,8 +1824,6 @@ public void OnMapEnd()
 	}
 
 	g_VoteTimer = null;
-
-	deleteMapInfo(g_hMapInfo);
 	// Save zones.
 	//g_bLateLoad = false;
 	//IRC_MsgFlaggedChannels("relay", "%t", "Map Changing")
@@ -1896,8 +1846,8 @@ public void OnMapEnd()
 		}
 		delete g_hZones; g_hZones = null;
 	}
-	if (IRC_Connected)
-		DisconnectFromMasterServer();
+	//if (IRC_Connected)
+		//DisconnectFromMasterServer();
 }
 
 public void OnClientPutInServer( int client )
@@ -2080,11 +2030,6 @@ public void OnClientDisconnect( int client )
 		
 	GetClientName(client, name, sizeof(name));
 	CPrintToChatAll("\x0750DCFF%s {white}has left the server.", name);	
-	ArrayList hMapInfoList = g_aMenu[client][Menu_MapInfoList];
-	if (hMapInfoList != null)
-	{
-		deleteMapInfoList(hMapInfoList);
-	}
 
 	ranksolly[client] = -1;
  	rankdemo[client] = -1;
@@ -3181,13 +3126,12 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 	char			szStyleFix[STYLEPOSTFIX_LENGTH];
 	char wr_notify[999];
 	char update_records[200];
-	char socket_key[20], server_tag[15];
+	char server_tag[15];
 	GetStylePostfix( mode, szStyleFix, true );
 	char			szFormTime[TIME_SIZE_DEF], szName[32];
 	GetClientName( client, szName, sizeof( szName ) );
 	FormatSeconds( flNewTime, szFormTime, FORMAT_2DECI );
-	GetConVarString(CVAR_MessageKey, socket_key, sizeof(socket_key));
-	GetConVarString(CVAR_ServerTag, server_tag, sizeof(server_tag));
+	Format(server_tag, sizeof(server_tag), (System2_GetOS() == OS_WINDOWS) ? "LOCAL" : server_name[NAME_SHORT][server_id]);
 
 	char buffer[500];
 
@@ -3220,7 +3164,7 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 			hook.SetContent( buffer );
 			hook.Send();
 
-			Format(wr_notify, sizeof(wr_notify), "%swrnotifycode| {lightskyblue}(%s) {white}:: (%s) \x0764E664%N {white}broke the \x0750DCFF%s {white}:: \x0764E664%s {white}(\x0750DCFFWR -%s{white})!", socket_key, server_tag, g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime, wr_improve);
+			Format(wr_notify, sizeof(wr_notify), "wrnotifycode| {lightskyblue}(%s) {white}:: (%s) \x0764E664%N {white}broke the \x0750DCFF%s {white}:: \x0764E664%s {white}(\x0750DCFFWR -%s{white})!", server_tag, g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime, wr_improve);
 	
 			SocketSend(ClientSocket, wr_notify, sizeof(wr_notify));
 		}
@@ -3246,7 +3190,7 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 				hook.Send();
 			}
 
-			Format(update_records, sizeof(update_records), "%supdate_records", socket_key);
+			Format(update_records, sizeof(update_records), "update_records");
 			if (IRC_Connected)
 				SocketSend(ClientSocket, update_records, sizeof(update_records));
 		}
@@ -3289,14 +3233,14 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 			hook.SetContent( buffer );
 			hook.Send();
 
-			Format(wr_notify, sizeof(wr_notify), "%swrnotifycode| {lightskyblue}(%s) {white}:: \x0764E664%N {white}set the \x0750DCFF%s {white}:: \x0764E664%s{white}!", socket_key, server_tag, client, g_szCurrentMap, szFormTime);
+			Format(wr_notify, sizeof(wr_notify), "wrnotifycode| {lightskyblue}(%s) {white}:: \x0764E664%N {white}set the \x0750DCFF%s {white}:: \x0764E664%s{white}!", server_tag, client, g_szCurrentMap, szFormTime);
 			
 			if (IRC_Connected)
 				SocketSend(ClientSocket, wr_notify, sizeof(wr_notify));
 		}
 		else
 		{
-			Format(update_records, sizeof(update_records), "%supdate_records", socket_key);
+			Format(update_records, sizeof(update_records), "update_records");
 			if (IRC_Connected)
 				SocketSend(ClientSocket, update_records, sizeof(update_records));
 		}
@@ -3331,7 +3275,6 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 				szTxt,
 				prefix,
 				szFormTime );
-				
 			}
 		}	
 	}
