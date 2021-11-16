@@ -165,13 +165,18 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, const int dataSiz
 public OnChildSocketDisconnected(Handle socket, any hFile)
 {
 	PrintToServer("Lost connection to IRC server, reconnecting...");
+	if (SocketIsConnected(ClientSocket))
+	{
+		SocketDisconnect(ClientSocket);
+		CloseHandle(ClientSocket);
+	}
 	IRC_Connected = false; //Very important.
 	CreateTimer(GetConVarFloat(CVAR_ReconnectTime), TimerReconnect); //Reconnecting timer
 }
 
 stock void DisconnectFromMasterServer()
 {
-	SocketDisconnect(ClientSocket); //sex
+	SocketDisconnect(ClientSocket);
 	CloseHandle(ClientSocket);
 	IRC_Connected = false;
 }
@@ -180,7 +185,6 @@ stock void DisconnectFromMasterServer()
 stock void ConnecToMasterServer()
 {	
 	IRC_Connected = false;
-	ClientSocket = SocketCreate(SOCKET_TCP, OnClientSocketError);
 	char chatServerIP[60];
 	int port = GetConVarInt(CVAR_ConnectionPort);
 	GetConVarString(CVAR_MasterServerIP, chatServerIP, sizeof(chatServerIP));

@@ -978,6 +978,8 @@ public void OnPluginStart()
 	hPlugin = ReadPlugin(pIterator);
 	CloseHandle(pIterator);
 
+	ClientSocket = SocketCreate(SOCKET_TCP, OnClientSocketError);
+
 	requested = false;
 	char path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), "recordings/bz2/");
