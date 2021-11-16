@@ -74,6 +74,8 @@ public OnClientSocketConnected(Handle socket, any arg)
 public OnClientSocketError(Handle socket, const int errorType, const int errorNum, any ary)
 {
 	IRC_Connected = false; //Client NOT connected anymore, this is very important.
+	if (SocketIsConnected(ClientSocket))
+		SocketDisconnect(ClientSocket);
 	CreateTimer(20.0, TimerReconnect); //Ask for the plugin to reconnect to the MCS in X seconds
 }
 

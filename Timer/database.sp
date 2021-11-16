@@ -61,7 +61,7 @@ stock void DB_InitializeDatabase()
 					"rachello",
 					"1W2e3r4t5y6",
 					"rachellonet",
-					szError, 100);
+					szError, 100, _, _, 120);
 
     // тип соединения (mysql или sqlite)
 
