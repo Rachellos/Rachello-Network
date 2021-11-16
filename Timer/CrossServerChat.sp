@@ -166,10 +166,7 @@ public OnChildSocketDisconnected(Handle socket, any hFile)
 {
 	PrintToServer("Lost connection to IRC server, reconnecting...");
 	if (SocketIsConnected(ClientSocket))
-	{
 		SocketDisconnect(ClientSocket);
-		CloseHandle(ClientSocket);
-	}
 	IRC_Connected = false; //Very important.
 	CreateTimer(GetConVarFloat(CVAR_ReconnectTime), TimerReconnect); //Reconnecting timer
 }
@@ -177,7 +174,6 @@ public OnChildSocketDisconnected(Handle socket, any hFile)
 stock void DisconnectFromMasterServer()
 {
 	SocketDisconnect(ClientSocket);
-	CloseHandle(ClientSocket);
 	IRC_Connected = false;
 }
 
