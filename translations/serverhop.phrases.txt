@@ -1,0 +1,21 @@
+﻿"Phrases"
+{
+	"SelectServer"
+	{
+		"en"		"Select a server to join\n "
+	}
+	"AboutToJoinServer"
+	{
+		"en"		"About to join server\n "
+	}
+	"HopNotification"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{1} has hopped to {2} !"
+	}
+	"Advert"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{1} [type {2} to join]"
+	}
+}
