@@ -306,7 +306,8 @@ char server_name[NUM_NAMES][6][120] =
 	{ 
 		"N/A",
 	 	"RG #1488 - Europe | Rachello Network",
-		"RG #1488 - Russia | Rachello Network", 
+		"RG #1488 - Russia | Rachello Network",
+		"RG #1488 - Australia | Rachello Network", 
 		"RG #1488 - US East | Rachello Network", 
 		"RG #1488 US West California | Rachello Network",
 	 	"RG #1488 Asia Singapore | Rachello Network" 
@@ -314,7 +315,8 @@ char server_name[NUM_NAMES][6][120] =
 	{ 
 		"N/A", 
 		"EU", 
-		"RU", 
+		"RU",
+		"AU", 
 		"US-East", 
 		"US-West", 
 		"SG" 
@@ -1009,7 +1011,7 @@ public void OnPluginStart()
 	LoadTranslations("common.phrases");
 
 	RegConsoleCmd( "sm_goto", Command_Gotos );
-	RegConsoleCmd("sm_msg", CMD_SendMessage, "Send a message to all server.");
+	RegConsoleCmd("sm_msg", CMD_SendMessage, "Send a message to all servers.");
 
 	// HOOKS
 	HookEvent("player_spawn", Event_PlayerSpawn);

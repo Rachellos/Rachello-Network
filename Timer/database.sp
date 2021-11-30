@@ -55,15 +55,7 @@ stock void DB_InitializeDatabase()
 {
 	char szError[100];
 
-    g_hDatabase = SQL_ConnectEx(
-					SQL_GetDriver("mysql"), 
-					"mgr.ourservers.ru",
-					"rachello",
-					"1W2e3r4t5y6",
-					"rachellonet",
-					szError, 100, _, _, 120);
-
-    // тип соединения (mysql или sqlite)
+    g_hDatabase = SQL_Connect("Timer", true, szError, sizeof(szError));
 
 	if ( g_hDatabase == null )
 		SetFailState( CONSOLE_PREFIX..."Unable to establish connection to the database! Error: %s", szError );
