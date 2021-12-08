@@ -301,7 +301,7 @@ int prev_random_msg;
 
 int g_ZoneMethod[MAXPLAYERS+1];
 
-char server_name[NUM_NAMES][6][120] =
+char server_name[NUM_NAMES][][] =
 {
 	{ 
 		"N/A",

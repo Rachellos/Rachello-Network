@@ -167,6 +167,6 @@ stock void ConnecToMasterServer()
 	IRC_Connected = false;
 	char chatServerIP[60];
 	int port = 2001;
-	Format(chatServerIP, sizeof(chatServerIP), "94.137.239.94");
+	Format(chatServerIP, sizeof(chatServerIP), "168.138.101.10");
 	SocketConnect(ClientSocket, OnClientSocketConnected, OnChildSocketReceive, OnChildSocketDisconnected, chatServerIP, port);	
 }
