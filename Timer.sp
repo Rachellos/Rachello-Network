@@ -3167,8 +3167,8 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 			hook.Send();
 
 			Format(wr_notify, sizeof(wr_notify), "wrnotifycode| {lightskyblue}(%s) {white}:: (%s) \x0764E664%N {white}broke the \x0750DCFF%s {white}:: \x0764E664%s {white}(\x0750DCFFWR -%s{white})!", server_tag, g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime, wr_improve);
-	
-			SocketSend(ClientSocket, wr_notify, sizeof(wr_notify));
+			if (IRC_Connected)
+				SocketSend(ClientSocket, wr_notify, sizeof(wr_notify));
 		}
 		else
 		{
