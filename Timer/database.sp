@@ -1156,7 +1156,7 @@ stock void DB_SaveMapZone( int zone, float vecMins[3], float vecMaxs[3], int id 
 	char szQuery[500];
 	if ( zone == ZONE_CP )
 	{
-		g_hDatabase.Format( szQuery, sizeof( szQuery ), "INSERT INTO "...TABLE_CP..." VALUES ('%s', %i,  %i, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %i, CURRENT_DATE)",
+		g_hDatabase.Format( szQuery, sizeof( szQuery ), "INSERT INTO "...TABLE_CP..." VALUES ('%s', %i,  %i, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %i)",
 		g_szCurrentMap, id, 0,
 		vecMins[0], vecMins[1], vecMins[2],
 		vecMaxs[0], vecMaxs[1], vecMaxs[2], g_iClientId[client]);
