@@ -897,10 +897,27 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = pts + %.1f%s WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? ", beaten = 0" : "", g_szCurrentMap, g_iClientId[client], run, mode);
 				transaction.AddQuery(szTrans);
 
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i AND mode = %i) WHERE uid = %i;", (mode == MODE_SOLDIER) ? "solly" : "demo", g_iClientId[client], mode, g_iClientId[client]);
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curRank := 0);");
 				transaction.AddQuery(szTrans);
 
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET overall = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i) WHERE uid = %i;", g_iClientId[client], g_iClientId[client]);
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "update maprecs SET `rank` = (@curRank := @curRank + 1) WHERE map = '%s' AND run = %i AND mode = %i ORDER BY time ASC;", g_szCurrentMap, run, mode );
+				transaction.AddQuery(szTrans);
+
+				if (rank <= 10)
+				{ 
+					g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = \
+						((SELECT wr_pts from points where run_type = '%s' and tier = %i) \
+						* (SELECT multipler FROM points_multipler where `rank` = maprecs.`rank`) \
+						+ (SELECT completion from points where run_type = '%s' and tier = %i) ) \
+						WHERE recordid = maprecs.recordid AND map = '%s' AND run = %i AND mode = %i",
+						db_run, g_Tiers[run][mode], db_run, g_Tiers[run][mode], g_szCurrentMap, run, mode);
+						
+					transaction.AddQuery(szTrans);
+				}
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = plydata.uid AND mode = %i) WHERE uid = plydata.uid;", (mode == MODE_SOLDIER) ? "solly" : "demo", mode);
+				transaction.AddQuery(szTrans);
+
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET overall = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = plydata.uid) WHERE uid = plydata.uid;");
 				transaction.AddQuery(szTrans);
 			}
 
@@ -918,16 +935,10 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				outof);
 			}
 
-			g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curRank := 0);");
-			transaction.AddQuery(szTrans);
-
-			g_hDatabase.Format(szTrans, sizeof(szTrans), "update maprecs SET `rank` = (@curRank := @curRank + 1) WHERE map = '%s' AND run = %i AND mode = %i ORDER BY time ASC;", g_szCurrentMap, run, mode );
-			transaction.AddQuery(szTrans);
-
 			g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curClassRank := 0);");
 			transaction.AddQuery(szTrans);
 
-			g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (@curClassRank := @curClassRank + 1) where %s > 0.0 ORDER BY %s DESC;", (style == STYLE_SOLLY) ? "srank" : "drank", (style == STYLE_SOLLY) ? "solly" : "demo" , (style == STYLE_SOLLY) ? "solly" : "demo" );
+			g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (@curClassRank := @curClassRank + 1) where %s > 0.0 ORDER BY %s DESC;", (mode == MODE_SOLDIER) ? "srank" : "drank", (mode == MODE_SOLDIER) ? "solly" : "demo" , (mode == MODE_SOLDIER) ? "solly" : "demo" );
 			transaction.AddQuery(szTrans);
 
 			g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curOverRank := 0);");
@@ -943,22 +954,15 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				transaction.AddQuery(szTrans);
 			}
 
-			if (rank <= 10)
-			{ 
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = \
-					((SELECT wr_pts from points where run_type = '%s' and tier = %i) \
-					* (SELECT multipler FROM points_multipler where `rank` = maprecs.`rank`) \
-					+ (SELECT completion from points where run_type = '%s' and tier = %i) ) \
-					WHERE recordid = maprecs.recordid AND map = '%s' AND run = %i AND mode = %i",
-					db_run, g_Tiers[run][mode], db_run, g_Tiers[run][mode], g_szCurrentMap, run, mode);
-					
-				transaction.AddQuery(szTrans);
-			}
-
-
 			SQL_ExecuteTransaction(g_hDatabase, transaction, _, OnTxnFail);
 
-			DB_RetrieveClientData( client );
+			for ( int i = 1; i <= MaxClients; i++)
+			{
+				if (IsClientInGame(i) && g_flClientBestTime[i][run][mode] != TIME_INVALID)
+				{
+					DB_RetrieveClientData( i );
+				}
+			}
 		}
 	}
 	delete hData;
@@ -1494,6 +1498,7 @@ public void Threaded_DeleteCpRecord( Database hOwner, DBResultSet hQuery, const 
 {
 	if ( hQuery == null )
 	{	
+		DB_LogError(szError);
 		return;
 	}
 }

@@ -7,6 +7,8 @@ public Action Command_Admin_AddSkipLevel( int client, int args )
 	GetClientAbsAngles(client, g_vecSkipAngles );
 	FormatEx(query, sizeof(query), "REPLACE INTO skip_zones VALUES('%s', '%i', '%.1f', '%.1f', '%.1f', '%.1f', '%.1f', '%.1f')", g_szCurrentMap, g_iClientMode[client], g_vecSkipPos[0], g_vecSkipPos[1], g_vecSkipPos[2], g_vecSkipAngles[0], g_vecSkipAngles[1], g_vecSkipAngles[2]);
 	SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
+	g_iSkipMode = g_iClientMode[client];
+
 	CPrintToChatAll(CHAT_PREFIX... "Skip position {lightskyblue}Added{white}! <{green}%s{white}>", g_szCurrentMap); 
 	return Plugin_Handled;
 }
@@ -18,7 +20,7 @@ public Action Command_Admin_DelSkipLevel( int client, int args )
 	char query[400];
 	GetEntPropVector(client, Prop_Send, "m_vecOrigin", g_vecSkipPos );
 	GetClientAbsAngles(client, g_vecSkipAngles );
-	FormatEx(query, sizeof(query), "DELETE FROM levels WHERE map = '%s'", g_szCurrentMap);
+	FormatEx(query, sizeof(query), "DELETE FROM skip_zones WHERE map = '%s' AND mode = %i", g_szCurrentMap, g_iClientMode[client]);
 	SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
 
 	for (int i = 0; i < 3; i++)
@@ -1270,117 +1272,6 @@ public int Handler_ZoneDelete_CP( Menu mMenu, MenuAction action, int client, int
 	return 0;
 }
 
-public Action Command_Admin_RunRecordsDelete( int client, int args )
-{
-	if ( !client ) return Plugin_Handled;
-	
-	
-	Menu mMenu = new Menu( Handler_RunRecordsDelete );
-	mMenu.SetTitle( "Remove Records\n " );
-	
-	char szItem[32];
-	
-	mMenu.AddItem( "", "Map (sub-menu)" );
-	for ( int i = 1; i < NUM_RUNS; i++ )
-	{
-		FormatEx( szItem, sizeof( szItem ), "%s (sub-menu)", g_szRunName[NAME_LONG][i] );
-		
-		mMenu.AddItem( "", szItem, ( g_bIsLoaded[i] ) ? 0 : ITEMDRAW_DISABLED );
-	}
-	
-	mMenu.Display( client, MENU_TIME_FOREVER );
-
-	
-	return Plugin_Handled;
-}
-
-public int Handler_RunRecordsDelete( Menu mMenu, MenuAction action, int client, int run )
-{
-	if ( action == MenuAction_End ) { delete mMenu; return 0; }
-	if ( action != MenuAction_Select ) return 0;
-	
-	
-	if ( run < 0 || run >= NUM_RUNS ) return 0;
-	
-	
-	Menu mMenu_ = new Menu( Handler_RunRecordsDelete_Type );
-	mMenu_.SetTitle( "Remove Records (%s)\n ", g_szRunName[NAME_LONG][run] );
-	
-	
-	char szItem[12];
-	FormatEx( szItem, sizeof( szItem ), "%i", run );
-	
-	AddMenuItem( mMenu_, szItem, "Remove specific record (sub-menu)" );
-	AddMenuItem( mMenu_, szItem, "Remove all records" );
-	
-	mMenu_.Display( client, MENU_TIME_FOREVER );
-	
-	return 0;
-}
-
-public int Handler_RunRecordsDelete_Type( Menu mMenu, MenuAction action, int client, int type )
-{
-	if ( action == MenuAction_End ) { delete mMenu; return 0; }
-	if ( action != MenuAction_Select ) return 0;
-	
-	
-	char szRun[4];
-	if ( !GetMenuItem( mMenu, type, szRun, sizeof( szRun ) ) ) return 0;
-	
-	
-	int run = StringToInt( szRun );
-	
-	if ( type == 0 )
-	{
-		DB_Admin_Records_DeleteMenu( client, run );
-		return 0;
-	}
-	
-	Menu mMenu_ = new Menu( Handler_RunRecordsDelete_Confirmation );
-	mMenu_.SetTitle( "Are you sure?\n " );
-	
-	
-	char szItem[64];
-	FormatEx( szItem, sizeof( szItem ), "%i_%i", run, type );
-	
-	mMenu_.AddItem( szItem, "Yes" );
-	mMenu_.AddItem( "", "No" );
-	
-	mMenu_.ExitButton = false;
-	mMenu_.Display( client, MENU_TIME_FOREVER );
-	
-	return 0;
-}
-
-public int Handler_RunRecordsDelete_Confirmation( Menu mMenu, MenuAction action, int client, int index )
-{
-	if ( action == MenuAction_End ) { delete mMenu; return 0; }
-	if ( action != MenuAction_Select ) return 0;
-	
-	
-	if ( index != 0 ) return 0;
-	
-	char szItem[12];
-	if ( !GetMenuItem( mMenu, index, szItem, sizeof( szItem ) ) ) return 0;
-	
-	
-	char szInfo[2][6];
-	if ( !ExplodeString( szItem, "_", szInfo, sizeof( szInfo ), sizeof( szInfo[] ) ) )
-		return 0;
-	
-	int run = StringToInt( szInfo[0] );
-	int type = StringToInt( szInfo[1] );
-	
-	switch ( type )
-	{
-		case 1 : // Remove run records
-		{
-			DB_EraseRunRecords( run );
-		}
-	}
-	
-	return 0;
-}
 
 public int Handler_RecordDelete( Menu mMenu, MenuAction action, int client, int index )
 {

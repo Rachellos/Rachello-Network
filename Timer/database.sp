@@ -163,6 +163,30 @@ stock void DB_InitializeDatabase()
 		)");
 	
 	g_hDatabase.Query( Threaded_Empty, 
+		"CREATE TABLE IF NOT EXISTS `levels` (\
+		`level` int(11) NOT NULL,\
+		`map` varchar(50) NOT NULL,\
+		`pos0` double NOT NULL,\
+		`pos1` double NOT NULL,\
+		`pos2` double NOT NULL,\
+		`ang0` double NOT NULL,\
+		`ang1` double NOT NULL,\
+		`ang2` double NOT NULL\
+		)");
+	
+	g_hDatabase.Query( Threaded_Empty, 
+		"CREATE TABLE IF NOT EXISTS `skip_zones` (\
+		`map` varchar(50) NOT NULL,\
+		`mode` int(11) NOT NULL,\
+		`pos0` double NOT NULL,\
+		`pos1` double NOT NULL,\
+		`pos2` double NOT NULL,\
+		`ang0` double NOT NULL,\
+		`ang1` double NOT NULL,\
+		`ang2` double NOT NULL\
+		)");
+	
+	g_hDatabase.Query( Threaded_Empty, 
 		"CREATE TABLE IF NOT EXISTS `maplist` (\
 		  `map` varchar(50) NOT NULL\
 		)");
@@ -1232,43 +1256,61 @@ stock void DB_EraseRunCPRecords( int run, int client = 0 )
 
 stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 {
-	char szQuery[500], update_records[100];
-	FormatEx( szQuery, sizeof( szQuery ), "DELETE FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND mode = %i AND uid = %i", map, run, mode, uid );
+	char szTr[500], szQuery[500], update_records[100], db_run[40];
 	
-	g_hDatabase.Query( Threaded_DeleteRecord, szQuery, client, DBPrio_Normal );
+	g_hDatabase.Format(db_run, sizeof(db_run), "%s", (RunIsCourse(run)) ? "course" : (RunIsBonus(run)) ? "bonus" : "map");
 
-	FormatEx( szQuery, sizeof( szQuery ), "DELETE FROM "...TABLE_CP_RECORDS..." WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i", map, uid, run, mode );
+	Transaction tr = new Transaction();
+
+	FormatEx( szTr, sizeof( szTr ), "DELETE FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND mode = %i AND uid = %i", map, run, mode, uid );
+	tr.AddQuery(szTr);
+
+	FormatEx( szTr, sizeof( szTr ), "DELETE FROM "...TABLE_CP_RECORDS..." WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i", map, uid, run, mode );
+	tr.AddQuery(szTr);
+
+
 	
-	g_hDatabase.Query( Threaded_DeleteCpRecord, szQuery, client, DBPrio_Normal );
+	g_hDatabase.Format(szTr, sizeof(szTr), "(SELECT @curRank := 0);");
+	tr.AddQuery(szTr);
 
-	char szT4[200], szT5[200], szT6[200], szT7[200], szT8[200], szT9[200], szT10[200], szT11[200], szT12[200], szT13[200];
+	g_hDatabase.Format(szTr, sizeof(szTr), "update maprecs SET `rank` = (@curRank := @curRank + 1) WHERE map = '%s' AND run = %i AND mode = %i ORDER BY time ASC;", map, run, mode );
+	tr.AddQuery(szTr);
 
-	Transaction t1s = new Transaction();
-	g_hDatabase.Format(szT4, sizeof(szT4), "(SELECT @curRank := 0);");
-	g_hDatabase.Format(szT5, sizeof(szT5), "update maprecs SET rank = (@curRank := @curRank + 1) WHERE map = '%s' AND run = %i AND mode = %i ORDER BY time ASC;", map, run, mode );
-	g_hDatabase.Format(szT12, sizeof(szT12), "update plydata SET %s = (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = %i) WHERE (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode %i) > 0.0;", (mode == MODE_SOLDIER) ? "solly" : "demo", (mode == MODE_SOLDIER) ? 1 : 3, (mode == MODE_SOLDIER) ? 1 : 3 );
-	g_hDatabase.Format(szT13, sizeof(szT13), "update plydata SET overall = (SELECT SUM(pts) from maprecs where uid = plydata.uid) WHERE (SELECT SUM(pts) from maprecs where uid = plydata.uid) > 0.0;" );
+	g_hDatabase.Format(szTr, sizeof(szTr), "UPDATE "...TABLE_RECORDS..." SET pts = \
+						((SELECT wr_pts from points where run_type = '%s' and tier = (select %stier from map_info where map = '%s')) \
+						* (SELECT multipler FROM points_multipler where `rank` = maprecs.`rank`) \
+						+ (SELECT completion from points where run_type = '%s' and tier = (select %stier from map_info where map = '%s')) ) \
+						WHERE recordid = maprecs.recordid AND map = '%s' AND run = %i AND mode = %i",
+						db_run, (mode == MODE_SOLDIER) ? "s" : "d", map, db_run, (mode == MODE_SOLDIER) ? "s" : "d", map, map, run, mode);
+	tr.AddQuery(szTr);
 
-	Transaction t2s = new Transaction();
-	g_hDatabase.Format(szT6, sizeof(szT6), "(SELECT @curRank := 0);");
-	g_hDatabase.Format(szT7, sizeof(szT7), "UPDATE "...TABLE_PLYDATA..." SET %s = (@curRank := @curRank + 1) where (select sum(pts) from maprecs where uid = plydata.uid and mode = %s) > 0.0 ORDER BY (select sum(pts) from maprecs where uid = plydata.uid and mode = %s) DESC;", (mode == MODE_SOLDIER) ? "srank" : "drank", (mode == MODE_SOLDIER) ? "solly" : "demo", (mode == MODE_SOLDIER) ? "1" : "3", (mode == MODE_SOLDIER) ? "1" : "3" );
-				
-	Transaction t3s = new Transaction();
-	g_hDatabase.Format(szT8, sizeof(szT8), "(SELECT @curRank := 0);");
-	g_hDatabase.Format(szT9, sizeof(szT9), "UPDATE "...TABLE_PLYDATA..." SET orank = (@curRank := @curRank + 1) where (select sum(pts) from maprecs where uid = plydata.uid) > 0.0 ORDER BY (select sum(pts) from maprecs where uid = plydata.uid) DESC;" );
+	g_hDatabase.Format(szTr, sizeof(szTr), "update plydata SET %s = (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = %i) WHERE (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = %i) > 0.0;", (mode == MODE_SOLDIER) ? "solly" : "demo", mode, mode );
+	tr.AddQuery(szTr);
 
-	t1s.AddQuery(szT4);
-	t1s.AddQuery(szT5);
-	t1s.AddQuery(szT12);
-	t1s.AddQuery(szT13);
-	t2s.AddQuery(szT6);
-	t2s.AddQuery(szT7);
-	t3s.AddQuery(szT8);
-	t3s.AddQuery(szT9);
+	g_hDatabase.Format(szTr, sizeof(szTr), "update plydata SET overall = (SELECT SUM(pts) from maprecs where uid = plydata.uid) WHERE (SELECT SUM(pts) from maprecs where uid = plydata.uid) > 0.0;" );
+	tr.AddQuery(szTr);
 
-	SQL_ExecuteTransaction(g_hDatabase, t1s);
-	SQL_ExecuteTransaction(g_hDatabase, t2s);
-	SQL_ExecuteTransaction(g_hDatabase, t3s);
+	g_hDatabase.Format(szTr, sizeof(szTr), "(SELECT @curRank := 0);");
+	tr.AddQuery(szTr);
+
+	g_hDatabase.Format(szTr, sizeof(szTr), "UPDATE "...TABLE_PLYDATA..." SET %s = (@curRank := @curRank + 1) where (select sum(pts) from maprecs where uid = plydata.uid and mode = %s) > 0.0 ORDER BY (select sum(pts) from maprecs where uid = plydata.uid and mode = %s) DESC;", (mode == MODE_SOLDIER) ? "srank" : "drank", (mode == MODE_SOLDIER) ? "solly" : "demo", (mode == MODE_SOLDIER) ? "1" : "3", (mode == MODE_SOLDIER) ? "1" : "3" );
+	tr.AddQuery(szTr);
+
+	g_hDatabase.Format(szTr, sizeof(szTr), "(SELECT @curRank := 0);");
+	tr.AddQuery(szTr);
+
+	g_hDatabase.Format(szTr, sizeof(szTr), "UPDATE "...TABLE_PLYDATA..." SET orank = (@curRank := @curRank + 1) where (select sum(pts) from maprecs where uid = plydata.uid) > 0.0 ORDER BY (select sum(pts) from maprecs where uid = plydata.uid) DESC;" );
+	tr.AddQuery(szTr);
+
+	SQL_ExecuteTransaction(g_hDatabase, tr, _, OnTxnFail);
+
+		for ( int i = 1; i <= MaxClients; i++)
+			{
+				if (IsClientInGame(i) && g_flClientBestTime[i][run][mode] != TIME_INVALID)
+				{
+					DB_RetrieveClientData( i );
+				}
+			}
 
 	Format(update_records, sizeof(update_records), "update_records");
 	if (IRC_Connected)
@@ -1278,12 +1320,17 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 	{
 		if (IsClientInGame(i))
 		{
+			if ( StrEqual( map, g_szCurrentMap) && g_flClientBestTime[i][run][mode] != TIME_INVALID )
+			{
+				DB_RetrieveClientData( i );
+			}
+
 			if (g_iClientId[i] == uid)
 			{
-				g_flClientBestTime[client][run][mode] = TIME_INVALID;
+				g_flClientBestTime[i][run][mode] = TIME_INVALID;
 				for (int cp = 0; cp < g_hCPs.Length; cp++)
 				{
-					f_CpPr[client][mode][cp] = TIME_INVALID;
+					f_CpPr[i][mode][cp] = TIME_INVALID;
 				}
 			}
 		}
