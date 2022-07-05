@@ -61,6 +61,7 @@
 #pragma semicolon 1
 //#pragma newdecls required
 #pragma dynamic 645221
+#pragma tabsize 0
 
 // -----------------
 // All globals here.
@@ -141,8 +142,9 @@ bool IRC_Connected;
 bool requested = false;
 
 // Zones
-bool g_bIsLoaded[NUM_RUNS]; // Do we have start and end zone for main/bonus at least?
-bool g_bZoneExists[NUM_REALZONES][30]; // Are we going to check if the player is inside the zones in the first place?
+bool g_bIsLoaded[NUM_RUNS];
+
+bool g_bZoneExists[NUM_REALZONES][30];
 bool g_bZoneBeingBuilt[NUM_REALZONES];
 float g_vecZoneMins[NUM_REALZONES][30][3];
 float g_vecZoneMaxs[NUM_REALZONES][30][3];
@@ -297,7 +299,6 @@ float db_time[MAXPLAYERS+1];
 int g_iClientCpsEntered[MAXPLAYERS+1][100];
 int DemoInfoId[MAXPLAYERS+1];
 int szClass[NUM_RUNS][NUM_MODES];
-int prev_random_msg;
 
 int g_ZoneMethod[MAXPLAYERS+1];
 

@@ -819,41 +819,55 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 			}
 		};
 
-		float TTPoints[3][6][10] = 
+		float WrPoints[3][6] = 
 		{
 			//Map
 			{	
-				{ 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 100.0, 140.0, 200.0 },
-				{ 25.0, 37.5, 50.0, 62.5, 75.0, 87.5, 100.0, 125.0, 175.0, 250.0 },
-				{ 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0, 150.0, 210.0, 300.0 },
-				{ 35.0, 52.5, 70.0, 87.5, 105.0, 122.5, 140.0, 175.0, 245.0, 350.0 },
-				{ 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 200.0, 280.0, 400.0 },
-				{ 50.0, 75.0, 100.0, 150.0, 175.0, 200.0, 250.0, 250.0, 350.0, 500.0 }
+				200.0,
+				250.0,
+				300.0,
+				350.0,
+				400.0,
+				500.0
 			},
 			//Course
 			{	
-				{ 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 70.0, 100.0 },
-				{ 15.0, 22.5, 30.0, 37.0, 45.0, 52.0, 60.0, 75.0, 105.0, 150.0 },
-				{ 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 100.0, 140.0, 200.0 },
-				{ 25.0, 37.5, 50.0, 62.5, 75.0, 87.5, 100.0, 125.0, 175.0, 250.0 },
-				{ 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0, 150.0, 210.0, 300.0 },
-				{ 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 200.0, 280.0, 400.0 }
+				100.0,
+				150.0,
+				200.0,
+				250.0,
+				300.0,
+				400.0
 			},
 			//Bonus
 			{	
-				{ 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 7.0, 10.0 },
-				{ 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 14.0, 20.0 },
-				{ 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 20.0, 28.0, 40.0 },
-				{ 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 24.0, 30.0, 42.0, 60.0 },
-				{ 8.0, 12.0, 16.0, 20.0, 24.0, 28.0, 32.0, 40.0, 56.0, 80.0 },
-				{ 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 70.0, 100.0 }
+				10.0,
+				20.0,
+				40.0,
+				60.0,
+				80.0,
+				100.0
 			}
+		};
+
+		float multipler[10] = 
+		{
+			1.0,
+			0.7,
+			0.5,
+			0.4,
+			0.35,
+			0.3,
+			0.25,
+			0.2,
+			0.15,
+			0.1
 		};
 
 		float points = CompletionPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1], points2 = 0.0;
 		
 		char db_run[40];
-		char szTrans[200];
+		char szTrans[400];
 
 		Transaction transaction = new Transaction();
 
@@ -863,13 +877,16 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 		{
 			if ( rank <= 10)
 			{
-				points2 = TTPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1][10 - rank]; 
+				points2 = WrPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1] * multipler[rank - 1]; 
 			}
 			
 			if ( 0 < oldrank <= 10 && oldrank > rank && rank <= 10 )
 			{
 				points = 0.0;
-				points2 = TTPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1][10 - rank] - TTPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1][10 - oldrank];
+				points2 = 	(WrPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1] * multipler[rank - 1])
+						-
+							(WrPoints[view_as<int>(run_type)][g_Tiers[run][mode]-1] * multipler[oldrank - 1]);
+			
 			}
 
 			if (rank < 11 || szOldTimePts[client][run][mode] <= TIME_INVALID)
@@ -877,7 +894,7 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				points3 = points + points2;
 				CPrintToChat(client, CHAT_PREFIX..."Gained "...CLR_CUSTOM1..."%.1f {white}%s points!", points3, (style == STYLE_DEMOMAN) ? "Demoman" : "Soldier" );
 				
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = %.1f%s WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? ", beaten = 0" : "", g_szCurrentMap, g_iClientId[client], run, mode);
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = pts + %.1f%s WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? ", beaten = 0" : "", g_szCurrentMap, g_iClientId[client], run, mode);
 				transaction.AddQuery(szTrans);
 
 				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = %i AND mode = %i) WHERE uid = %i;", (mode == MODE_SOLDIER) ? "solly" : "demo", g_iClientId[client], mode, g_iClientId[client]);
@@ -926,13 +943,18 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				transaction.AddQuery(szTrans);
 			}
 
-			int cycle = (outof >= 10) ? 10 : outof;
-			for (int i = 1; i <= cycle; i++)
-			{
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = ((SELECT r%i from points where tier = %i and run = '%s') + %.1f) WHERE %i <= %i AND %i <= 10 AND `rank` = %i AND map = '%s' AND run = %i AND mode = %i", i, g_Tiers[run][mode], db_run, points, i, outof, i, i, g_szCurrentMap, run, mode);
-				
+			if (rank <= 10)
+			{ 
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = \
+					((SELECT wr_pts from points where run_type = '%s' and tier = %i) \
+					* (SELECT multipler FROM points_multipler where `rank` = maprecs.`rank`) \
+					+ (SELECT completion from points where run_type = '%s' and tier = %i) ) \
+					WHERE recordid = maprecs.recordid AND map = '%s' AND run = %i AND mode = %i",
+					db_run, g_Tiers[run][mode], db_run, g_Tiers[run][mode], g_szCurrentMap, run, mode);
+					
 				transaction.AddQuery(szTrans);
 			}
+
 
 			SQL_ExecuteTransaction(g_hDatabase, transaction, _, OnTxnFail);
 

@@ -1,17 +1,11 @@
-/*
-CREATE TABLE IF NOT EXISTS tempbounds (map VARCHAR(32), zone INT, id INT, min0 REAL, min1 REAL, min2 REAL, max0 REAL, max1 REAL, max2 REAL, flags INT, PRIMARY KEY(map, zone, id))
 
-INSERT INTO mapbounds (map, zone, id, min0, min1, min2, max0, max1, max2) SELECT 'bhop_name', zone, id, min0, min1, min2, max0, max1, max2 FROM bhop_name
-INSERT INTO maprecs (map, steamid, run, style, name, time, jumps, strafes) SELECT 'bhop_name', steamid, run, style, name, time, jumps, strafes FROM rec_bhop_name
-*/
-#define DB_NAME				 "opentimer"
+#define DB_NAME				 "timer"
 #define TABLE_PLYDATA		 "plydata"
 #define TABLE_MAPINFO		 "map_info"
 #define TABLE_RECORDS		 "maprecs"
 #define TABLE_ZONES			 "mapbounds"
 #define TABLE_CP			 "mapcps"
 #define TABLE_CP_RECORDS	 "mapcprecs" // Save record checkpoint times only.
-#define TABLE_PLYCHEAT		 "plycheatdata"
 
 Database g_hDatabase;
 
@@ -65,108 +59,127 @@ stock void DB_InitializeDatabase()
 	
 	
 	// NOTE: Primary key cannot be 'INT'.
-	/*
 	g_hDatabase.Query( Threaded_Empty,
-		"CREATE TABLE IF NOT EXISTS plydata (
-		  uid int(11) NOT NULL,
-		  steamid varchar(64) NOT NULL,
-		  name varchar(32) NOT NULL DEFAULT 'N/A',
-		  hideflags int(11) NOT NULL DEFAULT '0',
-		  prefstyle int(11) NOT NULL DEFAULT '0',
-		  prefmode int(11) NOT NULL DEFAULT '0',
-		  finishes int(11) NOT NULL DEFAULT '0',
-		  records int(11) NOT NULL DEFAULT '0',
-		  overall double NOT NULL DEFAULT '0',
-		  solly double NOT NULL DEFAULT '0',
-		  demo double NOT NULL DEFAULT '0',
-		  lastseen varchar(30) DEFAULT NULL,
-		  firstseen varchar(30) DEFAULT NULL,
-		  country varchar(99) NOT NULL DEFAULT 'None',
-		  link varchar(130) NOT NULL DEFAULT 'None',
-		  srank int(11) DEFAULT '0',
-		  drank int(11) DEFAULT '0',
-		  orank int(11) DEFAULT '0',
-		  ip varchar(30) DEFAULT NULL
+		"CREATE TABLE IF NOT EXISTS plydata (\
+		  uid int NOT NULL PRIMARY KEY AUTO_INCREMENT,\
+		  steamid varchar(64) NOT NULL,\
+		  name varchar(32) NOT NULL DEFAULT 'N/A',\
+		  hideflags int(11) NOT NULL DEFAULT '0',\
+		  overall double DEFAULT '0',\
+		  solly double DEFAULT '0',\
+		  demo double DEFAULT '0',\
+		  lastseen varchar(30) DEFAULT NULL,\
+		  firstseen varchar(30) DEFAULT NULL,\
+		  country varchar(99) NOT NULL DEFAULT 'None',\
+		  link varchar(130) NOT NULL DEFAULT 'None',\
+		  srank int(11) DEFAULT '0',\
+		  drank int(11) DEFAULT '0',\
+		  orank int(11) DEFAULT '0',\
+		  ip varchar(30) DEFAULT NULL,\
+		  online int(11) DEFAULT '0'\
 		)");
 	
 	g_hDatabase.Query( Threaded_Empty,
-		"CREATE TABLE IF NOT EXISTS `map_info` (
-		  `map_name` varchar(32) NOT NULL DEFAULT 'gay',
-		  `run` int(11) NOT NULL,
-		  `stier` int(11) NOT NULL,
-		  `dtier` int(11) NOT NULL,
-		  `solly` int(11) NOT NULL,
-		  `demo` int(11) NOT NULL
+		"CREATE TABLE IF NOT EXISTS `map_info` (\
+		  `map_name` varchar(32) NOT NULL DEFAULT 'gay',\
+		  `run` int(11) NOT NULL,\
+		  `stier` int(11) NOT NULL,\
+		  `dtier` int(11) NOT NULL,\
+		  `solly` int(11) NOT NULL,\
+		  `demo` int(11) NOT NULL\
 		)");
 	
 	g_hDatabase.Query( Threaded_Empty,
-		"CREATE TABLE IF NOT EXISTS `mapbounds` (
-		  `map` varchar(32) NOT NULL,
-		  `zone` int(11) NOT NULL,
-		  `id` int(11) NOT NULL DEFAULT '0',
-		  `min0` double NOT NULL,
-		  `min1` double NOT NULL,
-		  `min2` double NOT NULL,
-		  `max0` double NOT NULL,
-		  `max1` double NOT NULL,
-		  `max2` double NOT NULL,
-		  `flags` int(11) NOT NULL DEFAULT '0'
+		"CREATE TABLE IF NOT EXISTS `mapbounds` (\
+		  `map` varchar(32) NOT NULL,\
+		  `zone` int(11) NOT NULL,\
+		  `id` int(11) NOT NULL DEFAULT '0',\
+		  `min0` double NOT NULL,\
+		  `min1` double NOT NULL,\
+		  `min2` double NOT NULL,\
+		  `max0` double NOT NULL,\
+		  `max1` double NOT NULL,\
+		  `max2` double NOT NULL,\
+		  `number` int(11) NOT NULL DEFAULT 0,\
+		  `uid` int(11) NOT NULL DEFAULT 1,\
+		  `time` DATE DEFAULT NULL\
 		)");
 	
 	g_hDatabase.Query( Threaded_Empty,
-		"CREATE TABLE IF NOT EXISTS `maprecs` (
-		`recordid` int(11) NOT NULL,
-		`map` varchar(40) NOT NULL,
-		`uid` int(11) DEFAULT NULL,
-		`run` int(11) DEFAULT NULL,
-		`style` int(11) DEFAULT NULL,
-		`mode` int(11) DEFAULT NULL,
-		`time` double DEFAULT NULL,
-		`pts` double DEFAULT NULL,
-		`date` varchar(30) DEFAULT NULL,
-		`rank` int(11) DEFAULT NULL,
-		`allranks` int(11) DEFAULT NULL,
-		`demourl` char(255) DEFAULT NULL,
-		`start_tick` int(11) DEFAULT NULL,
-		`end_tick` int(11) DEFAULT NULL
+		"CREATE TABLE IF NOT EXISTS `maprecs` (\
+		`recordid` int NOT NULL PRIMARY KEY AUTO_INCREMENT,\
+		`map` varchar(40) NOT NULL,\
+		`uid` int(11) DEFAULT NULL,\
+		`run` int(11) DEFAULT NULL,\
+		`style` int(11) DEFAULT NULL,\
+		`mode` int(11) DEFAULT NULL,\
+		`time` double DEFAULT NULL,\
+		`pts` double DEFAULT NULL,\
+		`date` varchar(30) DEFAULT NULL,\
+		`rank` int(11) DEFAULT NULL,\
+		`demourl` char(255) DEFAULT NULL,\
+		`start_tick` int(11) DEFAULT NULL,\
+		`end_tick` int(11) DEFAULT NULL,\
+		`demo_status` int(11) DEFAULT NULL,\
+		`server_id` int(11) DEFAULT 0,\
+		`beaten` int(2) default 0\
 		)");
 	
 	g_hDatabase.Query( Threaded_Empty,
-		"CREATE TABLE IF NOT EXISTS `mapcps` (
-		  `map` varchar(32) NOT NULL,
-		  `id` int(11) NOT NULL,
-		  `run` int(11) NOT NULL,
-		  `min0` double NOT NULL,
-		  `min1` double NOT NULL,
-		  `min2` double NOT NULL,
-		  `max0` double NOT NULL,
-		  `max1` double NOT NULL,
-		  `max2` double NOT NULL
+		"CREATE TABLE IF NOT EXISTS `mapcps` (\
+		  `map` varchar(32) NOT NULL,\
+		  `id` int(11) NOT NULL,\
+		  `run` int(11) NOT NULL,\
+		  `min0` double NOT NULL,\
+		  `min1` double NOT NULL,\
+		  `min2` double NOT NULL,\
+		  `max0` double NOT NULL,\
+		  `max1` double NOT NULL,\
+		  `max2` double NOT NULL,\
+		  `uid` int(11) NOT NULL DEFAULT 1\
 		)" );
 	
 	g_hDatabase.Query( Threaded_Empty,
-		"CREATE TABLE IF NOT EXISTS `mapcprecs` (
-		  `map` varchar(32) NOT NULL,
-		  `id` int(11) NOT NULL,
-		  `run` int(11) NOT NULL,
-		  `style` int(11) NOT NULL,
-		  `mode` int(11) NOT NULL,
-		  `uid` int(11) NOT NULL,
-		  `time` double NOT NULL
+		"CREATE TABLE IF NOT EXISTS `mapcprecs` (\
+		  `map` varchar(32) NOT NULL,\
+		  `id` int(11) NOT NULL,\
+		  `run` int(11) NOT NULL,\
+		  `style` int(11) NOT NULL,\
+		  `mode` int(11) NOT NULL,\
+		  `uid` int(11) NOT NULL,\
+		  `time` double NOT NULL\
 		)");
 
 	g_hDatabase.Query( Threaded_Empty, 
-		"CREATE TABLE IF NOT EXISTS `startpos` (
-		  `map` varchar(50) NOT NULL,
-		  `run` int(11) NOT NULL,
-		  `pos0` double NOT NULL,
-		  `pos1` double NOT NULL,
-		  `pos2` double NOT NULL,
-		  `ang0` double NOT NULL,
-		  `ang1` double NOT NULL,
-		  `ang2` double NOT NULL
+		"CREATE TABLE IF NOT EXISTS `startpos` (\
+		  `map` varchar(50) NOT NULL,\
+		  `run` int(11) NOT NULL,\
+		  `pos0` double NOT NULL,\
+		  `pos1` double NOT NULL,\
+		  `pos2` double NOT NULL,\
+		  `ang0` double NOT NULL,\
+		  `ang1` double NOT NULL,\
+		  `ang2` double NOT NULL\
 		)");
-		*/
+	
+	g_hDatabase.Query( Threaded_Empty, 
+		"CREATE TABLE IF NOT EXISTS `maplist` (\
+		  `map` varchar(50) NOT NULL\
+		)");
+
+	g_hDatabase.Query( Threaded_Empty,
+		"CREATE TABLE IF NOT EXISTS `points` (\
+		`run_type` varchar(45) DEFAULT NULL,\
+		`tier` int DEFAULT NULL,\
+		`completion` float DEFAULT NULL,\
+		`wr_pts` float DEFAULT NULL\
+		)" );
+	
+	g_hDatabase.Query( Threaded_Empty,
+		"CREATE TABLE IF NOT EXISTS `points_multipler` (\
+		`rank` int DEFAULT NULL,\
+  		`multipler` float DEFAULT NULL\
+		)" );
 }
 
 // Get map zones, mimics and vote-able maps

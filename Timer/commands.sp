@@ -2525,8 +2525,8 @@ public void MapPoints(int client, char[] map, int class)
 	char query[600];
 
 	g_hDatabase.Format(query, sizeof(query), "SELECT run, %s, \
-		(select r1 from points where tier = map_info.%s and run = if (map_info.run > 0, IF (map_info.run <= %i, 'course', 'bonus'), 'map' ) limit 1), \
-		(select main_pts from points where tier = map_info.%s and run = if (map_info.run > 0, IF (map_info.run <= %i, 'course', 'bonus'), 'map' ) limit 1), \
+		(select wr_pts from points where tier = map_info.%s and run_type = if (map_info.run > 0, IF (map_info.run <= %i, 'course', 'bonus'), 'map' ) limit 1), \
+		(select completion from points where tier = map_info.%s and run_type = if (map_info.run > 0, IF (map_info.run <= %i, 'course', 'bonus'), 'map' ) limit 1), \
 		(select time from maprecs where uid = %i and run = map_info.run and mode = %i and map = '%s' limit 1), \
 		map_name FROM `map_info` WHERE map_name = '%s'", (class == MODE_SOLDIER) ? "stier" : "dtier", (class == MODE_SOLDIER) ? "stier" : "dtier", RUN_COURSE5, (class == MODE_SOLDIER) ? "stier" : "dtier", RUN_COURSE5, g_iClientId[client], class, map, map);
 
