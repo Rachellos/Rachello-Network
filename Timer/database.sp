@@ -65,9 +65,9 @@ stock void DB_InitializeDatabase()
 		  steamid varchar(64) NOT NULL,\
 		  name varchar(32) NOT NULL DEFAULT 'N/A',\
 		  hideflags int(11) NOT NULL DEFAULT '0',\
-		  overall double DEFAULT '0',\
-		  solly double DEFAULT '0',\
-		  demo double DEFAULT '0',\
+		  overall double NOT NULL DEFAULT '0.0',\
+		  solly double NOT NULL DEFAULT '0.0',\
+		  demo double NOT NULL DEFAULT '0.0',\
 		  lastseen varchar(30) DEFAULT NULL,\
 		  firstseen varchar(30) DEFAULT NULL,\
 		  country varchar(99) NOT NULL DEFAULT 'None',\
@@ -1284,33 +1284,25 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 						db_run, (mode == MODE_SOLDIER) ? "s" : "d", map, db_run, (mode == MODE_SOLDIER) ? "s" : "d", map, map, run, mode);
 	tr.AddQuery(szTr);
 
-	g_hDatabase.Format(szTr, sizeof(szTr), "update plydata SET %s = (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = %i) WHERE (SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = %i) > 0.0;", (mode == MODE_SOLDIER) ? "solly" : "demo", mode, mode );
+	g_hDatabase.Format(szTr, sizeof(szTr), "update plydata SET %s = COALESCE((SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = %i), 0.0);", (mode == MODE_SOLDIER) ? "solly" : "demo", mode );
 	tr.AddQuery(szTr);
 
-	g_hDatabase.Format(szTr, sizeof(szTr), "update plydata SET overall = (SELECT SUM(pts) from maprecs where uid = plydata.uid) WHERE (SELECT SUM(pts) from maprecs where uid = plydata.uid) > 0.0;" );
-	tr.AddQuery(szTr);
-
-	g_hDatabase.Format(szTr, sizeof(szTr), "(SELECT @curRank := 0);");
-	tr.AddQuery(szTr);
-
-	g_hDatabase.Format(szTr, sizeof(szTr), "UPDATE "...TABLE_PLYDATA..." SET %s = (@curRank := @curRank + 1) where (select sum(pts) from maprecs where uid = plydata.uid and mode = %s) > 0.0 ORDER BY (select sum(pts) from maprecs where uid = plydata.uid and mode = %s) DESC;", (mode == MODE_SOLDIER) ? "srank" : "drank", (mode == MODE_SOLDIER) ? "solly" : "demo", (mode == MODE_SOLDIER) ? "1" : "3", (mode == MODE_SOLDIER) ? "1" : "3" );
+	g_hDatabase.Format(szTr, sizeof(szTr), "update plydata SET overall = COALESCE((SELECT SUM(pts) from maprecs where uid = plydata.uid), 0.0)" );
 	tr.AddQuery(szTr);
 
 	g_hDatabase.Format(szTr, sizeof(szTr), "(SELECT @curRank := 0);");
 	tr.AddQuery(szTr);
 
-	g_hDatabase.Format(szTr, sizeof(szTr), "UPDATE "...TABLE_PLYDATA..." SET orank = (@curRank := @curRank + 1) where (select sum(pts) from maprecs where uid = plydata.uid) > 0.0 ORDER BY (select sum(pts) from maprecs where uid = plydata.uid) DESC;" );
+	g_hDatabase.Format(szTr, sizeof(szTr), "UPDATE "...TABLE_PLYDATA..." SET %s = (@curRank := @curRank + 1) ORDER BY (select sum(pts) from maprecs where uid = plydata.uid and mode = %i) DESC;", (mode == MODE_SOLDIER) ? "srank" : "drank", mode, mode );
+	tr.AddQuery(szTr);
+
+	g_hDatabase.Format(szTr, sizeof(szTr), "(SELECT @curRank := 0);");
+	tr.AddQuery(szTr);
+
+	g_hDatabase.Format(szTr, sizeof(szTr), "UPDATE "...TABLE_PLYDATA..." SET orank = (@curRank := @curRank + 1) ORDER BY (select sum(pts) from maprecs where uid = plydata.uid) DESC;" );
 	tr.AddQuery(szTr);
 
 	SQL_ExecuteTransaction(g_hDatabase, tr, _, OnTxnFail);
-
-		for ( int i = 1; i <= MaxClients; i++)
-			{
-				if (IsClientInGame(i) && g_flClientBestTime[i][run][mode] != TIME_INVALID)
-				{
-					DB_RetrieveClientData( i );
-				}
-			}
 
 	Format(update_records, sizeof(update_records), "update_records");
 	if (IRC_Connected)

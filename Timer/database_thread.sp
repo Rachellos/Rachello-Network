@@ -560,9 +560,9 @@ public void Threaded_RetrieveClientData( Database hOwner, DBResultSet hQuery, co
 		g_iClientPoints[client] = hQuery.FetchFloat(  2 );
 		g_iClientPointsSolly[client] = hQuery.FetchFloat(  3 );
 		g_iClientPointsDemo[client] = hQuery.FetchFloat(  4 );
-		ranksolly[client] = hQuery.FetchInt( 5 );
-		rankdemo[client] = hQuery.FetchInt( 6 );
-		g_hDatabase.Format( szQuery, sizeof( szQuery ), "UPDATE plydata SET overall = (select sum(pts) from maprecs where uid = %i), solly = (select sum(pts) from maprecs where uid = %i and mode = 1), demo = (select sum(pts) from maprecs where uid = %i and mode = 3) WHERE uid = %i", g_iClientId[client], g_iClientId[client], g_iClientId[client], g_iClientId[client] );
+		ranksolly[client] = (g_iClientPointsSolly[client] > 0.0) ? hQuery.FetchInt( 5 ) : 0;
+		rankdemo[client] = (g_iClientPointsDemo[client] > 0.0) ? hQuery.FetchInt( 6 ) : 0;
+		g_hDatabase.Format( szQuery, sizeof( szQuery ), "UPDATE plydata SET overall = COALESCE((select sum(pts) from maprecs where uid = %i), 0.0), solly = COALESCE((select sum(pts) from maprecs where uid = %i and mode = 1), 0.0), demo = COALESCE((select sum(pts) from maprecs where uid = %i and mode = 3), 0.0) WHERE uid = %i", g_iClientId[client], g_iClientId[client], g_iClientId[client], g_iClientId[client] );
 		
 		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 	}
@@ -914,10 +914,10 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 						
 					transaction.AddQuery(szTrans);
 				}
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = plydata.uid AND mode = %i) WHERE uid = plydata.uid;", (mode == MODE_SOLDIER) ? "solly" : "demo", mode);
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = COALESCE((SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = plydata.uid AND mode = %i), 0.0) WHERE uid = plydata.uid;", (mode == MODE_SOLDIER) ? "solly" : "demo", mode);
 				transaction.AddQuery(szTrans);
 
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET overall = (SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = plydata.uid) WHERE uid = plydata.uid;");
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET overall = COALESCE((SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = plydata.uid), 0.0) WHERE uid = plydata.uid;");
 				transaction.AddQuery(szTrans);
 			}
 
