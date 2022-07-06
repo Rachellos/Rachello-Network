@@ -2353,25 +2353,29 @@ public Action Command_Profile( int client, int args )
 	RemoveAllPrevMenus(client);
 	char szTarget[32];
 	GetCmdArgString( szTarget, sizeof( szTarget ) );
-	int target = FindTarget( client, szTarget, true, false );
+	
 	char Name[32];
 
-	int mode = (g_iClientMode[client] == MODE_SOLDIER) ? MODE_SOLDIER : MODE_DEMOMAN;
+	int mode = g_iClientMode[client];
 	if ( args == 0 )
 	{
 		GetClientName(client, Name, sizeof( Name ) );
 		DB_Profile( client, args, 0, Name, g_iClientId[client], mode );
 		return Plugin_Handled;
 	}
-	if ( target != -1 )
-	{
-		DB_Profile( client, args, 0, Name, g_iClientId[target], mode );
-		return Plugin_Handled;
-	}
 	else
 	{
-		DB_Profile( client, args, 1, szTarget, 0, mode );
-		return Plugin_Handled;
+		int target = FindTarget( client, szTarget, true, false );
+		if ( target != -1 )
+		{
+			DB_Profile( client, args, 0, Name, g_iClientId[target], mode );
+			return Plugin_Handled;
+		}
+		else
+		{
+			DB_Profile( client, args, 1, szTarget, 0, mode );
+			return Plugin_Handled;
+		}
 	}
 }
 

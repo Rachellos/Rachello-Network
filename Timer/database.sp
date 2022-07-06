@@ -330,7 +330,7 @@ stock void DB_Profile( int client, int args, int how, char[] Name, int id, int m
 		(SELECT COUNT(overall) FROM plydata WHERE overall > 0.1), \
 		(SELECT COUNT(%s) FROM plydata WHERE %s > 0.1), \
 		(SELECT COUNT(map) FROM maprecs WHERE uid = (@dbuid) AND mode = %i and run = 0), \
-		(SELECT COUNT(map) FROM mapbounds WHERE (zone = 0 or zone = 2) and number = 0 and (select %s from map_info where map_name = mapbounds.map and run = 0) > 0)", mode, mode, mode, (mode == MODE_SOLDIER) ? "solly" : "demo", (mode == MODE_SOLDIER) ? "solly" : "demo", mode, (mode == MODE_SOLDIER) ? "stier" : "dtier" );
+		(SELECT COUNT(map) FROM mapbounds WHERE (zone = 0 or zone = 2) and number = 0 and (select %s from map_info where map_name = mapbounds.map and run = 0 limit 1) > 0)", mode, mode, mode, (mode == MODE_SOLDIER) ? "solly" : "demo", (mode == MODE_SOLDIER) ? "solly" : "demo", mode, (mode == MODE_SOLDIER) ? "stier" : "dtier" );
 
 	if ( how == 1 )
 	{
