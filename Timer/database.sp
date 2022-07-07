@@ -76,7 +76,8 @@ stock void DB_InitializeDatabase()
 		  drank int(11) DEFAULT '0',\
 		  orank int(11) DEFAULT '0',\
 		  ip varchar(30) DEFAULT NULL,\
-		  online int(11) DEFAULT '0'\
+		  online int(11) DEFAULT '0',\
+		  total_hours float NOT NULL DEFAULT '0.0' \
 		)");
 	
 	g_hDatabase.Query( Threaded_Empty,
@@ -509,7 +510,7 @@ public int Handler_Prifile( Menu mMenu, MenuAction action, int client, int item 
 	if ( item == 5 )
 	{
 		char szQuery[192];
-		FormatEx( szQuery, sizeof( szQuery ), "SELECT country, lastseen, firstseen, uid, name, CURRENT_TIMESTAMP FROM "...TABLE_PLYDATA..." WHERE uid = %i", db_id[client] );
+		FormatEx( szQuery, sizeof( szQuery ), "SELECT country, lastseen, firstseen, uid, name, CURRENT_TIMESTAMP, total_hours FROM "...TABLE_PLYDATA..." WHERE uid = %i", db_id[client] );
 		g_hDatabase.Query( Threaded_ProfileInfo, szQuery, GetClientUserId( client ), DBPrio_Normal );
 	}
 	if ( item == 6 )
@@ -1277,11 +1278,11 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 	tr.AddQuery(szTr);
 
 	g_hDatabase.Format(szTr, sizeof(szTr), "UPDATE "...TABLE_RECORDS..." SET pts = \
-						((SELECT wr_pts from points where run_type = '%s' and tier = (select %stier from map_info where map = '%s')) \
+						((SELECT wr_pts from points where run_type = '%s' and tier = (select %stier from map_info where map = '%s' and run = %i limit 1)) \
 						* (SELECT multipler FROM points_multipler where `rank` = maprecs.`rank`) \
-						+ (SELECT completion from points where run_type = '%s' and tier = (select %stier from map_info where map = '%s')) ) \
+						+ (SELECT completion from points where run_type = '%s' and tier = (select %stier from map_info where map = '%s' and run = %i limit 1)) ) \
 						WHERE recordid = maprecs.recordid AND map = '%s' AND run = %i AND mode = %i",
-						db_run, (mode == MODE_SOLDIER) ? "s" : "d", map, db_run, (mode == MODE_SOLDIER) ? "s" : "d", map, map, run, mode);
+						db_run, (mode == MODE_SOLDIER) ? "s" : "d", map, run, db_run, (mode == MODE_SOLDIER) ? "s" : "d", map, run, map, run, mode);
 	tr.AddQuery(szTr);
 
 	g_hDatabase.Format(szTr, sizeof(szTr), "update plydata SET %s = COALESCE((SELECT SUM(pts) from maprecs where uid = plydata.uid and mode = %i), 0.0);", (mode == MODE_SOLDIER) ? "solly" : "demo", mode );

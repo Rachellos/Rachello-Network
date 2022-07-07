@@ -285,8 +285,16 @@ public void Event_StartTouchPost_Block( int trigger, int ent )
 	EnteredZone[ent] = zone;
 	
 	PRINTCHAT( ent, CHAT_PREFIX..."You are not allowed to go there!" );
-		
-	TeleportPlayerToStart( ent );
+	
+	if ( g_bIsLoaded[RUN_MAIN] )
+	{
+		TeleportEntity( ent, g_vecSpawnPos[RUN_MAIN], g_vecSpawnAngles[RUN_MAIN], g_vecNull );
+	}
+	if ( g_bIsLoaded[RUN_COURSE1] )
+	{
+		TeleportEntity( ent, g_vecSpawnPos[RUN_COURSE1], g_vecSpawnAngles[RUN_COURSE1], g_vecNull );
+	
+	}
 }
 
 public void Event_StartTouchPost_NextCours( int trigger, int ent )

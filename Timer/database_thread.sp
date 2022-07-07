@@ -132,6 +132,7 @@ public void Threaded_ProfileInfo( Database hOwner, DBResultSet hQuery, const cha
 	char item[192];
 	char name[40];
 	char cur_date[100];
+	float total_hours;
 
 	if ( hQuery.RowCount )
 	{
@@ -142,6 +143,7 @@ public void Threaded_ProfileInfo( Database hOwner, DBResultSet hQuery, const cha
 		id = hQuery.FetchInt( 3 );
 		hQuery.FetchString( 4, name, sizeof( name ) );
 		hQuery.FetchString( 5, cur_date, sizeof( cur_date ) );
+		total_hours = hQuery.FetchFloat( 6 ) / 60 / 60;
 
 		char time_ago_last[40], time_ago_first[40]; 
 		FormatTimeDuration(time_ago_last, sizeof(time_ago_last), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(last));
@@ -149,7 +151,7 @@ public void Threaded_ProfileInfo( Database hOwner, DBResultSet hQuery, const cha
 		if (!hQuery.IsFieldNull(2))
 			FormatTimeDuration(time_ago_first, sizeof(time_ago_first), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(first));
 
-		FormatEx( item, sizeof( item ), "Details:\n Country: %s \n User id: %i \n Last seen: %s \n First seen: %s \n ", country, id, time_ago_last, time_ago_first );
+		FormatEx( item, sizeof( item ), "Details:\n Country: %s \n User id: %i \n Last seen: %s \n First seen: %s \n Total online hours: %.1f \n ", country, id, time_ago_last, time_ago_first, total_hours );
 		mMenu.AddItem("", item );
 		mMenu.AddItem("", "Get Steam Profile Link\n ");
 		if (GetUserFlagBits(client) & ADMFLAG_ROOT)

@@ -195,6 +195,7 @@ int ZoneIndex[MAXPLAYERS+1];
 Handle TimerEye[MAXPLAYERS+1] = null;
 
 // Misc player stuff.
+float ClientConnectTime[MAXPLAYERS+1];
 int EnteredZone[MAXPLAYERS+1];
 bool IsBuildingOnGround[MAXPLAYERS+1];
 int menu_page[MAXPLAYERS+1];
@@ -2001,6 +2002,8 @@ public void OnClientPostAdminCheck( int client )
 	{
 		DB_RetrieveClientData( client );
 		GetJoiningRank(client);
+		
+		ClientConnectTime[client] = GetEngineTime();
 
 		char query[200];
 		DB_SaveClientData(client);
@@ -2033,7 +2036,7 @@ public void OnClientDisconnect( int client )
 		
 	GetClientName(client, name, sizeof(name));
 	CPrintToChatAll("\x0750DCFF%s {white}has left the server.", name);	
-
+	
 	ranksolly[client] = -1;
  	rankdemo[client] = -1;
 
@@ -2057,7 +2060,10 @@ public void OnClientDisconnect( int client )
 	char sTime[32];
 	FormatTime(sTime, sizeof(sTime), "%Y-%m-%d %H:%M:%S", GetTime() );
 
-	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET lastseen = CURRENT_TIMESTAMP, online = 0 WHERE steamid = '%s'",
+	ClientConnectTime[client] = GetEngineTime() - ClientConnectTime[client];
+
+	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET lastseen = CURRENT_TIMESTAMP, total_hours = total_hours + %.1f, online = 0 WHERE steamid = '%s'",
+	ClientConnectTime[client],
 	szSteam );
 	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 
