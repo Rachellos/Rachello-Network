@@ -127,6 +127,7 @@
 
 #define MATH_PI					3.14159
 
+#define CHATLOGS_WEBHOOK "https://discord.com/api/webhooks/800327065731072030/0IBQg8Gjirm6YQDGauW6PjigBsgdG7ssh8sTQqKrmZXLI-NQ3teukvnYM4dsmsoODVv-"
 #define DISCONNECTSTR	"DISCONNECTMEPLSTHX"
 #define SENDERNAME		"[SENDER NAME]"
 #define SERVERTAG		"[SERVER TAG]"
@@ -305,9 +306,9 @@ int g_ZoneMethod[MAXPLAYERS+1];
 
 char server_name[NUM_NAMES][][] =
 {
-	{ 
+	{
 		"N/A",
-	 	"RG #1488 - Europe | Rachello Network",
+	 	"RG #1488 - Finland | Rachello Network",
 		"RG #1488 - Russia | Rachello Network",
 		"RG #1488 - Australia | Rachello Network", 
 		"RG #1488 - US East | Rachello Network", 
@@ -316,7 +317,7 @@ char server_name[NUM_NAMES][][] =
 	},
 	{ 
 		"N/A", 
-		"EU", 
+		"Finland", 
 		"RU",
 		"AU", 
 		"US-East", 
@@ -678,7 +679,7 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 	if ( !client || BaseComm_IsClientGagged( client ) ) return Plugin_Continue;
 
 	char live[10];
-	char msg[200];
+	char msg[200], discord_msg[256];
 	char alltext[300];
 	int rank;
 	char class[1];
@@ -694,6 +695,13 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 		FormatEx(live, sizeof(live), "* ");
 	else
 		FormatEx(live, sizeof(live), "");
+
+	DiscordWebHook hook = new DiscordWebHook(CHATLOGS_WEBHOOK);
+	FormatEx(discord_msg, sizeof(discord_msg), "``%s`` **%N:** %s", server_name[NAME_SHORT][server_id], client, msg);
+	hook.SetUsername("Chat");
+	hook.SetContent(discord_msg);
+	hook.Send();
+	delete hook;
 
 	if (g_fClientHideFlags[client] & HIDEHUD_CHATRANKSOLLY)
 	{
