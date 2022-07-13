@@ -526,10 +526,13 @@ public void Threaded_RetrieveClientData( Database hOwner, DBResultSet hQuery, co
 	
 	if ( !GetClientSteam( client, szSteam, sizeof( szSteam ) ) ) return;
 	char szName[32];
-	GetClientName(client, szName, sizeof( szName ) );
-	
 	char szQuery[500];
-	
+
+	GetClientName(client, szName, sizeof( szName ) );
+
+	if ( !SQL_EscapeString( g_hDatabase, szName, szName, sizeof( szName ) ) )
+		strcopy( szName, sizeof( szName ), "Player" );
+
 	int num;
 	if ( !(num = hQuery.RowCount) )
 	{
