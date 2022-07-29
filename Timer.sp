@@ -196,6 +196,7 @@ int ZoneIndex[MAXPLAYERS+1];
 Handle TimerEye[MAXPLAYERS+1] = null;
 
 // Misc player stuff.
+float Weather_delayTime[MAXPLAYERS+1];
 float ClientConnectTime[MAXPLAYERS+1];
 int EnteredZone[MAXPLAYERS+1];
 bool IsBuildingOnGround[MAXPLAYERS+1];
@@ -330,7 +331,7 @@ Handle hPlugin = INVALID_HANDLE;
 int server_id=0;
 
 enum { COMMAND, COMMAND_DESC };
-char command_list[2][81][180] = 
+char command_list[2][][] = 
 {
     //commands
     {
@@ -415,6 +416,7 @@ char command_list[2][81][180] =
      "!version",
      "!incomplete",
      "!calladmin",
+	 "!weather",
  	},
     //DESCRIPTION
     {
@@ -499,6 +501,7 @@ char command_list[2][81][180] =
      "Show Demoman map video",
      "Open yours or other player's incomplete maps menu",
      "Call Admin",
+	 "Show Current Temp in your city",
  	}
 };
 
@@ -623,6 +626,7 @@ Handle g_hForward_Timer_OnStateChanged;
 #include "Timer/CrossServerChat.sp"
 #include "Timer/autodemo_recorder.sp"
 #include "Timer/custom_mapchooser.sp"
+#include "Timer/weather.sp"
 
 
 public Plugin myinfo = // Note: must be 'myinfo'. Compiler accepts everything but only that works.
@@ -1156,6 +1160,8 @@ public void OnPluginStart()
 
 	RegConsoleCmd( "sm_incomplete", Command_IncompleteMaps );
 	RegConsoleCmd( "sm_incompletions", Command_IncompleteMaps );
+
+	RegConsoleCmd("sm_weather", CMD_Weather);
 
 
 	// ADMIN STUFF
@@ -2019,7 +2025,7 @@ public void OnClientPostAdminCheck( int client )
 		char szSteam[100];
 		GetClientSteam(client, szSteam, sizeof( szSteam ) );
 
-		g_hDatabase.Format(query, sizeof(query), "SELECT id, run, style, mode, time FROM "...TABLE_CP_RECORDS..." where uid = (select uid from plydata where steamid = '%s') and map = '%s'", szSteam, g_szCurrentMap);
+		g_hDatabase.Format(query, sizeof(query), "SELECT id, run, style, mode, min(time) FROM "...TABLE_CP_RECORDS..." where uid = (select uid from plydata where steamid = '%s') and map = '%s' group by id", szSteam, g_szCurrentMap);
 		g_hDatabase.Query( Threaded_Init_CP_PR_Times, query, client, DBPrio_High );
 
 		g_hDatabase.Format(query, sizeof(query), "Update plydata set online = 1 where steamid = '%s'", szSteam);
@@ -2068,6 +2074,7 @@ public void OnClientDisconnect( int client )
 	char sTime[32];
 	FormatTime(sTime, sizeof(sTime), "%Y-%m-%d %H:%M:%S", GetTime() );
 
+	Weather_delayTime[client] = 0.0;
 	ClientConnectTime[client] = GetEngineTime() - ClientConnectTime[client];
 
 	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET lastseen = CURRENT_TIMESTAMP, total_hours = total_hours + %.1f, online = 0 WHERE steamid = '%s'",

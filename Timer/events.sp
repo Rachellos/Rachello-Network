@@ -124,9 +124,7 @@ public void CPrintToChatClientAndSpec(int client, const char[] text, any...)
 	for (int i = 1; i <= MaxClients; i++)
 		if ( ( (IsClientInGame(i) && !IsPlayerAlive(i) ) || i == client) && !(g_fClientHideFlags[i] & HIDEHUD_CHAT))
 			if (GetEntPropEnt(i, Prop_Send, "m_hObserverTarget") == client || i == client)
-			{
 				CPrintToChat( i, szBuffer );
-			}
 }
 
 public void Event_Touch_Zone( int trigger, int client )
@@ -165,7 +163,7 @@ public void Event_Touch_Zone( int trigger, int client )
 
 					CPrintToChatClientAndSpec(client, "{red}ERROR {white}| Your run has been closed. You missed:");
 
-					for (int i = (( run - ( run - g_iClientRun[client] ) ) * 2)+1; i < run*2; i++)
+					for (int i = ( ( run - ( run - g_iClientRun[client] ) ) * 2) + 1; i < run * 2; i++)
 						CPrintToChatClientAndSpec(client, "{red}ERROR {white}| {orange}%s",
 							g_szZoneNames[i]);
 				}

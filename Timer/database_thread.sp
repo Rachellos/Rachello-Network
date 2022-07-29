@@ -1412,7 +1412,7 @@ public void Threaded_Init_CPs( Database hOwner, DBResultSet hQuery, const char[]
 	
 	// GET CHECKPOINT TIMES
 	char szQuery[500];
-	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' group by map, run, mode, id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, min(time), map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' GROUP BY id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
 	
 	g_hDatabase.Query( Threaded_Init_CP_WR_Times, szQuery, _, DBPrio_High );
 }
