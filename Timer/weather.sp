@@ -11,7 +11,7 @@ public Action CMD_Weather(int client, int args)
 	{
 		if (SteamWorks_GetPublicIP(iPublicIP))
 		{
-			Format(ip, sizeof(ip), "%d.%d.%d.%d:%d", iPublicIP[0], iPublicIP[1], iPublicIP[2], iPublicIP[3]);
+			Format(ip, sizeof(ip), "%d.%d.%d.%d", iPublicIP[0], iPublicIP[1], iPublicIP[2], iPublicIP[3]);
 		}
 		else 
 		{
