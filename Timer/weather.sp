@@ -4,13 +4,27 @@ HTTPRequest httpRequest;
 
 public Action CMD_Weather(int client, int args)
 {
-	char request[300], ip[100];
+	char request[300], ip[64];
+	int iPublicIP[4];
 
-	if (!GetClientIP(client, ip, sizeof(ip), true))
+	if (System2_GetOS() == OS_WINDOWS)
+	{
+		if (SteamWorks_GetPublicIP(iPublicIP))
+		{
+			Format(ip, sizeof(ip), "%d.%d.%d.%d:%d", iPublicIP[0], iPublicIP[1], iPublicIP[2], iPublicIP[3]);
+		}
+		else 
+		{
+			PrintToChat(client, CHAT_PREFIX... "Can not get your IP.");
+			return Plugin_Handled;
+    	}
+	}
+	else if (!GetClientIP(client, ip, sizeof(ip), true))
 	{
 		PrintToChat(client, CHAT_PREFIX... "Can not get your IP.");
 		return Plugin_Handled;
 	}
+
 
 	if (Weather_delayTime[client] > GetEngineTime())
 	{
