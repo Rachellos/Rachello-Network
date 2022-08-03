@@ -693,6 +693,56 @@ stock Handle:InitColorTrie() {
 	SetTrieValue(hTrie, "21", 0x292626);
 	SetTrieValue(hTrie, "22", 0x7D7777);
 	SetTrieValue(hTrie, "23", 0xE8E5E5);
+	
+	SetTrieValue(hTrie, "sirb", 0xBD5C00);
+	SetTrieValue(hTrie, "sirr", 0xEC3E00);
+	SetTrieValue(hTrie, "sirn", 0xFFFFFF);
+	SetTrieValue(hTrie, "sirc", 0xFFFFFF);
+	
+	SetTrieValue(hTrie, "countb", 0x059605);
+	SetTrieValue(hTrie, "countr", 0x54AB31);
+	SetTrieValue(hTrie, "countn", 0xFFFFFF);
+	SetTrieValue(hTrie, "countc", 0xFFFFFF);
+	
+	SetTrieValue(hTrie, "baronb", 0x35B7EA);
+	SetTrieValue(hTrie, "baronr", 0xC567E0);
+	SetTrieValue(hTrie, "baronn", 0xFFFFFF);
+	SetTrieValue(hTrie, "baronc", 0xFFFFFF);
+	
+	SetTrieValue(hTrie, "knightb", 0xFF8A8A);
+	SetTrieValue(hTrie, "knightr", 0xD91818);
+	SetTrieValue(hTrie, "knightn", 0xFFFFFF);
+	SetTrieValue(hTrie, "knightc", 0xFFFFFF);
+	
+	SetTrieValue(hTrie, "nobleb", 0x9EA5CB);
+	SetTrieValue(hTrie, "nobler", 0x9477D4);
+	SetTrieValue(hTrie, "noblen", 0xFFFFFF);
+	SetTrieValue(hTrie, "noblec", 0xFFFFFF);
+	
+	SetTrieValue(hTrie, "esquireb", 0xA9B6B3);
+	SetTrieValue(hTrie, "esquirer", 0x45AAF7);
+	SetTrieValue(hTrie, "esquiren", 0xFFFFFF);
+	SetTrieValue(hTrie, "esquirec", 0xFFFFFF);
+	
+	SetTrieValue(hTrie, "jesterb", 0xC5B1A3);
+	SetTrieValue(hTrie, "jesterr", 0x3EBBA0);
+	SetTrieValue(hTrie, "jestern", 0xFFFFFF);
+	SetTrieValue(hTrie, "jesterc", 0xFFFFFF);
+	
+	SetTrieValue(hTrie, "plebeianb", 0xC2C2A6);
+	SetTrieValue(hTrie, "plebeianr", 0x66924C);
+	SetTrieValue(hTrie, "plebeiann", 0xFFFFFF);
+	SetTrieValue(hTrie, "plebeianc", 0xFFFFFF);
+	
+	SetTrieValue(hTrie, "peasantb", 0xB9B3B3);
+	SetTrieValue(hTrie, "peasantr", 0xAFE06C);
+	SetTrieValue(hTrie, "peasantn", 0xFFFFFF);
+	SetTrieValue(hTrie, "peasantc", 0xFFFFFF);
+
+	SetTrieValue(hTrie, "peonb", 0xA6A6A6);
+	SetTrieValue(hTrie, "peonr", 0xEFDA3F);
+	SetTrieValue(hTrie, "peonn", 0xFFFFFF);
+	SetTrieValue(hTrie, "peonc", 0xFFFFFF);
 
 	/*
 		Colours go in this order: brackets, rank, name, chat.
