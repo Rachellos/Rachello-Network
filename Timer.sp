@@ -682,6 +682,8 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 {
 	if ( !client || BaseComm_IsClientGagged( client ) ) return Plugin_Continue;
 
+	char sCodes[8][] = {"\x01", "\x02", "\x03", "\x04", "\x05", "\x06", "\x07", "\x08"};
+
 	char live[10];
 	char msg[200], discord_msg[256];
 	char alltext[300];
@@ -690,6 +692,9 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 
 	FormatEx(msg, sizeof(msg), "%s", text);
 	TrimString(msg);
+
+	for ( int i = 0; i < 8; i++)
+		ReplaceString(msg, sizeof(msg), sCodes[i], "");
 	
 	if (StrEqual(msg, "( ͡° ͜ʖ ͡°)") || StrEqual(msg, "( ° ͜ʖ ͡°)") || StrEqual(msg, " ( ͡° ͜ʖ ͡°)") || StrEqual(msg, "( ͡° ͜ʖ ͡°) "))
 	{
@@ -1126,6 +1131,7 @@ public void OnPluginStart()
 
 	RegConsoleCmd( "sm_pts", Command_MapPoints );
 	RegConsoleCmd( "sm_points", Command_MapPoints );
+	RegConsoleCmd( "sm_mi", Command_MapPoints );
 	
 	RegConsoleCmd( "sm_saveloc", Command_Practise_SavePoint );
 	RegConsoleCmd( "sm_save", Command_Practise_SavePoint );
