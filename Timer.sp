@@ -97,6 +97,9 @@
 #define HIDEHUD_WORLDREC		( 1 << 23 )
 #define HIDEHUD_TIMER			( 1 << 24 )
 #define HIDEHUD_FAST_HUD		( 1 << 25 )
+#define HIDEHUD_RUN_NAME		( 1 << 26 )
+#define HIDEHUD_MODE_NAME		( 1 << 27 )
+#define HIDEHUD_CP_SPLIT		( 1 << 28 )
 
 // HUD flags to hide specific objects.
 #define HIDE_FLAGS				3946

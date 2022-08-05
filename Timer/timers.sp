@@ -91,6 +91,7 @@ public void OnGameFrame()
         char hintOutput[256]
             , speed[32]
             , CpSplit[100]
+            , RunName[100]
             , szCurTime[TIME_SIZE_DEF]
             , szTimeSplit[TIME_SIZE_DEF];
 
@@ -128,7 +129,7 @@ public void OnGameFrame()
         if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_INVALID ) {isHudDrawed[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue;}
 
         if (DisplayCpTime[target])
-            FormatEx(CpSplit, sizeof(CpSplit), "(%s %c%s)\n", g_fClientHideFlags[target] & HIDEHUD_PRTIME ? "PR" : "WR", CpPlusSplit[target], CpTimeSplit[target]);
+            FormatEx(CpSplit, sizeof(CpSplit), "\n(%s %c%s)", g_fClientHideFlags[target] & HIDEHUD_PRTIME ? "PR" : "WR", CpPlusSplit[target], CpTimeSplit[target]);
 
         if ( szClass[g_iClientRun[target]][g_iClientMode[target]] <= 0 || RegenOn[target])
             FormatEx(szAmmo[target], sizeof(szAmmo), "+regen");
@@ -136,14 +137,17 @@ public void OnGameFrame()
             FormatEx(szAmmo[target], sizeof(szAmmo), "");
 
         if ( g_fClientHideFlags[client] & HIDEHUD_SPEED )
-            FormatEx(speed, sizeof( speed ), "\n(%.0f u/s)\n ", GetEntitySpeed(target));
+            FormatEx(speed, sizeof( speed ), "(%.0f u/s)\n \n", GetEntitySpeed(target));
+        
+        StrCat(speed, sizeof(speed), "\n");
 
         if ( RunIsBonus(g_iClientRun[target]) )
-                FormatEx( szTimerMode[target], sizeof(szTimerMode), "Bonus");
+                FormatEx( szTimerMode[target], sizeof(szTimerMode), "Bonus mode %s", szAmmo[target]);
 
         else if ( g_iClientRun[target] == RUN_MAIN || RunIsCourse(g_iClientRun[target]))
-            FormatEx( szTimerMode[target], sizeof(szTimerMode), "%s", (IsMapMode[target]) ?
-                ((RunIsCourse(g_iClientRun[target])) ? "Map" : "Linear") : "Course" );     
+            FormatEx( szTimerMode[target], sizeof(szTimerMode), "%s mode %s", (IsMapMode[target]) ?
+                ((RunIsCourse(g_iClientRun[target])) ? "Map" : "Linear") : "Course",
+                szAmmo[target] );     
 
         if (g_iClientState[target] == STATE_END)
         {
@@ -176,9 +180,18 @@ public void OnGameFrame()
             if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER) )
             {
                 FormatSeconds( flCurTime, szCurTime );
-                StrCat(szCurTime, sizeof(szCurTime), "\n");
             }
-            Format(hintOutput, 256, "%s(%s %c%s)\n \n[%s End]\n %s\n%s mode %s", szCurTime, (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit, g_szRunName[NAME_LONG][run], speed, szTimerMode[target], szAmmo[target] );
+
+            FormatEx(CpSplit, sizeof(CpSplit), "\n(%s %c%s)", (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit);
+
+            FormatEx(RunName, sizeof(RunName), "\n \n[%s End]", g_szRunName[NAME_LONG][run]);
+
+            FormatEx(hintOutput, 256, "%s%s%s%s%s", 
+            (g_fClientHideFlags[client] & HIDEHUD_TIMER) ? "" : szCurTime, 
+            (g_fClientHideFlags[client] & HIDEHUD_CP_SPLIT) ? "" : CpSplit,
+            (g_fClientHideFlags[client] & HIDEHUD_RUN_NAME) ? "" : RunName,
+            (g_fClientHideFlags[client] & HIDEHUD_SPEED) ? speed : "",
+            (g_fClientHideFlags[client] & HIDEHUD_MODE_NAME) ? "" : szTimerMode[target]);
         }     
         else if ( g_iClientState[target] == STATE_START )
         {
@@ -187,7 +200,16 @@ public void OnGameFrame()
             {
                 FormatSeconds( flCurTime, szCurTime );
             }
-            Format(hintOutput, 256, "%s\n \n[%s Start]\n %s\n%s mode %s", IsMapMode[target] ? ( (RunIsCourse(g_iClientRun[target]) && g_iClientRun[target] != RUN_COURSE1) ? szCurTime : g_szCurrentMap ) : g_szCurrentMap, g_szRunName[NAME_LONG][ g_iClientRun[target] ], speed, szTimerMode[target], szAmmo[target] );
+            char Time[100];
+            FormatEx(Time, sizeof(Time), "%s\n \n", 
+            IsMapMode[target] ? ( (RunIsCourse(g_iClientRun[target]) && g_iClientRun[target] != RUN_COURSE1) ? szCurTime : g_szCurrentMap ) : g_szCurrentMap);
+
+            FormatEx(RunName, sizeof(RunName), "[%s Start]\n \n", g_szRunName[NAME_LONG][run]);
+            FormatEx(hintOutput, 256, "%s%s%s%s",
+            (g_fClientHideFlags[client] & HIDEHUD_TIMER) ? "" : Time,
+            (g_fClientHideFlags[client] & HIDEHUD_RUN_NAME) ? "" : RunName, 
+            (g_fClientHideFlags[client] & HIDEHUD_SPEED) ? speed : "", 
+            (g_fClientHideFlags[client] & HIDEHUD_MODE_NAME) ? "" : szTimerMode[target] );
         }
         else
         {
@@ -196,17 +218,17 @@ public void OnGameFrame()
             if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER) )
             {
                 FormatSeconds( flCurTime, szCurTime );
-                StrCat(szCurTime, sizeof(szCurTime), "\n");
+                StrCat(szCurTime, sizeof(szCurTime), "\n \n");
             }
-        
-            Format(hintOutput, 256, " %s%s \n[%s]\n %s\n%s mode %s",
-                szCurTime,
-                CpSplit,
-                g_szRunName[NAME_LONG][ g_iClientRun[target] ],
-                speed,
-                szTimerMode[target],
-                szAmmo[target]
-                );
+
+            FormatEx(RunName, sizeof(RunName), "[%s]\n \n", g_szRunName[NAME_LONG][run]);
+
+            Format(hintOutput, 256, "%s%s%s%s%s",
+                (g_fClientHideFlags[client] & HIDEHUD_TIMER) ? "" : szCurTime, 
+                (g_fClientHideFlags[client] & HIDEHUD_CP_SPLIT) ? "" : CpSplit,
+                (g_fClientHideFlags[client] & HIDEHUD_RUN_NAME) ? "" : RunName,
+                (g_fClientHideFlags[client] & HIDEHUD_SPEED) ? speed : "",
+                (g_fClientHideFlags[client] & HIDEHUD_MODE_NAME) ? "" : szTimerMode[target]);
         }
         if ((g_Tiers[run][MODE_SOLDIER] + g_Tiers[run][MODE_DEMOMAN]) <= 0)
             Format(hintOutput, 256, "No info about tiers :(\nYou cannot set runs or earn points.\nUse /calladmin to report this.", szAmmo[target] );

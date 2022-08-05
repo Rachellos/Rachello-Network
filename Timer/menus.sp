@@ -125,6 +125,9 @@ public void ShowHideMenuCHud(int client)
 
 	mMenu.AddItem( "hud", ( g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD )			? "Central Hud: [OFF]" : "Central Hud: [ON]" );
 	mMenu.AddItem( "tick", ( g_fClientHideFlags[client] & HIDEHUD_FAST_HUD ) 		? "Hud Rendering Frequency: [0.5 sec]" : "Hud Rendering Frequency: [every tick]" );
+	mMenu.AddItem( "run", ( g_fClientHideFlags[client] & HIDEHUD_RUN_NAME )			? "Run Name: [OFF]" : "Run Name: [ON]" );
+	mMenu.AddItem( "mode", ( g_fClientHideFlags[client] & HIDEHUD_MODE_NAME )			? "Run Mode: [OFF]" : "Run Mode: [ON]" );
+	mMenu.AddItem( "cp", ( g_fClientHideFlags[client] & HIDEHUD_CP_SPLIT )			? "Checkpoints Split: [OFF]" : "Checkpoints Split: [ON]" );
 	mMenu.AddItem( "time", ( g_fClientHideFlags[client] & HIDEHUD_TIMER )			? "Timer: [OFF]" : "Timer: [ON]" );
 	mMenu.AddItem( "speed", ( g_fClientHideFlags[client] & HIDEHUD_SPEED )		? "Speedometer: [ON]" : "Speedometer: [OFF]" );
 	
@@ -262,13 +265,46 @@ public int Handler_HudRHud( Menu mMenu, MenuAction action, int client, int item 
 		}
 		else if ( StrEqual( szItem, "time" ) )
 		{
-			if ( g_fClientHideFlags[client] & HIDEHUD_SPECTYPE )
+			if ( g_fClientHideFlags[client] & HIDEHUD_TIMEREMAINING )
 			{
-				g_fClientHideFlags[client] &= ~HIDEHUD_SPECTYPE;
+				g_fClientHideFlags[client] &= ~HIDEHUD_TIMEREMAINING;
 			}
 			else
 			{
-				g_fClientHideFlags[client] |= HIDEHUD_SPECTYPE;
+				g_fClientHideFlags[client] |= HIDEHUD_TIMEREMAINING;
+			}
+		}
+		else if ( StrEqual( szItem, "clas" ) )
+		{
+			if ( g_fClientHideFlags[client] & HIDEHUD_CLASS )
+			{
+				g_fClientHideFlags[client] &= ~HIDEHUD_CLASS;
+			}
+			else
+			{
+				g_fClientHideFlags[client] |= HIDEHUD_CLASS;
+			}
+		}
+		else if ( StrEqual( szItem, "pr" ) )
+		{
+			if ( g_fClientHideFlags[client] & HIDEHUD_PERSONALREC )
+			{
+				g_fClientHideFlags[client] &= ~HIDEHUD_PERSONALREC;
+			}
+			else
+			{
+				g_fClientHideFlags[client] |= HIDEHUD_PERSONALREC;
+			}
+		}
+		else if ( StrEqual( szItem, "wr" ) )
+		{
+			if ( g_fClientHideFlags[client] & HIDEHUD_WORLDREC )
+			{
+				g_fClientHideFlags[client] &= ~HIDEHUD_WORLDREC;
+			}
+			else
+			{
+				g_fClientHideFlags[client] |= HIDEHUD_WORLDREC;
 			}
 		}
 		else if ( StrEqual( szItem, "spec" ) )
@@ -362,6 +398,39 @@ public int Handler_HudCHud( Menu mMenu, MenuAction action, int client, int item 
 			{
 				g_fClientHideFlags[client] |= HIDEHUD_FAST_HUD;
 				
+			}
+		}
+		else if ( StrEqual( szItem, "run" ) )
+		{
+			if ( g_fClientHideFlags[client] & HIDEHUD_RUN_NAME )
+			{
+				g_fClientHideFlags[client] &= ~HIDEHUD_RUN_NAME;
+			}
+			else
+			{
+				g_fClientHideFlags[client] |= HIDEHUD_RUN_NAME;
+			}
+		}
+		else if ( StrEqual( szItem, "mode" ) )
+		{
+			if ( g_fClientHideFlags[client] & HIDEHUD_MODE_NAME )
+			{
+				g_fClientHideFlags[client] &= ~HIDEHUD_MODE_NAME;
+			}
+			else
+			{
+				g_fClientHideFlags[client] |= HIDEHUD_MODE_NAME;
+			}
+		}
+		else if ( StrEqual( szItem, "cp" ) )
+		{
+			if ( g_fClientHideFlags[client] & HIDEHUD_CP_SPLIT )
+			{
+				g_fClientHideFlags[client] &= ~HIDEHUD_CP_SPLIT;
+			}
+			else
+			{
+				g_fClientHideFlags[client] |= HIDEHUD_CP_SPLIT;
 			}
 		}
 		else if ( StrEqual( szItem, "time" ) )

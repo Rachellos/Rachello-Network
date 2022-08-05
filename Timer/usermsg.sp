@@ -142,7 +142,9 @@ stock void ShowKeyHintText( int client, int target )
 		FormatSeconds( g_TempusWrTime[run][mode], tempuswr, FORMAT_3DECI );
 	//FormatSeconds( g_TempusPrTime[target][run][mode], tempuspr, FORMAT_3DECI );
 	
-	FormatEx(tempus_info, sizeof(tempus_info), " \nTempus WR:\n%s (%s)\n", 
+	FormatEx(sz_TempusWrName[run][mode], sizeof(sz_TempusWrName), "(%s)", sz_TempusWrName[run][mode]);
+
+	FormatEx(tempus_info, sizeof(tempus_info), "Tempus WR:\n%s %s\n", 
 		(g_TempusWrTime[run][mode] <= TIME_INVALID) ? "None" : tempuswr,
 		(g_TempusWrTime[run][mode] <= TIME_INVALID) ? "" : sz_TempusWrName[run][mode]);
 
@@ -183,11 +185,11 @@ stock void ShowKeyHintText( int client, int target )
 	if ( g_flMapBestTime[run][style][mode] != TIME_INVALID )
 	{
 		FormatSeconds( g_flMapBestTime[run][style][mode], szBestTime, FORMAT_3DECI );
-		FormatEx( WorldRecord, sizeof( WorldRecord ), "%s (%s)", szBestTime, szWrName[run][mode] );
+		FormatEx( WorldRecord, sizeof( WorldRecord ), "World Record:\n%s (%s)\n\n", szBestTime, szWrName[run][mode] );
 	}
 	else
 	{
-		FormatEx( WorldRecord, sizeof( WorldRecord ), "None" );
+		FormatEx( WorldRecord, sizeof( WorldRecord ), "World Record:\nNone\n\n" );
 	}
 
 	if ( g_flClientBestTime[target][run][mode] <= g_flMapBestTime[run][style][mode] || g_flClientBestTime[target][run][mode] <= TIME_INVALID)
@@ -202,17 +204,24 @@ stock void ShowKeyHintText( int client, int target )
 		FormatEx( szTxt, sizeof( szTxt ), "(+%s)", szInterval );
 	}
 
+	char class_name[50], pr[70];
+	static char szStylePostFix[STYLEPOSTFIX_LENGTH];
+	GetStylePostfix( g_iClientMode[target], szStylePostFix );
+
+	FormatEx(remaining, sizeof(remaining), "%s\n\n", remaining);
+
+	FormatEx(class_name, sizeof(class_name), "::%s%s::\n\n", g_szStyleName[NAME_LONG][style], szStylePostFix);
+
+	FormatEx(pr, sizeof(pr), "Personal Record:\n%s %s\n\n", szTime, szTxt);
+
 	if ( !g_bClientPractising[target] && run != RUN_SETSTART )
 	{
-		static char szStylePostFix[STYLEPOSTFIX_LENGTH];
-		GetStylePostfix( g_iClientMode[target], szStylePostFix );
 		
-		FormatEx( szText, sizeof( szText ), "%s\n\n::%s%s::\n\nPersonal Record:\n%s %s\n\nWorld Record:\n%s\n%s",
-				remaining,
-				g_szStyleName[NAME_LONG][style], szStylePostFix,
-				szTime,
-				szTxt,
-				WorldRecord,
+		FormatEx( szText, sizeof( szText ), "%s%s%s%s%s",
+				(!(g_fClientHideFlags[client] & HIDEHUD_TIMEREMAINING)) ? remaining : "",
+				(!(g_fClientHideFlags[client] & HIDEHUD_CLASS)) ? class_name : "",
+				(!(g_fClientHideFlags[client] & HIDEHUD_PERSONALREC)) ? pr : "",
+				(!(g_fClientHideFlags[client] & HIDEHUD_WORLDREC)) ? WorldRecord : "",
 				(!(g_fClientHideFlags[client] & HIDEHUD_TEMPUSWR)) ? tempus_info : ""/*,
 				(!(g_fClientHideFlags[client] & HIDEHUD_TEMPUSPR)) ? tempus_info_pr : ""*/
 				);
