@@ -182,9 +182,9 @@ public void OnGameFrame()
                 FormatSeconds( flCurTime, szCurTime );
             }
 
-            FormatEx(CpSplit, sizeof(CpSplit), "\n(%s %c%s)", (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit);
+            FormatEx(CpSplit, sizeof(CpSplit), "\n(%s %c%s)\n \n", (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit);
 
-            FormatEx(RunName, sizeof(RunName), "\n \n[%s End]", g_szRunName[NAME_LONG][run]);
+            FormatEx(RunName, sizeof(RunName), "[%s End]\n \n", g_szRunName[NAME_LONG][run]);
 
             FormatEx(hintOutput, 256, "%s%s%s%s%s", 
             (g_fClientHideFlags[client] & HIDEHUD_TIMER) ? "" : szCurTime, 
