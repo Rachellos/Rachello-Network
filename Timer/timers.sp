@@ -180,9 +180,10 @@ public void OnGameFrame()
             if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER) )
             {
                 FormatSeconds( flCurTime, szCurTime );
+                StrCat(szCurTime, sizeof(szCurTime), "\n \n");
             }
 
-            FormatEx(CpSplit, sizeof(CpSplit), "\n(%s %c%s)\n \n", (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit);
+            FormatEx(CpSplit, sizeof(CpSplit), "(%s %c%s)\n \n", (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit);
 
             FormatEx(RunName, sizeof(RunName), "[%s End]\n \n", g_szRunName[NAME_LONG][run]);
 
