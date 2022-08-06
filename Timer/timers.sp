@@ -78,6 +78,8 @@ public void OnGameFrame()
     {
         if ( !IsClientInGame( client ) || !IsClientConnected(client) || IsFakeClient( client ) || IsClientSourceTV( client )) continue;
 
+        if ( !g_bClientPractising[client] && GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) SetPlayerPractice( client, true );
+
         if (TimeToDrawRightHud[client] <= 0.0)
             TimeToDrawRightHud[client] = GetEngineTime() - 0.5;
 

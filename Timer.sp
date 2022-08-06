@@ -982,9 +982,18 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 	return Plugin_Handled;
 }
 
+public Action OnRestrictCommand(int client, const char[] command, int argc)
+{
+	CPrintToChat(client, CHAT_PREFIX..."Command {lightskyblue}%s {white}blocked due to security reasons.", command);
+	return Plugin_Handled;
+}
+
 public void OnPluginStart()
 {
 	ServerCommand("sv_hudhint_sound 0");
+	AddCommandListener(OnRestrictCommand, "setpos");
+	AddCommandListener(OnRestrictCommand, "setpos_exact");
+	AddCommandListener(OnRestrictCommand, "noclip");
 	Handle pIterator = GetPluginIterator();
 	hPlugin = ReadPlugin(pIterator);
 	CloseHandle(pIterator);

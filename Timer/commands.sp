@@ -1448,7 +1448,7 @@ public Action Command_Set_Start(int client, int args)
 
 	if ( g_fClientHideFlags[client] & HIDEHUD_SETSTART_POS )
 		g_fClientRespawnEyes[client][0] = 0.00;
-		
+
 	PRINTCHAT( client, CHAT_PREFIX..."Starting position set. Use /clearstart or /clear to return to the default starting point." );
 	return Plugin_Handled;
 }
