@@ -100,6 +100,7 @@
 #define HIDEHUD_RUN_NAME		( 1 << 26 )
 #define HIDEHUD_MODE_NAME		( 1 << 27 )
 #define HIDEHUD_CP_SPLIT		( 1 << 28 )
+#define HIDEHUD_SETSTART_POS	( 1 << 29 )
 
 // HUD flags to hide specific objects.
 #define HIDE_FLAGS				3946

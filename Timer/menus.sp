@@ -90,6 +90,7 @@ public void ShowHideMenuGen(int client)
 	mMenu.SetTitle( "<Settings Menu> :: General\n " );
 
 	mMenu.AddItem( "pr", ( g_fClientHideFlags[client] & HIDEHUD_PRTIME ) 		? "Time Comparison: [Personal Record]" : "Time Comparison: [World Record]" );
+	mMenu.AddItem( "ss", ( g_fClientHideFlags[client] & HIDEHUD_SETSTART_POS ) 		? "Setstart Сoordinates: [only X]" : "Setstart Сoordinates: [X & Y]" );
 	mMenu.AddItem( "vm", ( g_fClientHideFlags[client] & HIDEHUD_VM )				? "Show Weapon: [OFF]" : "Show Weapon: [ON]" );
 	
 	mMenu.ExitBackButton = true;
@@ -503,6 +504,18 @@ public int Handler_HudGen( Menu mMenu, MenuAction action, int client, int item )
 			g_fClientHideFlags[client] |= HIDEHUD_VM;
 			
 			SetEntProp( client, Prop_Send, "m_bDrawViewmodel", 0 );
+			
+		}
+	}
+	else if ( StrEqual( szItem, "ss" ) )
+	{
+		if ( g_fClientHideFlags[client] & HIDEHUD_SETSTART_POS )
+		{
+			g_fClientHideFlags[client] &= ~HIDEHUD_SETSTART_POS;
+		}
+		else
+		{
+			g_fClientHideFlags[client] |= HIDEHUD_SETSTART_POS;
 			
 		}
 	}
