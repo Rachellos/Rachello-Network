@@ -129,7 +129,7 @@ public void OnGameFrame()
         if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_INVALID ) {isHudDrawed[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue;}
 
         if (DisplayCpTime[target])
-            FormatEx(CpSplit, sizeof(CpSplit), "\n(%s %c%s)", g_fClientHideFlags[target] & HIDEHUD_PRTIME ? "PR" : "WR", CpPlusSplit[target], CpTimeSplit[target]);
+            FormatEx(CpSplit, sizeof(CpSplit), "(%s %c%s)\n", g_fClientHideFlags[target] & HIDEHUD_PRTIME ? "PR" : "WR", CpPlusSplit[target], CpTimeSplit[target]);
 
         if ( szClass[g_iClientRun[target]][g_iClientMode[target]] <= 0 || RegenOn[target])
             FormatEx(szAmmo[target], sizeof(szAmmo), "+regen");
@@ -137,15 +137,13 @@ public void OnGameFrame()
             FormatEx(szAmmo[target], sizeof(szAmmo), "");
 
         if ( g_fClientHideFlags[client] & HIDEHUD_SPEED )
-            FormatEx(speed, sizeof( speed ), "(%.0f u/s)\n \n", GetEntitySpeed(target));
-        
-        StrCat(speed, sizeof(speed), "\n");
+            FormatEx(speed, sizeof( speed ), " \n(%.0f u/s)\n", GetEntitySpeed(target));
 
         if ( RunIsBonus(g_iClientRun[target]) )
-                FormatEx( szTimerMode[target], sizeof(szTimerMode), "Bonus mode %s", szAmmo[target]);
+                FormatEx( szTimerMode[target], sizeof(szTimerMode), " \nBonus mode %s", szAmmo[target]);
 
         else if ( g_iClientRun[target] == RUN_MAIN || RunIsCourse(g_iClientRun[target]))
-            FormatEx( szTimerMode[target], sizeof(szTimerMode), "%s mode %s", (IsMapMode[target]) ?
+            FormatEx( szTimerMode[target], sizeof(szTimerMode), " \n%s mode %s", (IsMapMode[target]) ?
                 ((RunIsCourse(g_iClientRun[target])) ? "Map" : "Linear") : "Course",
                 szAmmo[target] );     
 
@@ -180,12 +178,12 @@ public void OnGameFrame()
             if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER) )
             {
                 FormatSeconds( flCurTime, szCurTime );
-                StrCat(szCurTime, sizeof(szCurTime), "\n \n");
+                StrCat(szCurTime, sizeof(szCurTime), "\n");
             }
 
-            FormatEx(CpSplit, sizeof(CpSplit), "(%s %c%s)\n \n", (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit);
+            FormatEx(CpSplit, sizeof(CpSplit), " \n(%s %c%s)\n", (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit);
 
-            FormatEx(RunName, sizeof(RunName), "[%s End]\n \n", g_szRunName[NAME_LONG][run]);
+            FormatEx(RunName, sizeof(RunName), " \n[%s End]\n", g_szRunName[NAME_LONG][run]);
 
             FormatEx(hintOutput, 256, "%s%s%s%s%s", 
             (g_fClientHideFlags[client] & HIDEHUD_TIMER) ? "" : szCurTime, 
@@ -202,10 +200,10 @@ public void OnGameFrame()
                 FormatSeconds( flCurTime, szCurTime );
             }
             char Time[100];
-            FormatEx(Time, sizeof(Time), "%s\n \n", 
+            FormatEx(Time, sizeof(Time), "%s\n", 
             IsMapMode[target] ? ( (RunIsCourse(g_iClientRun[target]) && g_iClientRun[target] != RUN_COURSE1) ? szCurTime : g_szCurrentMap ) : g_szCurrentMap);
 
-            FormatEx(RunName, sizeof(RunName), "[%s Start]\n \n", g_szRunName[NAME_LONG][run]);
+            FormatEx(RunName, sizeof(RunName), " \n[%s Start]\n", g_szRunName[NAME_LONG][run]);
             FormatEx(hintOutput, 256, "%s%s%s%s",
             (g_fClientHideFlags[client] & HIDEHUD_TIMER) ? "" : Time,
             (g_fClientHideFlags[client] & HIDEHUD_RUN_NAME) ? "" : RunName, 
@@ -219,10 +217,10 @@ public void OnGameFrame()
             if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER) )
             {
                 FormatSeconds( flCurTime, szCurTime );
-                StrCat(szCurTime, sizeof(szCurTime), "\n \n");
+                StrCat(szCurTime, sizeof(szCurTime), "\n");
             }
 
-            FormatEx(RunName, sizeof(RunName), "[%s]\n \n", g_szRunName[NAME_LONG][run]);
+            FormatEx(RunName, sizeof(RunName), " \n[%s]\n", g_szRunName[NAME_LONG][run]);
 
             Format(hintOutput, 256, "%s%s%s%s%s",
                 (g_fClientHideFlags[client] & HIDEHUD_TIMER) ? "" : szCurTime, 

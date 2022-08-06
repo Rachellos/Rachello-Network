@@ -345,7 +345,7 @@ public void Event_StartTouchPost_CheckPoint( int trigger, int ent )
 	
 	if ( g_hCPs == null ) return;
 
-	if ( !StrEqual(szTimerMode[ent], "Linear") && !StrEqual(szTimerMode[ent], "Map") )
+	if ( !IsMapMode[ent] )
 		return;
 
 	int cp, id;
