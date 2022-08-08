@@ -2209,7 +2209,7 @@ public Action Cmd_CallAdmin(int client, int argc) {
 			return Plugin_Continue;
 		}
 
-		DiscordWebHook hook = new DiscordWebHook("https://discord.com/api/webhooks/800328237715816458/F_wYaCeUMLsaQEXOsbnFZ6-2EmpwVxfDfmeLkIp3pbzt2mexrBCdwt5Da6MCHegSADaL");
+		DiscordWebHook hook = new DiscordWebHook(WEBHOOK_CALLADMIN);
 		//Format Message to send
 		char message[400];
 
