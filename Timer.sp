@@ -131,7 +131,6 @@
 
 #define MATH_PI					3.14159
 
-#define CHATLOGS_WEBHOOK "https://discord.com/api/webhooks/800327065731072030/0IBQg8Gjirm6YQDGauW6PjigBsgdG7ssh8sTQqKrmZXLI-NQ3teukvnYM4dsmsoODVv-"
 #define DISCONNECTSTR	"DISCONNECTMEPLSTHX"
 #define SENDERNAME		"[SENDER NAME]"
 #define SERVERTAG		"[SERVER TAG]"
@@ -1173,6 +1172,7 @@ public void OnPluginStart()
 	RegConsoleCmd( "sm_version", Command_Version );
 
 	RegConsoleCmd( "sm_info", Command_Credits );
+	RegConsoleCmd( "sm_discord", Command_Discord );
 
 	RegConsoleCmd( "sm_svid", Command_SVid );
 	RegConsoleCmd( "sm_dvid", Command_DVid );

@@ -636,6 +636,14 @@ public int Handler_HudChat( Menu mMenu, MenuAction action, int client, int item 
 	return 0;
 }
 
+public Action Command_Discord( int client, int args )
+{
+	if ( !client ) return Plugin_Handled;
+	
+	CPrintToChat(client, CHAT_PREFIX..."Join us on Discord at {lightskyblue}discord.gg/8khRBCEu5C");
+	return Plugin_Handled;
+}
+
 public Action Command_Credits( int client, int args )
 {
 	if ( !client ) return Plugin_Handled;
