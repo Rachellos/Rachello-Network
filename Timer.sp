@@ -1,6 +1,5 @@
 #include <morecolors>
 #include <sourcemod>
-#include <mapchooser>
 #include <nextmap>
 #include <tf2>
 #include <ripext>
@@ -33,22 +32,6 @@
 
 #define ZONE_EDIT_ADMFLAG	ADMFLAG_CHANGEMAP // Admin level that allows zone editing.
 #define RECORDS_ADMFLAG		ADMFLAG_ROOT // Admin level that allows record deletion.
-
-
-	// CSS colors.
-	#define CLR_CUSTOM1		"\x0766CCCC" // Teal
-	#define CLR_CUSTOM2		"\x073399FF" // Light blue
-	#define CLR_CUSTOM3		"\x07E71470" // Purple
-	#define CLR_CUSTOM4		"\x07434343" // Gray
-
-	#define CLR_TEXT		"\x07FFFFFF" // Default text color. (White)
-	#define CLR_TEAM		"\x0750DCFF" // Team color
-
-	#define CHAT_PREFIX		"\x07C8C8C8Tempus| "...CLR_TEXT
-	#define CHAT_PREFIX_TIP		"\x07C8C8C8Tip | "...CLR_TEXT
-
-
-
 
 
 // Don't change things under this unless you know what you are doing!!

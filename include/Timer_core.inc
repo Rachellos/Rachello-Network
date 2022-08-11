@@ -17,6 +17,20 @@
 #define WEBHOOK "https://discord.com/api/webhooks/799962971068956692/po3TnHT3HTJ3EUJB0C8WNyoUuPTcJWA9OIVCdHOMJ20tMGkRvrCZu_47hlAXEpRmz4k7"
 
 #define WEBHOOK_SERVER_ACTIONS "https://discord.com/api/webhooks/852928160181911578/v9EWBwfclsUh6BHixOKJjEWl5g-0EfjA1CKPqK8pqHPMChb-f8uGENBxL39O2WD23SiI"
+
+
+
+#define CLR_CUSTOM1		"\x0766CCCC" // Teal
+#define CLR_CUSTOM2		"\x073399FF" // Light blue
+#define CLR_CUSTOM3		"\x07E71470" // Purple
+#define CLR_CUSTOM4		"\x07434343" // Gray
+
+#define CLR_TEXT		"\x07FFFFFF" // Default text color. (White)
+#define CLR_TEAM		"\x0750DCFF" // Team color
+
+#define CHAT_PREFIX		"\x07C8C8C8Tempus| "...CLR_TEXT
+#define CHAT_PREFIX_TIP		"\x07C8C8C8Tip | "...CLR_TEXT
+
 #define NUM_REALZONES	42
 #define NUM_REALZONES2	21
 #define STYLEPOSTFIX_LENGTH		10
@@ -24,6 +38,7 @@
 #define BEAM_SIZE		100
 #define CP_INDEX_PRTIME		3
 #define C_CP_SIZE		3
+
 
 enum
 {

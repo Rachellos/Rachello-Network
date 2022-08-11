@@ -1146,6 +1146,7 @@ public void Threaded_Init_Zones( Database hOwner, DBResultSet hQuery, const char
 	int zone;
 	int iData[ZONE_SIZE];
 	int index;
+
 	while ( hQuery.FetchRow() )
 	{
 		zone = hQuery.FetchInt( 0 );
@@ -1158,8 +1159,6 @@ public void Threaded_Init_Zones( Database hOwner, DBResultSet hQuery, const char
 		vecMaxs[1] = hQuery.FetchFloat( 5 );
 		vecMaxs[2] = hQuery.FetchFloat( 6 );
 		index = hQuery.FetchInt( 8 );
-		
-
 		
 		if ( zone >= NUM_REALZONES )
 		{
@@ -1175,6 +1174,7 @@ public void Threaded_Init_Zones( Database hOwner, DBResultSet hQuery, const char
 		{
 			iData[ZONE_TYPE] = zone;
 			iData[ZONE_ID] = index;
+
 			
 			g_bZoneExists[zone][index] = true;
 			
