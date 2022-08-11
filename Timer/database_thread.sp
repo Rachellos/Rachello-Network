@@ -1141,12 +1141,15 @@ public void Threaded_Init_Zones( Database hOwner, DBResultSet hQuery, const char
 	
 	int zones = 0;
 	float vecMins[3];
-	char Query[100];
+	char Query[100], polygon[1024], error[64];
 	float vecMaxs[3];
 	int zone;
 	int iData[ZONE_SIZE];
 	int index;
 
+	bool isErrorPolygon = false;
+
+	Handle hJson;
 	while ( hQuery.FetchRow() )
 	{
 		zone = hQuery.FetchInt( 0 );
