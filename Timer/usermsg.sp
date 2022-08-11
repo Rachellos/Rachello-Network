@@ -136,17 +136,17 @@ stock void ShowKeyHintText( int client, int target )
 	if (run == RUN_INVALID) return;
 
 	char remaining[100],
-			tempus_info[100];
+			tempus_info[100],
+			tempuswr_name[45];
 			//tempus_info_pr[100];
 	if (g_TempusWrTime[run][mode] > TIME_INVALID)
 		FormatSeconds( g_TempusWrTime[run][mode], tempuswr, FORMAT_3DECI );
 	//FormatSeconds( g_TempusPrTime[target][run][mode], tempuspr, FORMAT_3DECI );
-	
-	FormatEx(sz_TempusWrName[run][mode], sizeof(sz_TempusWrName), "(%s)", sz_TempusWrName[run][mode]);
+	FormatEx(tempuswr_name, sizeof(tempuswr_name), "(%s)", sz_TempusWrName[run][mode]);
 
 	FormatEx(tempus_info, sizeof(tempus_info), "Tempus WR:\n%s %s\n", 
 		(g_TempusWrTime[run][mode] <= TIME_INVALID) ? "None" : tempuswr,
-		(g_TempusWrTime[run][mode] <= TIME_INVALID) ? "" : sz_TempusWrName[run][mode]);
+		(g_TempusWrTime[run][mode] <= TIME_INVALID) ? "" : tempuswr_name);
 
 	/*FormatEx(tempus_info_pr, sizeof(tempus_info_pr), "\nTempus PR:\n%s\n", 
 		(g_TempusPrTime[target][run][mode] == TIME_INVALID) ? "None" : tempuspr);*/
