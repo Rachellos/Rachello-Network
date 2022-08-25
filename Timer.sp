@@ -277,7 +277,6 @@ float g_SavePointEye[MAXPLAYERS+1][3];
 float g_vecSkipAngles[3], g_vecSkipPos[3]; 
 
 bool RegenOn[MAXPLAYERS+1] = false;
-bool g_bLateLoad;
 
 int STVTickStart;
 float g_iClientPoints[MAXPLAYERS+1];
@@ -599,8 +598,6 @@ Handle g_hForward_Timer_OnStateChanged;
 // ------------------------
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
-	
-	g_bLateLoad = late;
 
 	MarkNativeAsOptional("ParseDemo");
 
@@ -655,7 +652,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 #include "Timer/tempuslite.sp"
 #include "Timer/CrossServerChat.sp"
 #include "Timer/autodemo_recorder.sp"
-#include "Timer/custom_mapchooser.sp"
+#include "Timer/mapchooser.sp"
 #include "Timer/weather.sp"
 
 
@@ -1083,7 +1080,33 @@ public void OnPluginStart()
 	HookEvent( "player_death", Event_ClientDeath );
 
 	HookEvent( "teamplay_round_start", Event_RoundRestart, EventHookMode_PostNoCopy );
+	HookEvent( "round_start", OnRoundStartPost );
 
+	g_aMapList = new ArrayList( ByteCountToCells(PLATFORM_MAX_PATH) );
+	g_aMapTiersSolly = new ArrayList();
+	g_aMapTiersDemo = new ArrayList();
+	g_aNominateList = new ArrayList( ByteCountToCells(PLATFORM_MAX_PATH) );
+	g_aOldMaps = new ArrayList( ByteCountToCells(PLATFORM_MAX_PATH) );
+		
+	g_cvMapVoteBlockMapInterval = CreateConVar( "smc_mapvote_blockmap_interval", "1", "How many maps should be played before a map can be nominated again", _, true, 0.0, false );
+	g_cvMapVoteExtendTime = CreateConVar( "smc_mapvote_extend_time", "10", "How many minutes should the map be extended by if the map is extended through a mapvote", _, true, 1.0, false );
+	g_cvMapVoteDuration = CreateConVar( "smc_mapvote_duration", "1", "Duration of time in minutes that map vote menu should be displayed for", _, true, 0.1, false );
+	g_cvMapVoteStartTime = CreateConVar( "smc_mapvote_start_time", "3", "Time in minutes before map end that map vote starts", _, true, 1.0, false );
+	
+	AutoExecConfig();
+	
+	RegAdminCmd( "sm_extend", Command_Extend, ADMFLAG_CHANGEMAP, "Admin command for extending map" );
+	RegAdminCmd( "sm_forcemapvote", Command_ForceMapVote, ADMFLAG_RCON, "Admin command for forcing the end of map vote" );
+	RegAdminCmd( "sm_reloadmaplist", Command_ReloadMaplist, ADMFLAG_CHANGEMAP, "Admin command for forcing maplist to be reloaded" );
+	
+	RegConsoleCmd( "sm_nominate", Command_Nominate, "Lets players nominate maps to be on the end of map vote" );
+	RegConsoleCmd( "sm_nom", Command_Nominate, "Alias for sm_nominate" );
+	RegConsoleCmd( "sm_unnominate", Command_UnNominate, "Removes nominations" );
+	RegConsoleCmd( "sm_rtv", Command_RockTheVote, "Lets players Rock The Vote" );
+	RegConsoleCmd( "sm_unrtv", Command_UnRockTheVote, "Lets players un-Rock The Vote" );
+	RegConsoleCmd("sm_ve", Command_VE);
+	RegConsoleCmd("sm_voteextend", Command_VE);
+	RegConsoleCmd("sm_revote", Command_Revote);	
 
 	// SPAWNING
 	RegConsoleCmd( "sm_respawn", Command_Spawn );
@@ -1546,6 +1569,28 @@ while ((iCP = FindEntityByClassname(iCP, "trigger_capture_area")) != -1)
 			g_fClientRespawnAngles[q][j] = 0.0;
 		}
 	}
+
+	GetCurrentMap( g_cMapName, sizeof(g_cMapName) );
+	
+	// disable rtv if delay time is > 0
+	g_fMapStartTime = GetGameTime();
+	
+	g_bMapVoteFinished = false;
+	g_bMapVoteStarted = false;
+	
+	g_aNominateList.Clear();
+	for( int i = 1; i <= MaxClients; i++ )
+	{
+		g_cNominatedMap[i][0] = '\0';
+	}
+	ClearRTV();
+	
+	// reload maplist array
+	LoadMapList();
+	// cache the nominate menu so that it isn't being built every time player opens it
+	CreateNominateMenu();
+	
+	CreateTimer( 1.0, Timer_OnSecond, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
 }
 
 public void OnMapInfoGained(HTTPResponse response, any value) 
@@ -1882,6 +1927,16 @@ public void OnMapEnd()
 	 	}
 	}
 
+	if( g_cvMapVoteBlockMapInterval.IntValue > 0 )
+	{
+		g_aOldMaps.PushString( g_cMapName );
+		if( g_aOldMaps.Length > g_cvMapVoteBlockMapInterval.IntValue )
+		{
+			g_aOldMaps.Erase( 0 );
+		}
+	}
+	g_VotesNeededVe = 0;
+
 	if (secure)
 	{
 		PrintToServer("Ending recording of %s", currentDemoFilename);
@@ -1989,12 +2044,49 @@ public void IdleSys_OnClientIdle(int client)
 {
 	PrintToChat(client, CHAT_PREFIX... "You have been marked as idle");
 	g_iClientIdle[client] = true;
+
+	int time;
+	GetMapTimeLeft(time);
+
+	CheckRTV();
+	
+	VeVotersCount();
+	if (g_VotesVe && 
+		g_VotersVe && 
+		g_VotesVe >= g_VotesNeededVe ) 
+	{
+		if (time > 180)
+		{
+			return;
+		}
+		
+		StartVE();
+	}
 }
 
 public void IdleSys_OnClientReturn(int client, int time) 
 {
 	PrintToChat(client, CHAT_PREFIX... "You are no longer an idle");
 	g_iClientIdle[client] = false;
+
+	VeVotersCount();
+	int time;
+	GetMapTimeLeft(time);
+
+	CheckRTV();
+
+	if (g_VotesVe && 
+		g_VotersVe && 
+		g_VotesVe >= g_VotesNeededVe ) 
+	{
+		if (time > 180)
+		{
+			return;
+		}
+		
+		StartVE();
+	}
+	return;
 }
 /*public Action IRCchat(int client, int args)
 {
@@ -2101,8 +2193,17 @@ public void OnClientDisconnect( int client )
 	char name[99];
 		
 	GetClientName(client, name, sizeof(name));
+
 	CPrintToChatAll("\x0750DCFF%s {white}has left the server.", name);	
 	
+	g_bRockTheVote[client] = false;
+	g_cNominatedMap[client][0] = '\0';
+	g_iClientIdle[client] = false;
+
+	g_VotedVe[client] = false;
+	
+	CheckRTV();
+
 	ranksolly[client] = -1;
  	rankdemo[client] = -1;
 
@@ -2129,7 +2230,8 @@ public void OnClientDisconnect( int client )
 	Weather_delayTime[client] = 0.0;
 	ClientConnectTime[client] = GetEngineTime() - ClientConnectTime[client];
 
-	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET lastseen = CURRENT_TIMESTAMP, total_hours = total_hours + %.1f, online = 0 WHERE steamid = '%s'",
+	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i, lastseen = CURRENT_TIMESTAMP, total_hours = total_hours + %.1f, online = 0 WHERE steamid = '%s'",
+	g_fClientHideFlags[client],
 	ClientConnectTime[client],
 	szSteam );
 	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);

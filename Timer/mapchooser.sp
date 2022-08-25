@@ -1,24 +1,9 @@
-#pragma semicolon 1
-
-#include <sourcemod>
-#include <Timer_core>
-#include <idlesystem>
-#include <morecolors>
-
-#undef REQUIRE_PLUGIN
-// for MapChange type
-
-#define PLUGIN_VERSION "1.0.4"
-
 enum MapChange
 {
 	MapChange_Instant,      /** Change map as soon as the voting results have come in */
 	MapChange_RoundEnd,     /** Change map at the end of the round */
 	MapChange_MapEnd        /** Change the sm_nextmap cvar */
 };
-
-Database g_hDatabase;
-char g_cSQLPrefix[32];
 
 bool g_bLate;
 
@@ -69,93 +54,9 @@ Menu g_hNominateMenu;
 
 /* Player Data */
 bool	g_bRockTheVote[MAXPLAYERS + 1];
-bool 	idle[MAXPLAYERS + 1];
 char g_cNominatedMap[MAXPLAYERS + 1][PLATFORM_MAX_PATH];
 
-g_flClientWarning[MAXPLAYERS + 1];
-
 bool g_VotedVe[MAXPLAYERS+1] = {false, ...};
-
-public Plugin myinfo =
-{
-	name = "Rachello Network - MapChooser",
-	author = "Rachello",
-	description = "Automated Map Voting and nominating with Rachellos timer integration",
-	version = PLUGIN_VERSION,
-	url = ""
-}
-
-public APLRes AskPluginLoad2( Handle myself, bool late, char[] error, int err_max )
-{
-	g_bLate = late;
-	
-	return APLRes_Success;
-}
-
-public void OnPluginStart()
-{
-	HookEvent( "round_start", OnRoundStartPost );
-
-	g_aMapList = new ArrayList( ByteCountToCells(PLATFORM_MAX_PATH) );
-	g_aMapTiersSolly = new ArrayList();
-	g_aMapTiersDemo = new ArrayList();
-	g_aNominateList = new ArrayList( ByteCountToCells(PLATFORM_MAX_PATH) );
-	g_aOldMaps = new ArrayList( ByteCountToCells(PLATFORM_MAX_PATH) );
-		
-	g_cvMapVoteBlockMapInterval = CreateConVar( "smc_mapvote_blockmap_interval", "1", "How many maps should be played before a map can be nominated again", _, true, 0.0, false );
-	g_cvMapVoteExtendTime = CreateConVar( "smc_mapvote_extend_time", "10", "How many minutes should the map be extended by if the map is extended through a mapvote", _, true, 1.0, false );
-	g_cvMapVoteDuration = CreateConVar( "smc_mapvote_duration", "1", "Duration of time in minutes that map vote menu should be displayed for", _, true, 0.1, false );
-	g_cvMapVoteStartTime = CreateConVar( "smc_mapvote_start_time", "3", "Time in minutes before map end that map vote starts", _, true, 1.0, false );
-	
-	AutoExecConfig();
-	
-	RegAdminCmd( "sm_extend", Command_Extend, ADMFLAG_CHANGEMAP, "Admin command for extending map" );
-	RegAdminCmd( "sm_forcemapvote", Command_ForceMapVote, ADMFLAG_RCON, "Admin command for forcing the end of map vote" );
-	RegAdminCmd( "sm_reloadmaplist", Command_ReloadMaplist, ADMFLAG_CHANGEMAP, "Admin command for forcing maplist to be reloaded" );
-	
-	RegConsoleCmd( "sm_nominate", Command_Nominate, "Lets players nominate maps to be on the end of map vote" );
-	RegConsoleCmd( "sm_nom", Command_Nominate, "Alias for sm_nominate" );
-	RegConsoleCmd( "sm_unnominate", Command_UnNominate, "Removes nominations" );
-	RegConsoleCmd( "sm_rtv", Command_RockTheVote, "Lets players Rock The Vote" );
-	RegConsoleCmd( "sm_unrtv", Command_UnRockTheVote, "Lets players un-Rock The Vote" );
-	RegConsoleCmd("sm_ve", Command_VE);
-	RegConsoleCmd("sm_voteextend", Command_VE);
-	RegConsoleCmd("sm_revote", Command_Revote);	
-	
-	if( g_bLate )
-	{
-		OnMapStart();
-	}
-	
-	#if defined DEBUG
-	RegConsoleCmd( "sm_smcdebug", Command_Debug );
-	#endif
-}
-
-public void OnMapStart()
-{
-	GetCurrentMap( g_cMapName, sizeof(g_cMapName) );
-	
-	// disable rtv if delay time is > 0
-	g_fMapStartTime = GetGameTime();
-	
-	g_bMapVoteFinished = false;
-	g_bMapVoteStarted = false;
-	
-	g_aNominateList.Clear();
-	for( int i = 1; i <= MaxClients; i++ )
-	{
-		g_cNominatedMap[i][0] = '\0';
-	}
-	ClearRTV();
-	
-	// reload maplist array
-	LoadMapList();
-	// cache the nominate menu so that it isn't being built every time player opens it
-	CreateNominateMenu();
-	
-	CreateTimer( 1.0, Timer_OnSecond, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE );
-}
 
 public Action Command_Revote(int client, int args)
 {
@@ -192,8 +93,8 @@ public Action Command_VE(int client, int args)
 void AttemptVE(int client)
 {
 	int time;
-	if (idle[client])
-		idle[client] = false;
+	if (g_iClientIdle[client])
+		g_iClientIdle[client] = false;
 	
 	GetMapTimeLeft(time);
 	if (time > 180)
@@ -267,7 +168,7 @@ public void VeVotersCount()
 	g_Voters=0;
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i) && !idle[i])
+		if (IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i) && !g_iClientIdle[i])
 		{
 			g_VotersVe++;
 			g_VotesNeededVe = RoundToCeil(g_VotersVe * 0.60);
@@ -277,53 +178,6 @@ public void VeVotersCount()
 		}
 
 	}
-}
-
-public void IdleSys_OnClientIdle(int client) 
-{
-	idle[client] = true;
-	
-	int time;
-	GetMapTimeLeft(time);
-
-	CheckRTV();
-	
-	VeVotersCount();
-	if (g_VotesVe && 
-		g_VotersVe && 
-		g_VotesVe >= g_VotesNeededVe ) 
-	{
-		if (time > 180)
-		{
-			return;
-		}
-		
-		StartVE();
-	}	
-}
-
-public void IdleSys_OnClientReturn(int client, int time) 
-{
-	idle[client] = false;
-
-	VeVotersCount();
-	int time;
-	GetMapTimeLeft(time);
-
-	CheckRTV();
-
-	if (g_VotesVe && 
-		g_VotersVe && 
-		g_VotesVe >= g_VotesNeededVe ) 
-	{
-		if (time > 180)
-		{
-			return;
-		}
-		
-		StartVE();
-	}
-	return;
 }
 
 public Action OnRoundStartPost( Event event, const char[] name, bool dontBroadcast )
@@ -340,19 +194,6 @@ public Action OnRoundStartPost( Event event, const char[] name, bool dontBroadca
 		g_cNominatedMap[i][0] = '\0';
 	}
 	ClearRTV();
-}
-
-public void OnMapEnd()
-{
-	if( g_cvMapVoteBlockMapInterval.IntValue > 0 )
-	{
-		g_aOldMaps.PushString( g_cMapName );
-		if( g_aOldMaps.Length > g_cvMapVoteBlockMapInterval.IntValue )
-		{
-			g_aOldMaps.Erase( 0 );
-		}
-	}
-	g_VotesNeededVe = 0;
 }
 
 public Action Timer_OnSecond( Handle timer )
@@ -375,18 +216,6 @@ void CheckTimeLeft()
 			InitiateMapVote( MapChange_MapEnd );
 		}
 	}
-}
-
-public void OnClientDisconnect( int client )
-{
-	// clear player data
-	g_bRockTheVote[client] = false;
-	g_cNominatedMap[client][0] = '\0';
-	idle[client] = false;
-
-	g_VotedVe[client] = false;
-	
-	CheckRTV();
 }
 
 public void OnClientSayCommand_Post( int client, const char[] command, const char[] sArgs )
@@ -487,7 +316,7 @@ void InitiateMapVote( MapChange when )
 		ClientVote[i] = -1;
 		Client_in_vote[i] = false;
 
-		if (!IsClientInGame(i) || IsFakeClient(i) || idle[i])
+		if (!IsClientInGame(i) || IsFakeClient(i) || g_iClientIdle[i])
 		{
 			continue;
 		}
@@ -499,11 +328,11 @@ void InitiateMapVote( MapChange when )
 			CPrintToChat(i, CHAT_PREFIX..."({lightskyblue}!runmode{white}) You automatically voted for {lightskyblue}Extend Map{white}. {lightskyblue}!revote{white} if you change your mind.");
 			ClientVote[i] = 5;
 		}
-		else
-		{
-			g_VoteMenu.Display(i, MENU_TIME_FOREVER);
-		}
 	}
+
+	for (int i = 1; i <= MaxClients; i++)
+		if (Client_in_vote[i] && ClientVote[i] != 5)
+			g_VoteMenu.Display(i, MENU_TIME_FOREVER);
 
 	h_VoteTimer = CreateTimer( 30.0, Timer_EndOfVoting, g_VoteMenu, TIMER_FLAG_NO_MAPCHANGE );
 
@@ -643,7 +472,7 @@ public void FinishMapVote( Menu menu, bool TimeEnd )
 		else if( g_ChangeTime == MapChange_Instant )
 		{
 			DataPack data;
-			CreateDataTimer(2.0, Timer_ChangeMap, data);
+			CreateDataTimer(5.0, Timer_ChangeMap, data);
 			data.WriteString(map);
 		}
 		
@@ -651,9 +480,9 @@ public void FinishMapVote( Menu menu, bool TimeEnd )
 		g_bMapVoteFinished = true;
 		
 		if (random)
-			CPrintToChatAll(CHAT_PREFIX..."No one voted. Randomly selected: \x0750DCFF%s", displayName);
+			CPrintToChatAll(CHAT_PREFIX..."No one voted. Randomly selected: \x0750DCFF%s", map);
 		else
-			CPrintToChatAll(CHAT_PREFIX..."\x0750DCFF%s {white}won the vote with %i%c (%i/%i)", displayName, RoundToFloor(float(item_votes[winner_index])/float(num_votes)*100), c, item_votes[winner_index], num_votes);
+			CPrintToChatAll(CHAT_PREFIX..."\x0750DCFF%s {white}won the vote with %i%c (%i/%i)", map, RoundToFloor(float(item_votes[winner_index])/float(num_votes)*100), c, item_votes[winner_index], num_votes);
 
 		LogAction(-1, -1, "Voting for next map has finished. Nextmap: %s.", map);
 	}
@@ -739,7 +568,14 @@ public int Handler_MapVoteMenu( Menu menu, MenuAction action, int param1, int pa
 			else
 			{
 				menu.GetItem(param2, changed, sizeof(changed));
-				Format(buffer, sizeof(buffer), "%s%s", changed, szVotes);
+				int stier = -1, dtier = -1;
+				int idx = g_aMapList.FindString( changed );
+				if( idx != -1 )
+				{
+					stier = g_aMapTiersSolly.Get( idx );
+					dtier = g_aMapTiersDemo.Get( idx );
+				}
+				Format(buffer, sizeof(buffer), "S%i|D%i %s%s", stier, dtier, changed, szVotes);
 				return RedrawMenuItem(buffer);
 			}
 		}
@@ -756,6 +592,7 @@ public int Handler_MapVoteMenu( Menu menu, MenuAction action, int param1, int pa
 
 			ClientVote[param1] = param2;
 			
+			MenuClosedByServer = true;
 			for (int i = 1; i <= MaxClients; i++)
 			{
 				if (!IsClientInGame(i) || IsFakeClient(i) || !Client_in_vote[i])
@@ -764,6 +601,7 @@ public int Handler_MapVoteMenu( Menu menu, MenuAction action, int param1, int pa
 				}
 				menu.Display(i, MENU_TIME_FOREVER);
 			}
+			MenuClosedByServer = false;
 
 			int votes;
 			for ( int i = 1; i <= MaxClients; i++)
@@ -814,10 +652,7 @@ void LoadMapList()
 	g_aMapTiersSolly.Clear();
 	g_aMapTiersDemo.Clear();
 	
-	delete g_hDatabase;
-	
 	char buffer[512];
-	g_hDatabase = SQL_Connect( "Timer", true, buffer, sizeof(buffer) );
 
 	Format( buffer, sizeof(buffer), "SELECT map_name, stier, dtier FROM `map_info` WHERE run = 0 ORDER BY `map_name`" );
 	g_hDatabase.Query( LoadZonedMapsCallback, buffer, _, DBPrio_High );
@@ -1058,8 +893,8 @@ void Nominate( int client, const char mapname[PLATFORM_MAX_PATH] )
 
 public Action Command_RockTheVote( int client, int args )
 {
-	if (idle[client])
-		idle[client] = false;
+	if (g_iClientIdle[client])
+		g_iClientIdle[client] = false;
 
 	if( g_bMapVoteStarted )
 	{
@@ -1071,7 +906,7 @@ public Action Command_RockTheVote( int client, int args )
 		int rtvcount = 0;
 		for( int i = 1; i <= MaxClients; i++ )
 		{
-			if( IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i) && !idle[i])
+			if( IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i) && !g_iClientIdle[i])
 			{
 				total++;
 				if( g_bRockTheVote[i] )
@@ -1091,7 +926,7 @@ public Action Command_RockTheVote( int client, int args )
 		int rtvcount = 0;
 		for( int i = 1; i <= MaxClients; i++ )
 		{
-			if( IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i) && !idle[i])
+			if( IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i) && !g_iClientIdle[i])
 			{
 				total++;
 				if( g_bRockTheVote[i] )
@@ -1116,7 +951,7 @@ void CheckRTV( int client = 0 )
 	int rtvcount = 0;
 	for( int i = 1; i <= MaxClients; i++ )
 	{
-		if( IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i) && !idle[i])
+		if( IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i) && !g_iClientIdle[i])
 		{
 			total++;
 			if( g_bRockTheVote[i] )
@@ -1203,7 +1038,7 @@ stock int GetRTVVotesNeeded()
 	int rtvcount = 0;
 	for( int i = 1; i <= MaxClients; i++ )
 	{
-		if( IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i) && !idle[i])
+		if( IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i) && !g_iClientIdle[i])
 		{
 			total++;
 			if( g_bRockTheVote[i] )
