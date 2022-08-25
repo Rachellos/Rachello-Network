@@ -89,7 +89,8 @@ public void ShowHideMenuGen(int client)
 	
 	mMenu.SetTitle( "<Settings Menu> :: General\n " );
 
-	mMenu.AddItem( "pr", ( g_fClientHideFlags[client] & HIDEHUD_PRTIME ) 		? "Time Comparison: [Personal Record]" : "Time Comparison: [World Record]" );
+	mMenu.AddItem( "pr", ( g_fClientHideFlags[client] & HIDEHUD_PRTIME ) 			? "Time Comparison: [Personal Record]" : "Time Comparison: [World Record]" );
+	mMenu.AddItem( "ae", ( g_fClientHideFlags[client] & AUTO_EXTEND_MAP_OPTION )	? "Run Mode (Autoextend): [ON]" : "Run Mode (Autoextend): [OFF]" );
 	mMenu.AddItem( "ss", ( g_fClientHideFlags[client] & HIDEHUD_SETSTART_POS ) 		? "Setstart Сoordinates: [only X]" : "Setstart Сoordinates: [X & Y]" );
 	mMenu.AddItem( "vm", ( g_fClientHideFlags[client] & HIDEHUD_VM )				? "Show Weapon: [OFF]" : "Show Weapon: [ON]" );
 	
@@ -125,7 +126,7 @@ public void ShowHideMenuCHud(int client)
 	mMenu.SetTitle( "<Settings Menu> :: Central Hud\n " );
 
 	mMenu.AddItem( "hud", ( g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD )			? "Central Hud: [OFF]" : "Central Hud: [ON]" );
-	mMenu.AddItem( "tick", ( g_fClientHideFlags[client] & HIDEHUD_FAST_HUD ) 		? "Hud Rendering Frequency: [0.5 sec]" : "Hud Rendering Frequency: [every tick]" );
+	mMenu.AddItem( "tick", ( g_fClientHideFlags[client] & HIDEHUD_FAST_HUD ) 		? "Hud Rendering Frequency: [every tick]" : "Hud Rendering Frequency: [0.5 sec]" );
 	mMenu.AddItem( "run", ( g_fClientHideFlags[client] & HIDEHUD_RUN_NAME )			? "Run Name: [OFF]" : "Run Name: [ON]" );
 	mMenu.AddItem( "mode", ( g_fClientHideFlags[client] & HIDEHUD_MODE_NAME )			? "Run Mode: [OFF]" : "Run Mode: [ON]" );
 	mMenu.AddItem( "cp", ( g_fClientHideFlags[client] & HIDEHUD_CP_SPLIT )			? "Checkpoints Split: [OFF]" : "Checkpoints Split: [ON]" );
@@ -504,6 +505,18 @@ public int Handler_HudGen( Menu mMenu, MenuAction action, int client, int item )
 			g_fClientHideFlags[client] |= HIDEHUD_VM;
 			
 			SetEntProp( client, Prop_Send, "m_bDrawViewmodel", 0 );
+			
+		}
+	}
+	else if ( StrEqual( szItem, "ae" ) )
+	{
+		if ( g_fClientHideFlags[client] & AUTO_EXTEND_MAP_OPTION )
+		{
+			g_fClientHideFlags[client] &= ~AUTO_EXTEND_MAP_OPTION;
+		}
+		else
+		{
+			g_fClientHideFlags[client] |= AUTO_EXTEND_MAP_OPTION;
 			
 		}
 	}

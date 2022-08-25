@@ -12,6 +12,24 @@ public Action Command_Version( int client, int args )
 	return Plugin_Handled;
 }
 
+public Action Command_RunMode(int client, int args)
+{
+	if (!client) return Plugin_Handled;
+
+	if ( g_fClientHideFlags[client] & AUTO_EXTEND_MAP_OPTION )
+	{
+		g_fClientHideFlags[client] &= ~AUTO_EXTEND_MAP_OPTION;
+		CPrintToChat(client, CHAT_PREFIX..."You are no longer in run mode.");
+	}
+	else
+	{
+		g_fClientHideFlags[client] |= AUTO_EXTEND_MAP_OPTION;
+		CPrintToChat(client, CHAT_PREFIX..."You are now in run mode - you will automatically vote to extend.");
+		
+	}
+	return Plugin_Handled;
+}
+
 public Action Command_Help( int client, int args )
 {
 	if ( !client ) return Plugin_Handled;

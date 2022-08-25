@@ -2,16 +2,13 @@
 public Action Timer_Connected( Handle hTimer, int client )
 {
     if ( !(client = GetClientOfUserId( client )) ) return Plugin_Handled;
-   
-   
+
     CPrintToChat( client,  CHAT_PREFIX..."Welcome to the \x0750DCFFRachello Network {white}!");
 
     char i_SteamID[50];
 	GetClientAuthId(client, AuthId_Steam3, i_SteamID, sizeof(i_SteamID));
 
-	if (StrEqual(i_SteamID, "[U:1:1230320973]"))
-    	CPrintToChat( client,  CHAT_PREFIX..."Боши ты заебал бегать, чего очкуешь то? бан на темпусе словил и кукухой ебнулся?");
-   
+ 
     if ( !g_bIsLoaded[RUN_MAIN] && !g_bIsLoaded[RUN_COURSE1])
     {
         PRINTCHAT( client, CHAT_PREFIX..."No records are available for this map!" );
@@ -74,6 +71,8 @@ public Action Timer_Ad( Handle hTimer )
 public void OnGameFrame()
 {
     static float TimeToDrawRightHud[MAXPLAYERS+1];
+    static PlayerState PrevState[MAXPLAYERS+1];
+
     for ( int client = 1; client <= MaxClients; client++ )
     {
         if ( !IsClientInGame( client ) || !IsClientConnected(client) || IsFakeClient( client ) || IsClientSourceTV( client )) continue;
@@ -119,16 +118,16 @@ public void OnGameFrame()
 				continue;
         }
 
-		if ( TF2_GetPlayerClass(target) != TFClass_DemoMan && TF2_GetPlayerClass(target) != TFClass_Soldier && GetClientTeam( target ) != TFTeam_Spectator ) { isHudDrawed[target] = false; TimeToDrawHud[target] = TIME_INVALID; continue; }
+		if ( TF2_GetPlayerClass(target) != TFClass_DemoMan && TF2_GetPlayerClass(target) != TFClass_Soldier && GetClientTeam( target ) != TFTeam_Spectator ) { isHudDrawed[target] = false; continue; }
 
         if ( g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD
             && g_fClientHideFlags[client] & HIDEHUD_SIDEINFO )
-            { isHudDrawed[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue; }
+            { isHudDrawed[client] = false; continue; }
         
         run = g_iClientRun[target];
         mode = g_iClientMode[target];
         
-        if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_INVALID ) {isHudDrawed[client] = false; TimeToDrawHud[client] = TIME_INVALID; continue;}
+        if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_INVALID ) {isHudDrawed[client] = false; continue;}
 
         if (DisplayCpTime[target])
             FormatEx(CpSplit, sizeof(CpSplit), "(%s %c%s)\n", g_fClientHideFlags[target] & HIDEHUD_PRTIME ? "PR" : "WR", CpPlusSplit[target], CpTimeSplit[target]);
@@ -240,16 +239,18 @@ public void OnGameFrame()
         if ( (g_iClientRun[target] != RUN_SETSTART || g_bClientPractising[target]) &&
             !(g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD))
         {
-            if ( !(g_fClientHideFlags[client] & HIDEHUD_FAST_HUD) )
+            if ( ( g_fClientHideFlags[client] & HIDEHUD_FAST_HUD ) 
+            && !( g_iClientState[target] == STATE_START 
+            && (run == RUN_MAIN || run == RUN_COURSE1) 
+            && PrevState[client] == STATE_START ) )
             {
                 if (!isHudDrawed[client] && (GetEngineTime() - LastHudDrawing[client]) > 0.5)
                 {
                     isHudDrawed[client] = true;
                     PrintHintText( client, hintOutput);
-                    TimeToDrawHud[client] = GetEngineTime() + 0.6;
                     LastHudDrawing[client] = GetEngineTime();
                 }
-                else if ( isHudDrawed[client] && (GetEngineTime() - TimeToDrawHud[client]) > 0.0 )
+                else if ( isHudDrawed[client] )
                 {
                     LastHudDrawing[client] = GetEngineTime();
                     PrintHintText( client, hintOutput);
@@ -261,7 +262,6 @@ public void OnGameFrame()
                 {
                     isHudDrawed[client] = true;
                     PrintHintText( client, hintOutput);
-                    TimeToDrawHud[client] = GetEngineTime() + 0.5;
                     LastHudDrawing[client] = GetEngineTime();
                 }
             }
@@ -275,6 +275,7 @@ public void OnGameFrame()
                 TimeToDrawRightHud[client] = GetEngineTime();
             }
         }
+        PrevState[client] = g_iClientState[target];
     }
 }
 

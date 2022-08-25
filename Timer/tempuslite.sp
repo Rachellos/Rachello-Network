@@ -792,49 +792,6 @@ public int RecordsMenuHandler(Menu mMenu, MenuAction action, int client, int ite
 	}
 }
 
-
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
-	
-	g_bLateLoad = late;
-
-	MarkNativeAsOptional("ParseDemo");
-
-	MarkNativeAsOptional("EasyFTP_UploadFile");
-
-	MarkNativeAsOptional("JSONArray.JSONArray");
-	MarkNativeAsOptional("JSONArray.Push");
-	MarkNativeAsOptional("JSONArray.FromString");
-	MarkNativeAsOptional("JSONArray.ToString");
-	MarkNativeAsOptional("JSONArray.Length.get");
-	MarkNativeAsOptional("JSONArray.Get");
-
-	MarkNativeAsOptional("JSONObject.JSONObject");
-	MarkNativeAsOptional("JSONObject.GetString");
-	MarkNativeAsOptional("JSONObject.SetString");
-	MarkNativeAsOptional("JSONObject.ToString");
-	MarkNativeAsOptional("JSONObject.FromString");
-	MarkNativeAsOptional("JSONObject.GetInt");
-	MarkNativeAsOptional("JSONObject.SetInt");
-	MarkNativeAsOptional("JSONObject.Get");
-	MarkNativeAsOptional("JSONObject.Set");
-	MarkNativeAsOptional("JSONObject.SetFloat");
-	MarkNativeAsOptional("JSONObject.GetFloat");
-	MarkNativeAsOptional("JSONObject.GetBool");
-	MarkNativeAsOptional("JSONObject.SetBool");
-	MarkNativeAsOptional("JSONObject.IsNull");
-
-	MarkNativeAsOptional("JSON.ToString");
-
-	MarkNativeAsOptional("HTTPClient.HTTPClient");
-	MarkNativeAsOptional("HTTPClient.SetHeader");
-	MarkNativeAsOptional("HTTPClient.Get");
-
-	MarkNativeAsOptional("HTTPResponse.Status.get");
-	MarkNativeAsOptional("HTTPResponse.Data.get");
-
-	return APLRes_Success;
-}
-
 /* Main methods */
 
 

@@ -84,6 +84,7 @@
 #define HIDEHUD_MODE_NAME		( 1 << 27 )
 #define HIDEHUD_CP_SPLIT		( 1 << 28 )
 #define HIDEHUD_SETSTART_POS	( 1 << 29 )
+#define AUTO_EXTEND_MAP_OPTION	( 1 << 30 )
 
 // HUD flags to hide specific objects.
 #define HIDE_FLAGS				3946
@@ -208,7 +209,6 @@ int g_tier_MapMenu[MAXPLAYERS+1];
 char db_map[MAXPLAYERS+1][100];
 
 bool isHudDrawed[MAXPLAYERS+1];
-float TimeToDrawHud[MAXPLAYERS+1];
 float LastHudDrawing[MAXPLAYERS+1];
 
 float g_CustomRespawnPos[NUM_RUNS][3];
@@ -598,6 +598,50 @@ Handle g_hForward_Timer_OnStateChanged;
 // End of globals.
 // ------------------------
 
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
+	
+	g_bLateLoad = late;
+
+	MarkNativeAsOptional("ParseDemo");
+
+	MarkNativeAsOptional("EasyFTP_UploadFile");
+
+	MarkNativeAsOptional("JSONArray.JSONArray");
+	MarkNativeAsOptional("JSONArray.Push");
+	MarkNativeAsOptional("JSONArray.FromString");
+	MarkNativeAsOptional("JSONArray.ToString");
+	MarkNativeAsOptional("JSONArray.Length.get");
+	MarkNativeAsOptional("JSONArray.Get");
+
+	MarkNativeAsOptional("JSONObject.JSONObject");
+	MarkNativeAsOptional("JSONObject.GetString");
+	MarkNativeAsOptional("JSONObject.SetString");
+	MarkNativeAsOptional("JSONObject.ToString");
+	MarkNativeAsOptional("JSONObject.FromString");
+	MarkNativeAsOptional("JSONObject.GetInt");
+	MarkNativeAsOptional("JSONObject.SetInt");
+	MarkNativeAsOptional("JSONObject.Get");
+	MarkNativeAsOptional("JSONObject.Set");
+	MarkNativeAsOptional("JSONObject.SetFloat");
+	MarkNativeAsOptional("JSONObject.GetFloat");
+	MarkNativeAsOptional("JSONObject.GetBool");
+	MarkNativeAsOptional("JSONObject.SetBool");
+	MarkNativeAsOptional("JSONObject.IsNull");
+
+	MarkNativeAsOptional("JSON.ToString");
+
+	MarkNativeAsOptional("HTTPClient.HTTPClient");
+	MarkNativeAsOptional("HTTPClient.SetHeader");
+	MarkNativeAsOptional("HTTPClient.Get");
+
+	MarkNativeAsOptional("HTTPResponse.Status.get");
+	MarkNativeAsOptional("HTTPResponse.Data.get");
+
+	CreateNative("IsAutoExtendEnabled", Native_IsAutoExtendEnabled);
+
+	return APLRes_Success;
+}
+
 #include "Timer/stocks.sp"
 #include "Timer/usermsg.sp"
 #include "Timer/database.sp"
@@ -636,6 +680,11 @@ public void OnPluginEnd() {
 		WritePackString(pack, currentDemoFilename);
 		CreateTimer(1.0, Timer_CompressDemo, pack);
 	}
+}
+
+public int Native_IsAutoExtendEnabled(Handle handler, int numParams)
+{
+	return (g_fClientHideFlags[GetNativeCell(1)] & AUTO_EXTEND_MAP_OPTION);
 }
 
 public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
@@ -1070,6 +1119,8 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_maps", cmdMapList, "Show the map list");
 
 	RegConsoleCmd("sm_ttop", SM_TopTimes, "sm_top <mapname> - Show map top times");
+
+	RegConsoleCmd("sm_runmode", Command_RunMode, "Switch Run Mode");
 
 
 
@@ -1875,7 +1926,6 @@ public void OnClientPutInServer( int client )
 	IsMapMode[client] = true;
 	LastUsage[client] = 0;
 	isHudDrawed[client] = false;
-	TimeToDrawHud[client] = TIME_INVALID;
 	LastHudDrawing[client] = GetEngineTime();
 	char szSteam[100];
 	char szQuery[200];
