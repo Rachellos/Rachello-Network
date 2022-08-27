@@ -1308,6 +1308,23 @@ public void OnAllPluginsLoaded()
     }
 	g_ripext_loaded = LibraryExists("ripext");
     RegServerCmd("sm_plugins_update", cmdPluginUpdate);
+
+	char vote_plugins[3][100] = {"mapchooser", "nominations", "rockthevote"};
+	char filename[200];
+
+	for (int i; i < 3; i++)
+	{
+		BuildPath(Path_SM, filename, sizeof(filename), "plugins/%s.smx", vote_plugins[i]);
+		if(FileExists(filename))
+		{
+			char newfilename[200];
+			BuildPath(Path_SM, newfilename, sizeof(newfilename), "plugins/disabled/%s.smx", vote_plugins[i]);
+			ServerCommand("sm plugins unload %s", vote_plugins[i]);
+			if(FileExists(newfilename))
+				DeleteFile(newfilename);
+			RenameFile(newfilename, filename);
+		}
+	}
 }
 
 public Action cmdPluginUpdate(int args)

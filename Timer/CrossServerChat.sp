@@ -19,7 +19,7 @@ public Action CMD_SendMessage(client, args)
 												Message);
 	
 	char text[500];
-	DiscordWebHook hook = new DiscordWebHook(WEBHOOK);
+	DiscordWebHook hook = new DiscordWebHook(WEBHOOK_IRC);
 	hook.SlackMode = true;
 	hook.SetUsername( "Chat" );
 	Format(text, sizeof(text), "`%s` **%N:** %s", (System2_GetOS() == OS_WINDOWS) ? "LOCAL" : server_name[NAME_SHORT][server_id], client, Message);	
@@ -29,7 +29,7 @@ public Action CMD_SendMessage(client, args)
 
 	if(StrEqual(Message, "Ping", false))
 	{
-		hook = new DiscordWebHook(WEBHOOK);
+		hook = new DiscordWebHook(WEBHOOK_IRC);
 		hook.SetUsername("Chat");
 		hook.SetContent("Pong!");
 		hook.Send();

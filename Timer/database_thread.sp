@@ -728,22 +728,15 @@ public void Threaded_GetRank( Database hOwner, DBResultSet hQuery, const char[] 
 		int srank = hQuery.FetchInt( 2 );
 		int drank = hQuery.FetchInt( 3 );
 
-		if (srank > 0 || drank > 0)
+		if ((solly > 0.0 || solly > 0.0) && (srank > 0 || drank > 0))
 		{
-			if (srank > drank > 0)
-			{
-				CPrintToChatAll("\x0750DCFF%s {orange}(Rank %d Demoman){white} joining from \x0764E664%s", name, drank, Country );
-			}
-			else if (drank >= srank > 0)
+			if (drank >= srank)
 			{
 				CPrintToChatAll("\x0750DCFF%s {orange}(Rank %d Soldier){white} joining from \x0764E664%s", name, srank, Country );
 			}
 			else
 			{
-				if (srank <= 0)
-					CPrintToChatAll("\x0750DCFF%s {orange}(Rank %d Demoman){white} joining from \x0764E664%s", name, drank, Country );
-				else
-					CPrintToChatAll("\x0750DCFF%s {orange}(Rank %d Soldier){white} joining from \x0764E664%s", name, srank, Country );	
+				CPrintToChatAll("\x0750DCFF%s {orange}(Rank %d Demoman){white} joining from \x0764E664%s", name, drank, Country );
 			}
 		}
 		else
@@ -926,10 +919,9 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				transaction.AddQuery(szTrans);
 			}
 
-			// "XXX is ranked X/X in [XXXX XXXX]"
 			CPrintToChatClientAndSpec( client, CHAT_PREFIX..."Now ranked \x0750DCFF%i/%i"...CLR_TEXT..." on \x0750DCFF%s"...CLR_TEXT..."!", rank, outof, g_szRunName[NAME_LONG][run] );
 
-			if (rank < 11 && rank > 1 && run == RUN_MAIN )
+			if ( 1 < rank < 11 && run == RUN_MAIN )
 			{
 				char	szStyleFix[STYLEPOSTFIX_LENGTH];
 				GetStylePostfix( mode, szStyleFix, true );

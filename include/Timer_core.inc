@@ -14,7 +14,7 @@
 #define CONSOLE_PREFIX		"["...PLUGIN_NAME_CORE..."] " // Used only for console/server.
 
 #define BRUSH_MODEL				"models/props/cs_office/vending_machine.mdl"
-#define WEBHOOK "https://discord.com/api/webhooks/799962971068956692/po3TnHT3HTJ3EUJB0C8WNyoUuPTcJWA9OIVCdHOMJ20tMGkRvrCZu_47hlAXEpRmz4k7"
+#define WEBHOOK_IRC "https://discord.com/api/webhooks/799962971068956692/po3TnHT3HTJ3EUJB0C8WNyoUuPTcJWA9OIVCdHOMJ20tMGkRvrCZu_47hlAXEpRmz4k7"
 
 #define WEBHOOK_SERVER_ACTIONS "https://discord.com/api/webhooks/852928160181911578/v9EWBwfclsUh6BHixOKJjEWl5g-0EfjA1CKPqK8pqHPMChb-f8uGENBxL39O2WD23SiI"
 
@@ -287,3 +287,12 @@ native PlayerState Timer_GetState( int client );
 native int Timer_GetRun( int client );
 native int Timer_GetStyle( int client );
 native int Timer_GetMode( int client );
+
+native bool IsAutoExtendEnabled(int client);
+
+#if !defined REQUIRE_EXTENSIONS
+public void __ext_Timer_SetNTVOptional()
+{
+	MarkNativeAsOptional("IsAutoExtendEnabled");
+}
+#endif
