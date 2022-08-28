@@ -2247,19 +2247,19 @@ public void OnClientDisconnect( int client )
 	Weather_delayTime[client] = 0.0;
 	ClientConnectTime[client] = GetEngineTime() - ClientConnectTime[client];
 
-	FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i, lastseen = CURRENT_TIMESTAMP, total_hours = total_hours + %.1f, online = 0 WHERE steamid = '%s'",
-	g_fClientHideFlags[client],
-	ClientConnectTime[client],
-	szSteam );
-	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
+	// Id can be 0 if quitting before getting authorized.
+	if (g_iClientId[client] > 0)
+	{
+		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i, lastseen = CURRENT_TIMESTAMP, total_hours = total_hours + %.1f, online = 0 WHERE steamid = '%s'",
+		g_fClientHideFlags[client],
+		ClientConnectTime[client],
+		szSteam );
+		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 
-	DB_SaveClientData(client);
+		DB_SaveClientData(client);
+	}
 
 	RemoveAllPrevMenus(client);
-	
-
-	// Id can be 0 if quitting before getting authorized.
-
 
 	if ( g_iBuilderZone[client] != ZONE_INVALID )
 	{
