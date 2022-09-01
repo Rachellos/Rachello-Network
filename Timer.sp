@@ -1306,26 +1306,6 @@ public void OnAllPluginsLoaded()
     }
 	g_ripext_loaded = LibraryExists("ripext");
     RegServerCmd("sm_plugins_update", cmdPluginUpdate);
-
-	char vote_plugins[3][100] = {"mapchooser", "nominations", "rockthevote"};
-	char filename[200];
-
-	for (int i; i < 3; i++)
-	{
-		BuildPath(Path_SM, filename, sizeof(filename), "plugins/%s.smx", vote_plugins[i]);
-		if(FileExists(filename))
-		{
-			if (!DirExists("plugins/disabled/"))
-				CreateDirectory("plugins/disabled/", FPERM_U_READ|FPERM_U_WRITE|FPERM_U_EXEC|FPERM_G_READ|FPERM_G_EXEC|FPERM_O_READ|FPERM_O_EXEC);
-				
-			char newfilename[200];
-			BuildPath(Path_SM, newfilename, sizeof(newfilename), "plugins/disabled/%s.smx", vote_plugins[i]);
-			ServerCommand("sm plugins unload %s", vote_plugins[i]);
-			if(FileExists(newfilename))
-				DeleteFile(newfilename);
-			RenameFile(newfilename, filename);
-		}
-	}
 }
 
 public Action cmdPluginUpdate(int args)
@@ -1419,6 +1399,26 @@ public void OnConfigsExecuted()
 
 public void OnMapStart()
 {
+	char vote_plugins[3][100] = {"mapchooser", "nominations", "rockthevote"};
+	char filename[200];
+
+	for (int i; i < 3; i++)
+	{
+		BuildPath(Path_SM, filename, sizeof(filename), "plugins/%s.smx", vote_plugins[i]);
+		if(FileExists(filename))
+		{
+			if (!DirExists("plugins/disabled/"))
+				CreateDirectory("plugins/disabled/", FPERM_U_READ|FPERM_U_WRITE|FPERM_U_EXEC|FPERM_G_READ|FPERM_G_EXEC|FPERM_O_READ|FPERM_O_EXEC);
+				
+			char newfilename[200];
+			BuildPath(Path_SM, newfilename, sizeof(newfilename), "plugins/disabled/%s.smx", vote_plugins[i]);
+			ServerCommand("sm plugins unload %s", vote_plugins[i]);
+			if(FileExists(newfilename))
+				DeleteFile(newfilename);
+			RenameFile(newfilename, filename);
+		}
+	}
+	
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if ( g_hClientCPData[i] != null ) { delete g_hClientCPData[i]; g_hClientCPData[i] = null; }
