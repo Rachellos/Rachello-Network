@@ -547,7 +547,7 @@ public void Threaded_RetrieveClientData( Database hOwner, DBResultSet hQuery, co
 	if ( num > 1 )
 	{
 		// Should never happen.
-		PrintToChatAll( CHAT_PREFIX..."Found multiple records with the same Steam Id!!" );
+		CPrintToChatAll( CHAT_PREFIX..."Found multiple records with the same Steam Id!!" );
 	}
 	
 	if ( hQuery.RowCount )
@@ -732,21 +732,21 @@ public void Threaded_GetRank( Database hOwner, DBResultSet hQuery, const char[] 
 		{
 			if (drank >= srank)
 			{
-				CPrintToChatAll("\x0750DCFF%s {orange}(Rank %d Soldier){white} joining from \x0764E664%s", name, srank, Country );
+				CPrintToChatAll("{lightskyblue}%s {orange}(Rank %d Soldier){white} joining from {green}%s", name, srank, Country );
 			}
 			else
 			{
-				CPrintToChatAll("\x0750DCFF%s {orange}(Rank %d Demoman){white} joining from \x0764E664%s", name, drank, Country );
+				CPrintToChatAll("{lightskyblue}%s {orange}(Rank %d Demoman){white} joining from {green}%s", name, drank, Country );
 			}
 		}
 		else
 		{
-			CPrintToChatAll("\x0750DCFF%s {orange}(Unranked){white} joining from \x0764E664%s", name, Country );
+			CPrintToChatAll("{lightskyblue}%s {orange}(Unranked){white} joining from {green}%s", name, Country );
 		}
 	}
 	else
 	{
-		CPrintToChatAll("\x0750DCFF%s {orange}(Unranked){white} joining from \x0764E664%s", name, Country );
+		CPrintToChatAll("{lightskyblue}%s {orange}(Unranked){white} joining from {green}%s", name, Country );
 	}
 	delete hQuery;
 }
@@ -890,7 +890,7 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 			if (rank < 11 || szOldTimePts[client][run][mode] <= TIME_INVALID)
 			{
 				points3 = points + points2;
-				CPrintToChat(client, CHAT_PREFIX..."Gained "...CLR_CUSTOM1..."%.1f {white}%s points!", points3, (style == STYLE_DEMOMAN) ? "Demoman" : "Soldier" );
+				CPrintToChat(client, CHAT_PREFIX..."Gained {lightskyblue}%.1f {white}%s points!", points3, (style == STYLE_DEMOMAN) ? "Demoman" : "Soldier" );
 				
 				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = pts + %.1f%s WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? ", beaten = 0" : "", g_szCurrentMap, g_iClientId[client], run, mode);
 				transaction.AddQuery(szTrans);
@@ -919,13 +919,13 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				transaction.AddQuery(szTrans);
 			}
 
-			CPrintToChatClientAndSpec( client, CHAT_PREFIX..."Now ranked \x0750DCFF%i/%i"...CLR_TEXT..." on \x0750DCFF%s"...CLR_TEXT..."!", rank, outof, g_szRunName[NAME_LONG][run] );
+			CPrintToChatClientAndSpec( client, CHAT_PREFIX..."Now ranked {lightskyblue}%i/%i{white} on {lightskyblue}%s{white}!", rank, outof, g_szRunName[NAME_LONG][run] );
 
 			if ( 1 < rank < 11 && run == RUN_MAIN )
 			{
 				char	szStyleFix[STYLEPOSTFIX_LENGTH];
 				GetStylePostfix( mode, szStyleFix, true );
-				CPrintToChatAll(CHAT_PREFIX..."(%s%s) \x0764E664%N {white}finished the map with rank \x0764E664%i/%i{white}!",
+				CPrintToChatAll(CHAT_PREFIX..."(%s%s) {green}%N {white}finished the map with rank {green}%i/%i{white}!",
 				g_szStyleName[NAME_SHORT][style], szStyleFix,
 				client,
 				rank,
@@ -1009,22 +1009,22 @@ public void GetTiers_CallBack( Database hOwner, DBResultSet results, const char[
 
 		if (courses > 0)
 		{
-			FormatEx(szCourses, sizeof(szCourses)," {white}| \x0750DCFF%i {white}courses", courses);
+			FormatEx(szCourses, sizeof(szCourses)," {white}| {lightskyblue}%i {white}courses", courses);
 		}
 		if (bonuses > 0)
 		{
-			FormatEx(szBonuses, sizeof(szBonuses)," {white}| \x0750DCFF%i {white}bonuses", bonuses);
+			FormatEx(szBonuses, sizeof(szBonuses)," {white}| {lightskyblue}%i {white}bonuses", bonuses);
 		}
 
-		FormatEx(szInfo, sizeof(szInfo), ""...CHAT_PREFIX..."\x0750DCFF%s \x07FFFFFFtiers", map);
-		FormatEx(szInfo2, sizeof(szInfo2), ""...CHAT_PREFIX..."\x07FFFFFFSolly \x0750DCFFT%i \x07FFFFFF| Demo \x0750DCFFT%i%s%s", stier, dtier, szCourses, szBonuses);
+		FormatEx(szInfo, sizeof(szInfo), ""...CHAT_PREFIX..."{lightskyblue}%s \x07FFFFFFtiers", map);
+		FormatEx(szInfo2, sizeof(szInfo2), ""...CHAT_PREFIX..."\x07FFFFFFSolly {lightskyblue}T%i \x07FFFFFF| Demo {lightskyblue}T%i%s%s", stier, dtier, szCourses, szBonuses);
 
 		CPrintToChatAll(szInfo);
 		CPrintToChatAll(szInfo2);
 	}
 	else
 	{
-		PrintToChatAll(CHAT_PREFIX..."No match found");
+		CPrintToChatAll(CHAT_PREFIX..."No match found");
 	}
 
 	delete results;
@@ -1183,7 +1183,7 @@ public void Threaded_Init_Zones( Database hOwner, DBResultSet hQuery, const char
 		CreateZoneBeams( zone, vecMins, vecMaxs, iData[ZONE_ID], index );
 		zones++;
 	}
-	PrintToChatAll(CHAT_PREFIX..."Loaded \x0750DCFF%i zone(s)", zones );
+	CPrintToChatAll(CHAT_PREFIX..."Loaded {lightskyblue}%i zone(s)", zones );
 	
 	if ( !g_bZoneExists[ZONE_START][0] && !g_bZoneExists[ZONE_END][0] && !g_bZoneExists[ZONE_COURSE_1_START][0] && !g_bZoneExists[ZONE_COURSE_1_END][0] )
 	{
@@ -1490,7 +1490,7 @@ public void Threaded_DeleteRecord( Database hOwner, DBResultSet hQuery, const ch
 	
 	if ( client && IsClientInGame( client ) )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."Record was succesfully deleted!" );
+		CPrintToChat( client, CHAT_PREFIX..."Record was succesfully deleted!" );
 	}
 }
 

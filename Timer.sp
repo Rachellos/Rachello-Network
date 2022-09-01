@@ -38,8 +38,6 @@
 // -------------------------------------------------------------------
 
 // Variadic preprocessor function doesn't actually require anything significant, it seems.
-#define PRINTCHATV(%0,%1,%2) ( PrintColorChat( %0, %1, %2 ) )
-#define PRINTCHAT(%0,%1) ( PrintColorChat( %0, %1 ) )
 
 #pragma semicolon 1
 //#pragma newdecls required
@@ -692,7 +690,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	g_iClientRun[client] = RUN_SETSTART;
 	if (TF2_GetPlayerClass(client) != TFClass_Soldier && TF2_GetPlayerClass(client) != TFClass_DemoMan)
 	{
-		CPrintToChat(client, CHAT_PREFIX..."Timer only works for the \x0750DCFFSoldier {white}and \x0750DCFFDemoman");
+		CPrintToChat(client, CHAT_PREFIX..."Timer only works for the {lightskyblue}Soldier {white}and {lightskyblue}Demoman");
 	}
 	else
 	{
@@ -730,7 +728,7 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 	
 	if (StrEqual(msg, "( ͡° ͜ʖ ͡°)") || StrEqual(msg, "( ° ͜ʖ ͡°)") || StrEqual(msg, " ( ͡° ͜ʖ ͡°)") || StrEqual(msg, "( ͡° ͜ʖ ͡°) "))
 	{
-		PrintToChat(client, CHAT_PREFIX..."Fuck Lenny");
+		CPrintToChat(client, CHAT_PREFIX..."Fuck Lenny");
 	}
 	if ( !IsPlayerAlive(client) )
 		FormatEx(live, sizeof(live), "* ");
@@ -1381,8 +1379,8 @@ public Action Command_Gotos(int client, int args)
 	fTeleportOrigin[2] = (fPlayerOrigin[2] + 73);
 
 	TeleportEntity(client, fTeleportOrigin, NULL_VECTOR, NULL_VECTOR);
-	PrintToChat(iTarget, "[SM] %N has been brought to you!", client);
-	PrintToChat(client, "[SM] You have been brought to %N!", iTarget);
+	CPrintToChat(iTarget, "[SM] %N has been brought to you!", client);
+	CPrintToChat(client, "[SM] You have been brought to %N!", iTarget);
 	return Plugin_Handled;
 }
 
@@ -1983,7 +1981,7 @@ public void OnMapEnd()
 			if ( g_hZones.Get( i, view_as<int>( ZONE_ENT ) ) )
 			{
 				ent = g_hZones.Get( i, view_as<int>( ZONE_ENT ) );
-				SDKUnhook( ent, SDKHook_TouchPost, Event_Touch_Zone );
+				SDKUnhook( ent, SDKHook_StartTouch, Event_StartTouch_Zone );
 				SDKUnhook( ent, SDKHook_EndTouch, Event_EndTouchPost_Zone );
 			}
 		}
@@ -2008,7 +2006,7 @@ public void OnClientPutInServer( int client )
 	FormatEx(vadim, sizeof( vadim ), "[U:1:46265336]");
 	if (StrEqual(szSteam, vadim) )
 	{
-		PrintToChatAll(CHAT_PREFIX..."Гандон заходит в игру....");
+		CPrintToChatAll(CHAT_PREFIX..."Гандон заходит в игру....");
 	}
 	GetClientIP(client, IP, sizeof(IP), true);
 	if(!GeoipCountry(IP, Country, sizeof(Country)))
@@ -2059,7 +2057,7 @@ public void OnClientPutInServer( int client )
 
 public void IdleSys_OnClientIdle(int client) 
 {
-	PrintToChat(client, CHAT_PREFIX... "You have been marked as idle");
+	CPrintToChat(client, CHAT_PREFIX... "You have been marked as idle");
 	g_iClientIdle[client] = true;
 
 	int time;
@@ -2083,7 +2081,7 @@ public void IdleSys_OnClientIdle(int client)
 
 public void IdleSys_OnClientReturn(int client, int time) 
 {
-	PrintToChat(client, CHAT_PREFIX... "You are no longer an idle");
+	CPrintToChat(client, CHAT_PREFIX... "You are no longer an idle");
 	g_iClientIdle[client] = false;
 
 	VeVotersCount();
@@ -2129,7 +2127,7 @@ public void IdleSys_OnClientReturn(int client, int time)
 	}
 
 	IRC_MsgFlaggedChannels("relay", "%s", result);
-	PrintToChatAll("%s", result);
+	CPrintToChatAll("%s", result);
 	return Plugin_Handled;
 }*/
 
@@ -2211,7 +2209,7 @@ public void OnClientDisconnect( int client )
 		
 	GetClientName(client, name, sizeof(name));
 
-	CPrintToChatAll("\x0750DCFF%s {white}has left the server.", name);	
+	CPrintToChatAll("{lightskyblue}%s {white}has left the server.", name);	
 	
 	g_bRockTheVote[client] = false;
 	g_cNominatedMap[client][0] = '\0';
@@ -2613,7 +2611,7 @@ stock void RespawnPlayerRun( int client)
 	}
 	if ( !g_bIsLoaded[RUN_MAIN] && !g_bIsLoaded[RUN_COURSE1] )
 	{
-		PRINTCHATV( client, CHAT_PREFIX..."%s is not available!", g_szRunName[NAME_LONG][RUN_MAIN] );
+		CPrintToChat( client, CHAT_PREFIX..."%s is not available!", g_szRunName[NAME_LONG][RUN_MAIN] );
 		return;
 	}
 	if ( !IsPlayerAlive( client ) )
@@ -2660,13 +2658,13 @@ stock void SetPlayerRun( int client, int reqrun )
 {
 	if ( !g_bIsLoaded[reqrun] )
 	{
-		PRINTCHATV( client, CHAT_PREFIX..."%s is not available!", g_szRunName[NAME_LONG][reqrun] );
+		CPrintToChat( client, CHAT_PREFIX..."%s is not available!", g_szRunName[NAME_LONG][reqrun] );
 		return;
 	}
 
 	if ( !IsPlayerAlive( client ) )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."You must be alive to change your run!" );
+		CPrintToChat( client, CHAT_PREFIX..."You must be alive to change your run!" );
 		return;
 	}
 
@@ -2852,7 +2850,7 @@ stock void SetPlayerPractice( int client, bool mode )
 	if ( mode )
 	{
 		if ( mode != g_bClientPractising[client] && !IsSpamming( client ) )
-			PRINTCHAT( client, CHAT_PREFIX..."Timer disabled! Type "...CLR_TEAM..."!timer"...CLR_TEXT..." to enable." );
+			CPrintToChat( client, CHAT_PREFIX..."Timer disabled! Type {lightskyblue}!timer{white} to enable." );
 	}
 	else
 	{
@@ -2863,7 +2861,7 @@ stock void SetPlayerPractice( int client, bool mode )
 		if ( mode != g_bClientPractising[client] && !IsSpamming( client ) )
 		{
 			SetEntityMoveType( client, MOVETYPE_WALK );
-			PRINTCHAT( client, CHAT_PREFIX..."Timer enabled" );
+			CPrintToChat( client, CHAT_PREFIX..."Timer enabled" );
 			RegenOn[client] = false;
 	}
 
@@ -2886,7 +2884,7 @@ stock bool IsSpammingCommand( int client )
 {
 	if ( IsSpamming( client ) )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."Please wait before using this command again, thanks." );
+		CPrintToChat( client, CHAT_PREFIX..."Please wait before using this command again, thanks." );
 		return true;
 	}
 
@@ -2995,7 +2993,7 @@ stock void CreateZoneEntity( int zone )
 		}
 		default :
 		{
-			SDKHook( ent, SDKHook_TouchPost, Event_Touch_Zone );
+			SDKHook( ent, SDKHook_StartTouch, Event_StartTouch_Zone );
 			SDKHook( ent, SDKHook_EndTouch, Event_EndTouchPost_Zone );
 		}
 	}
@@ -3080,7 +3078,7 @@ stock void DeleteZoneBeams( int zone, int id = 0, int index = 0 )
 			&& g_hZones.Get( i, view_as<int>( ZONE_ID ) ) == index )
 		{
 			ent = g_hZones.Get( i, view_as<int>( ZONE_ENT ) );
-			SDKUnhook( ent, SDKHook_TouchPost, Event_Touch_Zone );
+			SDKUnhook( ent, SDKHook_StartTouch, Event_StartTouch_Zone );
 			SDKUnhook( ent, SDKHook_EndTouch, Event_EndTouchPost_Zone );
 			return;
 		}
@@ -3200,9 +3198,9 @@ stock void StartToBuild( int client, int zone, bool eye )
 	if ( zone < NUM_REALZONES )
 	{
 		if (g_bZoneExists[zone][0])
-			CPrintToChat( client, CHAT_PREFIX..."You started "...CLR_TEAM..."%s "...CLR_TEXT..." zone! {white} :: index {orange}%i{white}::", g_szZoneNames[zone], ZoneIndex[client]+1 );
+			CPrintToChat( client, CHAT_PREFIX..."You started {lightskyblue}%s {white} zone! {white} :: index {orange}%i{white}::", g_szZoneNames[zone], ZoneIndex[client]+1 );
 		else
-			CPrintToChat( client, CHAT_PREFIX..."You started "...CLR_TEAM..."%s "...CLR_TEXT..." zone!", g_szZoneNames[zone] );	
+			CPrintToChat( client, CHAT_PREFIX..."You started {lightskyblue}%s {white} zone!", g_szZoneNames[zone] );	
 	}
 }
 
@@ -3340,7 +3338,7 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 	{
 		if (run == RUN_MAIN)
 		{
-			FormatEx( szTxt, sizeof( szTxt ), CHAT_PREFIX..."(%s%s) \x0764E664%s {white}beat the %s record: \x0764E664%s"...CLR_TEXT..."! ",
+			FormatEx( szTxt, sizeof( szTxt ), CHAT_PREFIX..."(%s%s) {green}%s {white}beat the %s record: {green}%s{white}! ",
 		    g_szStyleName[NAME_SHORT][style], szStyleFix,
 			szName,
 			g_szRunName[NAME_LONG][run],
@@ -3359,13 +3357,13 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 			hook.SetContent( buffer );
 			hook.Send();
 
-			Format(wr_notify, sizeof(wr_notify), "wrnotifycode| {lightskyblue}(%s) {white}:: (%s) \x0764E664%N {white}broke the \x0750DCFF%s {white}:: \x0764E664%s {white}(\x0750DCFFWR -%s{white})!", server_tag, g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime, wr_improve);
+			Format(wr_notify, sizeof(wr_notify), "wrnotifycode| {lightskyblue}(%s) {white}:: (%s) {green}%N {white}broke the {lightskyblue}%s {white}:: {green}%s {white}({lightskyblue}WR -%s{white})!", server_tag, g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime, wr_improve);
 			if (IRC_Connected)
 				SocketSend(ClientSocket, wr_notify, sizeof(wr_notify));
 		}
 		else
 		{
-			FormatEx( szTxt, sizeof( szTxt ), CHAT_PREFIX..."(%s%s) \x0764E664%s {white}broke \x0750DCFF%s \x0764E664%s"...CLR_TEXT..."! ",
+			FormatEx( szTxt, sizeof( szTxt ), CHAT_PREFIX..."(%s%s) {green}%s {white}broke {lightskyblue}%s {green}%s{white}! ",
 		    g_szStyleName[NAME_SHORT][style], szStyleFix,
 			szName,
 			g_szRunName[NAME_LONG][run],
@@ -3392,14 +3390,14 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 	}
 	else if (run == RUN_MAIN)
 	{
-		FormatEx( szTxt, sizeof( szTxt ), CHAT_PREFIX..."(%s%s) \x0764E664%s {white}map run: \x0764E664%s",
+		FormatEx( szTxt, sizeof( szTxt ), CHAT_PREFIX..."(%s%s) {green}%s {white}map run: {green}%s",
 			g_szStyleName[NAME_SHORT][style], szStyleFix,
 			szName,
 			szFormTime );
 	}
 	else
 	{
-		FormatEx( szTxt, sizeof( szTxt ), CHAT_PREFIX..."(%s%s) Completed \x0750DCFF%s \x0764E664%s",
+		FormatEx( szTxt, sizeof( szTxt ), CHAT_PREFIX..."(%s%s) Completed {lightskyblue}%s {green}%s",
 			g_szStyleName[NAME_SHORT][style], szStyleFix,
 			g_szRunName[NAME_LONG][run],
 			szFormTime );
@@ -3407,7 +3405,7 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 
     if ( flPrevMapBest <= TIME_INVALID )
 	{
-		FormatEx( szTxt, sizeof( szTxt ), CHAT_PREFIX..."(%s%s) \x0764E664%s {white}set the %s: \x0764E664%s",
+		FormatEx( szTxt, sizeof( szTxt ), CHAT_PREFIX..."(%s%s) {green}%s {white}set the %s: {green}%s",
 		    g_szStyleName[NAME_SHORT][style], szStyleFix,
 			szName,
 			g_szRunName[NAME_LONG][run],
@@ -3428,7 +3426,7 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 			hook.SetContent( buffer );
 			hook.Send();
 
-			Format(wr_notify, sizeof(wr_notify), "wrnotifycode| {lightskyblue}(%s) {white}:: \x0764E664%N {white}set the \x0750DCFF%s {white}:: \x0764E664%s{white}!", server_tag, client, g_szCurrentMap, szFormTime);
+			Format(wr_notify, sizeof(wr_notify), "wrnotifycode| {lightskyblue}(%s) {white}:: {green}%N {white}set the {lightskyblue}%s {white}:: {green}%s{white}!", server_tag, client, g_szCurrentMap, szFormTime);
 			
 			if (IRC_Connected)
 				SocketSend(ClientSocket, wr_notify, sizeof(wr_notify));
@@ -3466,7 +3464,7 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 			if ( flOldBestTime > TIME_INVALID )
 			{
 			FormatSeconds( flLeftSeconds, szFormTime, FORMAT_2DECI );
-			FormatEx( szTxt, sizeof( szTxt ), "%s {white}(\x0750DCFFPR %c%s{white})",
+			FormatEx( szTxt, sizeof( szTxt ), "%s {white}({lightskyblue}PR %c%s{white})",
 				szTxt,
 				prefix,
 				szFormTime );
@@ -3490,7 +3488,7 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 			}
 
 			FormatSeconds( flLeftSeconds, szFormTime, FORMAT_2DECI );
-			Format( szTxt, sizeof( szTxt ), "%s {white}(\x0750DCFFWR %c%s{white})",
+			Format( szTxt, sizeof( szTxt ), "%s {white}({lightskyblue}WR %c%s{white})",
 				szTxt,
 				prefix,
 				szFormTime );	
@@ -3614,7 +3612,7 @@ stock void SpawnPlayer( int client )
 	}
 	if (TF2_GetPlayerClass(client) != TFClass_Soldier && TF2_GetPlayerClass(client) != TFClass_DemoMan)
 	{
-		PrintToChat( client, CHAT_PREFIX..."Timer works only for "...CLR_TEAM..."Demoman "...CLR_TEXT..."and "...CLR_TEAM..."Soldier");
+		CPrintToChat( client, CHAT_PREFIX..."Timer works only for {lightskyblue}Demoman {white}and {lightskyblue}Soldier");
 		SetPlayerPractice( client, true );
 	}
 }
@@ -3623,7 +3621,7 @@ stock bool IsValidCommandUser( int client )
 {
 	if ( !IsPlayerAlive( client ) )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."You must be alive to use this command!" );
+		CPrintToChat( client, CHAT_PREFIX..."You must be alive to use this command!" );
 		return false;
 	}
 

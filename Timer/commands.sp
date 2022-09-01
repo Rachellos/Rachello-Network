@@ -2,7 +2,7 @@ public Action Command_Version( int client, int args )
 {
 	if ( client )
 	{
-		PrintToChatAll( CHAT_PREFIX..."Running version "...CLR_TEAM...""...PLUGIN_VERSION_CORE...CLR_TEXT..." made by "...CLR_TEAM...""...PLUGIN_AUTHOR_CORE...CLR_TEXT..."." );
+		CPrintToChatAll( CHAT_PREFIX..."Running version {lightskyblue}"...PLUGIN_VERSION_CORE..." {white}made by {lightskyblue}"...PLUGIN_AUTHOR_CORE..."{white}." );
 	}
 	else
 	{
@@ -84,21 +84,21 @@ public void GetTimer(int client, int args)
 
 	if (g_iClientState[client] == STATE_END)
 	{
-		CPrintToChatAll(CHAT_PREFIX..."(%s%s) \x0764E664%N {white}state on \x0750DCFF%s End",
+		CPrintToChatAll(CHAT_PREFIX..."(%s%s) {green}%N {white}state on {lightskyblue}%s End",
 		g_szStyleName[NAME_SHORT][ g_iClientStyle[client] ], szStyleFix,
 		client,
 		g_szRunName[NAME_LONG][ g_iClientRun[client] ] );
 	}
 	else if (g_iClientState[client] == STATE_START)
 	{
-		CPrintToChatAll(CHAT_PREFIX..."(%s%s) \x0764E664%N {white}state on \x0750DCFF%s Start",
+		CPrintToChatAll(CHAT_PREFIX..."(%s%s) {green}%N {white}state on {lightskyblue}%s Start",
 		g_szStyleName[NAME_SHORT][ g_iClientStyle[client] ], szStyleFix,
 		client,
 		g_szRunName[NAME_LONG][ g_iClientRun[client] ] );
 	}
 	else if (g_iClientState[client] == STATE_RUNNING && g_iClientState[client] != STATE_SETSTART)
 	{
-		CPrintToChatAll(CHAT_PREFIX..."(%s%s) \x0764E664%N {white}run \x0750DCFF%s {white}with time: \x0764E664%s",
+		CPrintToChatAll(CHAT_PREFIX..."(%s%s) {green}%N {white}run {lightskyblue}%s {white}with time: {green}%s",
 		g_szStyleName[NAME_SHORT][ g_iClientStyle[client] ], szStyleFix,
 		client,
 		g_szRunName[NAME_LONG][ g_iClientRun[client] ],
@@ -1456,7 +1456,7 @@ public Action Command_Set_Start(int client, int args)
 	if (!IsPlayerAlive(client)) return Plugin_Handled;
 	
 	if (!(GetEntityFlags(client) & FL_ONGROUND)){
-		PRINTCHAT( client, CHAT_PREFIX..."This command can only be used on the ground." );
+		CPrintToChat( client, CHAT_PREFIX..."This command can only be used on the ground." );
 		return Plugin_Handled;
 	}
 	GetEntPropVector(client, Prop_Send, "m_vecOrigin", g_fClientRespawnPosition[client] );
@@ -1467,7 +1467,7 @@ public Action Command_Set_Start(int client, int args)
 	if ( g_fClientHideFlags[client] & HIDEHUD_SETSTART_POS )
 		g_fClientRespawnEyes[client][0] = 0.00;
 
-	PRINTCHAT( client, CHAT_PREFIX..."Starting position set. Use /clearstart or /clear to return to the default starting point." );
+	CPrintToChat( client, CHAT_PREFIX..."Starting position set. Use /clearstart or /clear to return to the default starting point." );
 	return Plugin_Handled;
 }
 
@@ -1482,7 +1482,7 @@ public Action Command_Clear_Start(int client, int args){
 		g_fClientRespawnAngles[client][i] = 0.0;
 	}
 
-	PRINTCHAT( client, CHAT_PREFIX..."Starting position reset." );
+	CPrintToChat( client, CHAT_PREFIX..."Starting position reset." );
 		
 		
 	return Plugin_Handled;
@@ -1675,7 +1675,7 @@ public Action Command_Practise_SavePoint( int client, int args )
 	
 	if ( !g_bClientPractising[client] )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."You have to be in "...CLR_TEAM..."timer disabled"...CLR_TEXT..." mode for use save and teleport! ("...CLR_TEAM..."!timer"...CLR_TEXT...")" );
+		CPrintToChat( client, CHAT_PREFIX..."You have to be in {lightskyblue}timer disabled{white} mode for use save and teleport! ({lightskyblue}!timer{white})" );
 		return Plugin_Handled;
 	}
 	
@@ -1686,7 +1686,7 @@ public Action Command_Practise_SavePoint( int client, int args )
 	
 	GetClientEyeAngles( client, g_SavePointEye[client] );
 	
-	PRINTCHAT( client, CHAT_PREFIX..."Saved location!" );
+	CPrintToChat( client, CHAT_PREFIX..."Saved location!" );
 	
 	return Plugin_Handled;
 }
@@ -1697,7 +1697,7 @@ public Action Command_Practise_GotoSavedLoc( int client, int args )
 	
 	if ( !g_bClientPractising[client] )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."You have to be in "...CLR_TEAM..."timer disabled"...CLR_TEXT..." mode for use save and teleport! ("...CLR_TEAM..."!timer"...CLR_TEXT...")" );
+		CPrintToChat( client, CHAT_PREFIX..."You have to be in {lightskyblue}timer disabled{white} mode for use save and teleport! ({lightskyblue}!timer{white})" );
 		return Plugin_Handled;
 	}
 	
@@ -1705,7 +1705,7 @@ public Action Command_Practise_GotoSavedLoc( int client, int args )
 	
 	TeleportEntity( client, g_SavePointOrig[client], g_SavePointEye[client], NULL_VECTOR );
 
-	PRINTCHAT( client, CHAT_PREFIX..."Teleported to Saved location!" );
+	CPrintToChat( client, CHAT_PREFIX..."Teleported to Saved location!" );
 	
 	return Plugin_Handled;
 }
@@ -1731,14 +1731,14 @@ public Action Command_Bonus(int client, int args)
 	{
 		if (!IsCharNumeric(szArg[i]))
 		{
-			PrintToChat(client, CHAT_PREFIX... "You must enter the bonus number");
+			CPrintToChat(client, CHAT_PREFIX... "You must enter the bonus number");
 			return Plugin_Handled;
 		}
 	}
 
 	if (!(0 < bonus))
 	{
-		PrintToChat(client, CHAT_PREFIX... "The bonus number is not entered correctly");
+		CPrintToChat(client, CHAT_PREFIX... "The bonus number is not entered correctly");
 	  	return Plugin_Handled;
 	}
 	if ((10+bonus) <= RUN_BONUS10 && g_bIsLoaded[10+bonus] )
@@ -1777,7 +1777,7 @@ public Action Command_Bonus(int client, int args)
 
 	if (bonus_count > 0)
 	{
-		CPrintToChat(client, CHAT_PREFIX... "Only \x0750DCFF%i {white}bonuses are available", bonus_count);
+		CPrintToChat(client, CHAT_PREFIX... "Only {lightskyblue}%i {white}bonuses are available", bonus_count);
 	}
 	else
 	{
@@ -1807,14 +1807,14 @@ public Action Command_Courses(int client, int args)
 	{
 		if (!IsCharNumeric(szArg[i]))
 		{
-			PrintToChat(client, CHAT_PREFIX... "You must enter the course number");
+			CPrintToChat(client, CHAT_PREFIX... "You must enter the course number");
 			return Plugin_Handled;
 		}
 	}
 
 	if (!(0 < course))
 	{
-		PrintToChat(client, CHAT_PREFIX... "The course number is not entered correctly");
+		CPrintToChat(client, CHAT_PREFIX... "The course number is not entered correctly");
 	  	return Plugin_Handled;
 	}
 	if (course <= RUN_COURSE10 && g_bIsLoaded[course] )
@@ -1856,7 +1856,7 @@ public Action Command_Courses(int client, int args)
 
 	if (course_count > 0)
 	{
-		CPrintToChat(client, CHAT_PREFIX... "Only \x0750DCFF%i {white}courses are available", course_count);
+		CPrintToChat(client, CHAT_PREFIX... "Only {lightskyblue}%i {white}courses are available", course_count);
 	}
 	else
 	{
@@ -1875,7 +1875,7 @@ stock void ClearStart(int client){
 	g_fClientRespawnAngles[client][1] = 0.0;
 	g_fClientRespawnAngles[client][2] = 0.0;
 	
-	PRINTCHAT( client, CHAT_PREFIX..."Starting position reset." );
+	CPrintToChat( client, CHAT_PREFIX..."Starting position reset." );
 	return Plugin_Handled;
 }
 
@@ -2129,15 +2129,15 @@ public void OnVideoInfoReceivedSolly(HTTPResponse response, any value)
 	if (response.Status != HTTPStatus_OK) {
 		// Failed to retrieve object
 		if(response.Status == 404) {
-			PrintToChat(client, CHAT_PREFIX..."Map not on Tempus",response.Status);
+			CPrintToChat(client, CHAT_PREFIX..."Map not on Tempus",response.Status);
 			return;
 		}
-		PrintToChat(client,"Error %d",response.Status);
+		CPrintToChat(client,"Error %d",response.Status);
 		return;
 	}
 	if (response.Data == null) {
 		// Invalid JSON response
-		PrintToChat(client,CHAT_PREFIX..."Invalid JSON response");
+		CPrintToChat(client,CHAT_PREFIX..."Invalid JSON response");
 		return;
 	}
 
@@ -2163,7 +2163,7 @@ public void OnVideoInfoReceivedSolly(HTTPResponse response, any value)
 	}
 	else
 	{
-		PrintToChat(client, CHAT_PREFIX..."No video.");
+		CPrintToChat(client, CHAT_PREFIX..."No video.");
 	}
 	delete video;
 	delete map_info;
@@ -2177,15 +2177,15 @@ public void OnVideoInfoReceivedDemo(HTTPResponse response, any value)
 	if (response.Status != HTTPStatus_OK) {
 		// Failed to retrieve object
 		if(response.Status == 404) {
-			PrintToChat(client, CHAT_PREFIX..."Map not on Tempus",response.Status);
+			CPrintToChat(client, CHAT_PREFIX..."Map not on Tempus",response.Status);
 			return;
 		}
-		PrintToChat(client,"Error %d",response.Status);
+		CPrintToChat(client,"Error %d",response.Status);
 		return;
 	}
 	if (response.Data == null) {
 		// Invalid JSON response
-		PrintToChat(client,CHAT_PREFIX..."Invalid JSON response");
+		CPrintToChat(client,CHAT_PREFIX..."Invalid JSON response");
 		return;
 	}
 
@@ -2211,7 +2211,7 @@ public void OnVideoInfoReceivedDemo(HTTPResponse response, any value)
 	}
 	else
 	{
-		PrintToChat(client, CHAT_PREFIX..."No video.");
+		CPrintToChat(client, CHAT_PREFIX..."No video.");
 	}
 	delete video;
 	delete map_info;
@@ -2258,12 +2258,12 @@ public Action Cmd_CallAdmin(int client, int argc) {
 		hook.Send();
 		delete hook;
 
-		CPrintToChat(client, CHAT_PREFIX..."\x0750DCFFCalled {white}an Admin");
+		CPrintToChat(client, CHAT_PREFIX..."{lightskyblue}Called {white}an Admin");
 		LastUsage[client] = GetTime();
 	}
 	else
 	{
-		CPrintToChat(client, CHAT_PREFIX..."Usage \x0750DCFF/calladmin <reason>");
+		CPrintToChat(client, CHAT_PREFIX..."Usage {lightskyblue}/calladmin <reason>");
 	}
 	return Plugin_Continue;
 }
@@ -2304,7 +2304,7 @@ public Action Command_Spectate( int client, int args )
 		}
 		else
 		{
-			PRINTCHAT( client, CHAT_PREFIX..."Couldn't find the player you were looking for." );
+			CPrintToChat( client, CHAT_PREFIX..."Couldn't find the player you were looking for." );
 		}
 	}
 	
@@ -2412,7 +2412,7 @@ public Action Command_RecordsPrint( int client, int args )
 
 	if ( args > 0 && !GetMapDisplayName(szTarget, displayName, sizeof(displayName)) )
 	{
-		PrintToChat(client, CHAT_PREFIX..."Map not found");
+		CPrintToChat(client, CHAT_PREFIX..."Map not found");
 		return Plugin_Handled;
 	}
 
@@ -2432,7 +2432,7 @@ public Action Command_CoursesRecordsPrint( int client, int args )
 
 	if ( args > 0 && !GetMapDisplayName(szTarget, displayName, sizeof(displayName)) )
 	{
-		PrintToChat(client, CHAT_PREFIX..."Map not found");
+		CPrintToChat(client, CHAT_PREFIX..."Map not found");
 		return Plugin_Handled;
 	}
 
@@ -2452,7 +2452,7 @@ public Action Command_BonusesRecordsPrint( int client, int args )
 
 	if ( args > 0 && !GetMapDisplayName(szTarget, displayName, sizeof(displayName)) )
 	{
-		PrintToChat(client, CHAT_PREFIX..."Map not found");
+		CPrintToChat(client, CHAT_PREFIX..."Map not found");
 		return Plugin_Handled;
 	}
 
@@ -2509,7 +2509,7 @@ public Action Command_PersonalRecords( int client, int args )
 		}
 		else
 		{
-			PrintToChat(client, CHAT_PREFIX..."Map not found");
+			CPrintToChat(client, CHAT_PREFIX..."Map not found");
 			return Plugin_Handled;
 		}
 	}
@@ -2539,7 +2539,7 @@ public Action Command_MapPoints( int client, int args )
 		}
 		else
 		{
-			PrintToChat(client, CHAT_PREFIX..."Map not found");
+			CPrintToChat(client, CHAT_PREFIX..."Map not found");
 			return Plugin_Handled;
 		}
 	}
@@ -2595,7 +2595,7 @@ public void MapPointsCallBack( Database hOwner, DBResultSet results, const char[
 
 			if (StrEqual(map, ""))
 			{
-				PrintToChat(client, CHAT_PREFIX..."Map not found");
+				CPrintToChat(client, CHAT_PREFIX..."Map not found");
 				delete mMenu;
 				return;
 			}
@@ -2918,7 +2918,7 @@ public void IncompleteRecordsCallBack( Database hOwner, DBResultSet results, con
 
 			if (StrEqual(player_name, ""))
 			{
-				PrintToChat(client, CHAT_PREFIX..."No player found");
+				CPrintToChat(client, CHAT_PREFIX..."No player found");
 				return;
 			}
 
@@ -3291,7 +3291,7 @@ public Action Command_Hide_Chat( int client, int args )
 {
 	if ( !client ) return Plugin_Handled;
 
-	PrintToChat(client, CHAT_PREFIX..."Chat \x0750DCFF%s", (g_fClientHideFlags[client] & HIDEHUD_CHAT) ? "ON" : "OFF");
+	CPrintToChat(client, CHAT_PREFIX..."Chat {lightskyblue}%s", (g_fClientHideFlags[client] & HIDEHUD_CHAT) ? "ON" : "OFF");
 
 	if (g_fClientHideFlags[client] & HIDEHUD_CHAT)
 	{
@@ -3319,7 +3319,7 @@ public Action Command_Level( int client, int args )
 		{
 			if (!IsCharNumeric(szLevel_id[i]))
 			{
-				PrintToChat(client, CHAT_PREFIX... "You must enter the level number");
+				CPrintToChat(client, CHAT_PREFIX... "You must enter the level number");
 				return;
 			}
 		}
@@ -3328,7 +3328,7 @@ public Action Command_Level( int client, int args )
 
 		if (!(0 < level_id < 201))
 		{
-			PrintToChat(client, CHAT_PREFIX... "The level number is not entered correctly");
+			CPrintToChat(client, CHAT_PREFIX... "The level number is not entered correctly");
 		  	return;
 		}
 		if (g_fClientLevelPos[level_id-1][0] != 0.0 || g_fClientLevelPos[level_id-1][1] != 0.0 || g_fClientLevelPos[level_id-1][2] != 0.0)
@@ -3350,7 +3350,7 @@ public Action Command_Level( int client, int args )
 
 		if (levels_count > 0)
 		{
-			CPrintToChat(client, CHAT_PREFIX... "Only \x0750DCFF%i {white}levels are available", levels_count);
+			CPrintToChat(client, CHAT_PREFIX... "Only {lightskyblue}%i {white}levels are available", levels_count);
 		}
 		else
 		{
@@ -3436,7 +3436,7 @@ public Action DWr( int client, int args)
 		}
 		else 
 		{
-			PrintToChat(client, CHAT_PREFIX... "\x07C8C8C8Wrong map name");
+			CPrintToChat(client, CHAT_PREFIX... "\x07C8C8C8Wrong map name");
 			return Plugin_Handled;
 		}
 	}
@@ -3467,7 +3467,7 @@ public void Threaded_DWr( Database hOwner, DBResultSet hQuery, const char[] szEr
 
 		FormatSeconds(time, szTime, FORMAT_2DECI);
 		
-		CPrintToChatAll(CHAT_PREFIX..."(Demo WR) \x0750DCFF%s{white} :: \x0764E664%s {white}:: \x0764E664%s", map, szTime, name);
+		CPrintToChatAll(CHAT_PREFIX..."(Demo WR) {lightskyblue}%s{white} :: {green}%s {white}:: {green}%s", map, szTime, name);
 	}
 	else
 	{
@@ -3488,7 +3488,7 @@ public Action SWr( int client, int args)
 		}
 		else 
 		{
-			PrintToChat(client, CHAT_PREFIX... "\x07C8C8C8Wrong map name");
+			CPrintToChat(client, CHAT_PREFIX... "\x07C8C8C8Wrong map name");
 			return Plugin_Handled;
 		}
 	}
@@ -3519,7 +3519,7 @@ public void Threaded_SWr( Database hOwner, DBResultSet hQuery, const char[] szEr
 
 		FormatSeconds(time, szTime, FORMAT_2DECI);
 
-		CPrintToChatAll(CHAT_PREFIX..."(Solly WR) \x0750DCFF%s{white} :: \x0764E664%s {white}:: \x0764E664%s", map, szTime, name);
+		CPrintToChatAll(CHAT_PREFIX..."(Solly WR) {lightskyblue}%s{white} :: {green}%s {white}:: {green}%s", map, szTime, name);
 	}
 	else
 	{
@@ -3582,7 +3582,7 @@ public void Threaded_ORank( Database hOwner, DBResultSet hQuery, const char[] sz
 		rank = hQuery.FetchInt( 1 );
 		allranks = hQuery.FetchInt( 2 );
 		points = hQuery.FetchFloat( 3 );
-		CPrintToChatAll(CHAT_PREFIX..."(Overall) \x0764E664%s {white}is ranked \x0750DCFF%i/%i {white}with \x0750DCFF%.0f {white}points", name, rank, allranks, points);
+		CPrintToChatAll(CHAT_PREFIX..."(Overall) {green}%s {white}is ranked {lightskyblue}%i/%i {white}with {lightskyblue}%.0f {white}points", name, rank, allranks, points);
 	}
 	else
 	{
@@ -3637,7 +3637,7 @@ public void Threaded_DRank( Database hOwner, DBResultSet hQuery, const char[] sz
 		rank = hQuery.FetchInt( 1 );
 		allranks = hQuery.FetchInt( 2 );
 		points = hQuery.FetchFloat( 3 );
-		CPrintToChatAll(CHAT_PREFIX..."(Demoman) \x0764E664%s {white}is ranked \x0750DCFF%i/%i {white}with \x0750DCFF%.0f {white}points", name, rank, allranks, points);
+		CPrintToChatAll(CHAT_PREFIX..."(Demoman) {green}%s {white}is ranked {lightskyblue}%i/%i {white}with {lightskyblue}%.0f {white}points", name, rank, allranks, points);
 	}
 	else
 	{
@@ -3700,7 +3700,7 @@ public void Threaded_SRank( Database hOwner, DBResultSet hQuery, const char[] sz
 		rank = hQuery.FetchInt( 1 );
 		allranks = hQuery.FetchInt( 2 );
 		points = hQuery.FetchFloat( 3 );
-		CPrintToChatAll(CHAT_PREFIX..."(Soldier) \x0764E664%s {white}is ranked \x0750DCFF%i/%i {white}with \x0750DCFF%.0f {white}points", name, rank, allranks, points);
+		CPrintToChatAll(CHAT_PREFIX..."(Soldier) {green}%s {white}is ranked {lightskyblue}%i/%i {white}with {lightskyblue}%.0f {white}points", name, rank, allranks, points);
 	}
 	else
 	{
@@ -3812,7 +3812,7 @@ public void Threaded_STime( Database hOwner, DBResultSet hQuery, const char[] sz
 		allranks = hQuery.FetchInt( 3);
 		hQuery.FetchString( 4, map, sizeof(map));
 		hQuery.FetchString( 5, name, sizeof(name));
-		CPrintToChatAll(CHAT_PREFIX..."(Solly) \x0764E664%s {white}is ranked \x0750DCFF%i/%i {white}on \x0764E664%s {white}with time: \x0764E664%s", name, rank, allranks, map, szTime);
+		CPrintToChatAll(CHAT_PREFIX..."(Solly) {green}%s {white}is ranked {lightskyblue}%i/%i {white}on {green}%s {white}with time: {green}%s", name, rank, allranks, map, szTime);
 	}
 	else
 	{
@@ -3924,7 +3924,7 @@ public void Threaded_DTime( Database hOwner, DBResultSet hQuery, const char[] sz
 		allranks = hQuery.FetchInt( 3);
 		hQuery.FetchString( 4, map, sizeof(map));
 		hQuery.FetchString( 5, name, sizeof(name));
-		CPrintToChatAll(CHAT_PREFIX..."(Demo) \x0764E664%s {white}is ranked \x0750DCFF%i/%i {white}on \x0764E664%s {white}with time: \x0764E664%s", name, rank, allranks, map, szTime);
+		CPrintToChatAll(CHAT_PREFIX..."(Demo) {green}%s {white}is ranked {lightskyblue}%i/%i {white}on {green}%s {white}with time: {green}%s", name, rank, allranks, map, szTime);
 	}
 	else
 	{
@@ -4000,28 +4000,28 @@ public int Handler_SetClassDEV( Menu mMenu, MenuAction action, int client, int i
 		if (args == 1)
 		{
 			FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET solly = 1, demo = 0 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
-			CPrintToChatAll(CHAT_PREFIX..."Regen for Soldier have been \x0764E664Disabled {white}for \x0764E664%s {white}<\x0750DCFF%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
+			CPrintToChatAll(CHAT_PREFIX..."Regen for Soldier have been {green}Disabled {white}for {green}%s {white}<{lightskyblue}%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
 			szClass[tier_run[client]][MODE_SOLDIER] = 1;
 			szClass[tier_run[client]][MODE_DEMOMAN] = 0;
 		}
 		else if (args == 2)
 		{
 			FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET solly = 0, demo = 1 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
-			CPrintToChatAll(CHAT_PREFIX..."Regen for Demoman have been \x0764E664Disabled {white}for \x0764E664%s {white}<\x0750DCFF%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
+			CPrintToChatAll(CHAT_PREFIX..."Regen for Demoman have been {green}Disabled {white}for {green}%s {white}<{lightskyblue}%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
 			szClass[tier_run[client]][MODE_DEMOMAN] = 1;
 			szClass[tier_run[client]][MODE_SOLDIER] = 0;	
 		}
 		else if (args == 3)
 		{
 			FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET solly = 1, demo = 1 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
-			CPrintToChatAll(CHAT_PREFIX..."Regen for both classes have been \x0764E664Disabled {white}for \x0764E664%s {white}<\x0750DCFF%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
+			CPrintToChatAll(CHAT_PREFIX..."Regen for both classes have been {green}Disabled {white}for {green}%s {white}<{lightskyblue}%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
 			szClass[tier_run[client]][MODE_DEMOMAN] = 1;
 			szClass[tier_run[client]][MODE_SOLDIER] = 1;
 		}
 		else if (args == 4)
 		{
 			FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET solly = 0, demo = 0 WHERE map_name = '%s' AND run = %i", g_szCurrentMap, tier_run[client] );
-			CPrintToChatAll(CHAT_PREFIX..."Regen for both classes have been \x0764E664Enabled {white}for \x0764E664%s {white}<\x0750DCFF%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
+			CPrintToChatAll(CHAT_PREFIX..."Regen for both classes have been {green}Enabled {white}for {green}%s {white}<{lightskyblue}%s{white}>", g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
 			szClass[tier_run[client]][MODE_DEMOMAN] = 0;
 			szClass[tier_run[client]][MODE_SOLDIER] = 0;
 		}
@@ -4113,7 +4113,7 @@ public int Handler_SetTierDEV( Menu mMenu, MenuAction action, int client, int it
 	{
 		FormatEx(szQuery, sizeof(szQuery), "UPDATE "...TABLE_MAPINFO..." SET dtier = %i WHERE map_name = '%s' AND run = %i", args, g_szCurrentMap, tier_run[client] );
 		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
-		CPrintToChatAll(CHAT_PREFIX..."\x0764E664Demoman {white}Tier {lightskyblue}%i {white}have been set for \x0764E664%s {white}<\x0750DCFF%s{white}>", args, g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
+		CPrintToChatAll(CHAT_PREFIX..."{green}Demoman {white}Tier {lightskyblue}%i {white}have been set for {green}%s {white}<{lightskyblue}%s{white}>", args, g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
 		SetClassDEV(client, tier_run[client]);
 		g_Tiers[tier_run[client]][MODE_DEMOMAN] = args;
 	}
@@ -4126,7 +4126,7 @@ public int Handler_SetTierDEV( Menu mMenu, MenuAction action, int client, int it
 			SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 		}
 		SetTierDEV( client, tier_run[client], 1 );
-		CPrintToChatAll(CHAT_PREFIX..."\x0764E664Soldier {white}Tier {lightskyblue}%i {white}have been set for \x0764E664%s {white}<\x0750DCFF%s{white}>", args, g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
+		CPrintToChatAll(CHAT_PREFIX..."{green}Soldier {white}Tier {lightskyblue}%i {white}have been set for {green}%s {white}<{lightskyblue}%s{white}>", args, g_szCurrentMap, g_szRunName[NAME_LONG][tier_run[client]] );
 		g_Tiers[tier_run[client]][MODE_SOLDIER] = args;	
 	}
 	}
@@ -4268,7 +4268,7 @@ public Action Command_Practise_Noclip( int client, int args )
 	}
 	else SetEntityMoveType( client, MOVETYPE_WALK );
 
-	CPrintToChat(client, "Noclip \x0750DCFF%s", (GetEntityMoveType( client ) == MOVETYPE_WALK) ? "OFF" : "ON");
+	CPrintToChat(client, "Noclip {lightskyblue}%s", (GetEntityMoveType( client ) == MOVETYPE_WALK) ? "OFF" : "ON");
 	
 	return Plugin_Handled;
 }

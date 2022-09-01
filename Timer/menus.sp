@@ -180,13 +180,13 @@ public int Handler_Hud( Menu mMenu, MenuAction action, int client, int item )
 	}
 	if ( action == MenuAction_Cancel )
 	{
-		PrintToChat(client, CHAT_PREFIX..."Saving settings...");
+		CPrintToChat(client, CHAT_PREFIX..."Saving settings...");
 		GetClientSteam(client, szSteam, sizeof(szSteam)	);
 		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
 		g_fClientHideFlags[client],
 		szSteam);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
-		PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
+		CPrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 	}
 
 	if ( action == MenuAction_Select )
@@ -209,13 +209,13 @@ public int Handler_Hud( Menu mMenu, MenuAction action, int client, int item )
 		}
 		else if ( item == 10 )
 		{
-			PrintToChat(client, CHAT_PREFIX..."Saving settings...");
+			CPrintToChat(client, CHAT_PREFIX..."Saving settings...");
 			GetClientSteam(client, szSteam, sizeof(szSteam)	);
 			FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
 			g_fClientHideFlags[client],
 			szSteam);
 			SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
-			PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
+			CPrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		}
 	}
 	return 0;
@@ -239,13 +239,13 @@ public int Handler_HudRHud( Menu mMenu, MenuAction action, int client, int item 
 		
 		char szQuery[192];
 		char szSteam[100];
-		PrintToChat(client, CHAT_PREFIX..."Saving settings...");
+		CPrintToChat(client, CHAT_PREFIX..."Saving settings...");
 		GetClientSteam(client, szSteam, sizeof(szSteam)	);
 		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
 		g_fClientHideFlags[client],
 		szSteam);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
-		PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
+		CPrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		return 0;
 	}
 
@@ -566,13 +566,13 @@ public int Handler_HudChat( Menu mMenu, MenuAction action, int client, int item 
 		
 		char szQuery[192];
 		char szSteam[100];
-		PrintToChat(client, CHAT_PREFIX..."Saving settings...");
+		CPrintToChat(client, CHAT_PREFIX..."Saving settings...");
 		GetClientSteam(client, szSteam, sizeof(szSteam)	);
 		FormatEx( szQuery, sizeof( szQuery ), "UPDATE "...TABLE_PLYDATA..." SET hideflags = %i WHERE steamid = '%s'",
 		g_fClientHideFlags[client],
 		szSteam);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
-		PrintToChat(client, CHAT_PREFIX..."Settings have been saved");
+		CPrintToChat(client, CHAT_PREFIX..."Settings have been saved");
 		return 0;
 	}
 

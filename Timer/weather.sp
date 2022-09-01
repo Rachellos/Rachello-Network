@@ -15,13 +15,13 @@ public Action CMD_Weather(int client, int args)
 		}
 		else 
 		{
-			PrintToChat(client, CHAT_PREFIX... "Can not get your IP.");
+			CPrintToChat(client, CHAT_PREFIX... "Can not get your IP.");
 			return Plugin_Handled;
     	}
 	}
 	else if (!GetClientIP(client, ip, sizeof(ip), true))
 	{
-		PrintToChat(client, CHAT_PREFIX... "Can not get your IP.");
+		CPrintToChat(client, CHAT_PREFIX... "Can not get your IP.");
 		return Plugin_Handled;
 	}
 
@@ -83,7 +83,7 @@ public void OnWeatherInfoReceived(HTTPResponse response, any client, const char[
 	else 
 		FormatEx(TempColor, sizeof(TempColor), "{cyan}");
 			
-	FormatEx(FinallText, sizeof(FinallText), CHAT_PREFIX..."In the \x0764E664%s/%s {white}now %s%.0f℃ {white}(%s).", country, city, TempColor, temp, text);
+	FormatEx(FinallText, sizeof(FinallText), CHAT_PREFIX..."In the {green}%s/%s {white}now %s%.0f℃ {white}(%s).", country, city, TempColor, temp, text);
 
 	CPrintToChatAll(FinallText);
 

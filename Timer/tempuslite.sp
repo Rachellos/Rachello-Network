@@ -108,15 +108,15 @@ public void OnMapInfoReceived(HTTPResponse response, any value)
 	if (response.Status != HTTPStatus_OK) {
 		// Failed to retrieve object
 		if(response.Status == 404) {
-			PrintToChat(client,"Map not on Tempus",response.Status);
+			CPrintToChat(client,"Map not on Tempus",response.Status);
 			return;
 		}
-		PrintToChat(client,"Error %d",response.Status);
+		CPrintToChat(client,"Error %d",response.Status);
 		return;
 	}
 	if (response.Data == null) {
 		// Invalid JSON response
-		PrintToChat(client,"Invalid JSON response");
+		CPrintToChat(client,"Invalid JSON response");
 		return;
 	}
 
@@ -152,12 +152,12 @@ public void OnMapInfoReceivedFromQuery(HTTPResponse response, any value) {
 
 	if (response.Status != HTTPStatus_OK) {
 		// Failed to retrieve object
-		PrintToChat(client,"Error %d",response.Status);
+		CPrintToChat(client,"Error %d",response.Status);
 		return;
 	}
 	if (response.Data == null) {
 		// Invalid JSON response
-		PrintToChat(client,"Invalid JSON response");
+		CPrintToChat(client,"Invalid JSON response");
 		return;
 	}
 
@@ -165,7 +165,7 @@ public void OnMapInfoReceivedFromQuery(HTTPResponse response, any value) {
 	JSONArray mResults = view_as<JSONArray>(qResults.Get("maps"));
 
 	if(mResults.Length == 0) {
-		PrintToChat(client,"No maps found");
+		CPrintToChat(client,"No maps found");
 		delete mResults;
 		delete qResults;
 		return;
@@ -225,8 +225,8 @@ public void DisplayMapGeneral(int client)
 	delete tier_info;
 	delete mapObj;
 
-	PrintToChatAll("\x07C8C8C8Tempus | \x0750DCFF%s \x07FFFFFFby \x0764E664%s", name, author);
-	PrintToChatAll("\x07C8C8C8Tempus | \x07FFFFFFSolly \x0750DCFF%s \x07FFFFFF| Demo \x0750DCFF%s", s_tier, d_tier);
+	CPrintToChatAll("\x07C8C8C8Tempus | {lightskyblue}%s \x07FFFFFFby {green}%s", name, author);
+	CPrintToChatAll("\x07C8C8C8Tempus | \x07FFFFFFSolly {lightskyblue}%s \x07FFFFFF| Demo {lightskyblue}%s", s_tier, d_tier);
 
 }
 
@@ -349,12 +349,12 @@ public void OnTopTimesDownloaded(HTTPResponse response, any value) {
 
 	if (response.Status != HTTPStatus_OK) {
 		// Failed to retrieve object
-		PrintToChat(client,"Error %d",response.Status);
+		CPrintToChat(client,"Error %d",response.Status);
 		return;
 	}
 	if (response.Data == null) {
 		// Invalid JSON response
-		PrintToChat(client,"Invalid JSON response");
+		CPrintToChat(client,"Invalid JSON response");
 		return;
 	}
 
@@ -414,12 +414,12 @@ public void OnSingleRecordDownloaded(HTTPResponse response, int client) {
 
 	if (response.Status != HTTPStatus_OK) {
 		// Failed to retrieve object
-		PrintToChat(client,"Error %d",response.Status);
+		CPrintToChat(client,"Error %d",response.Status);
 		return;
 	}
 	if (response.Data == null) {
 		// Invalid JSON response
-		PrintToChat(client,"Invalid JSON response");
+		CPrintToChat(client,"Invalid JSON response");
 		return;
 	}
 
@@ -623,7 +623,7 @@ public int DemoInfoHandler(Menu mMenu, MenuAction action, int client, int item) 
 	if (action == MenuAction_Select) {
 		if(item == 1) {
 			//Print demo link to client
-			PrintToChat(client,"\x07C8C8C8Tempus | \x0750DCFF%s",g_demoLink[client]);
+			CPrintToChat(client,"\x07C8C8C8Tempus | {lightskyblue}%s",g_demoLink[client]);
 		} else if(item == 3) {
 			//Refresh panel
 			DisplayDemoInfo(client);

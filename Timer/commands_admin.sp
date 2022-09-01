@@ -4,7 +4,7 @@ public Action Command_Admin_ZoneEnd( int client, int args )
 	
 	if ( g_iBuilderZone[client] <= ZONE_INVALID )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."You haven't even started to build!" );
+		CPrintToChat( client, CHAT_PREFIX..."You haven't even started to build!" );
 		return Plugin_Handled;
 	}
 	
@@ -116,10 +116,10 @@ public Action Command_Admin_ZoneEnd( int client, int args )
 			SetupZoneSpawns();
 			
 			g_bIsLoaded[i/2] = true;
-			PrintColorChatAll( client, CHAT_PREFIX...""...CLR_TEAM..."%s"...CLR_TEXT..." is now available!", g_szRunName[NAME_LONG][i/2] );
+			PrintColorChatAll( client, CHAT_PREFIX..."{lightskyblue}%s{white} is now available!", g_szRunName[NAME_LONG][i/2] );
 			for (int r=0; r < NUM_RUNS; r++)
 				if (g_bIsLoaded[r] && g_Tiers[r][MODE_DEMOMAN] == -1)
-					CPrintToChat(client, CHAT_PREFIX..."No tiers set for the \x0764E664%s {white}(\x0750DCFF/settier{white})", g_szRunName[NAME_LONG][r]);
+					CPrintToChat(client, CHAT_PREFIX..."No tiers set for the {green}%s {white}({lightskyblue}/settier{white})", g_szRunName[NAME_LONG][r]);
 		}
 	}
 	
@@ -151,14 +151,14 @@ public Action Command_Admin_ZoneEnd( int client, int args )
 
 	if ( zone == ZONE_CP )
 	{
-		PRINTCHATV( client, CHAT_PREFIX..."Created "...CLR_TEAM..."%s %i"...CLR_TEXT..." successfully!", g_szZoneNames[zone], id+1 );
+		CPrintToChat( client, CHAT_PREFIX..."Created {lightskyblue}%s %i{white} successfully!", g_szZoneNames[zone], id+1 );
 	}
 	else
 	{
 		if (ZoneIndex[client] <= 0)
-			PRINTCHATV( client, CHAT_PREFIX..."Created "...CLR_TEAM..."%s"...CLR_TEXT..." successfully!", g_szZoneNames[zone] );
+			CPrintToChat( client, CHAT_PREFIX..."Created {lightskyblue}%s{white} successfully!", g_szZoneNames[zone] );
 		else
-			CPrintToChatAll( CHAT_PREFIX..."Created "...CLR_TEAM..."%s {white}::index {orange}%i{white}::"...CLR_TEXT..." successfully!", g_szZoneNames[zone], ZoneIndex[client]+1 );
+			CPrintToChatAll( CHAT_PREFIX..."Created {lightskyblue}%s {white}::index {orange}%i{white}::{white} successfully!", g_szZoneNames[zone], ZoneIndex[client]+1 );
 	}
 	
 	ResetBuilding( client );
@@ -175,7 +175,7 @@ public Action Command_Admin_ZoneCancel( int client, int args )
 	
 	if ( g_iBuilderZone[client] == ZONE_INVALID )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."You have no zone to cancel!" );
+		CPrintToChat( client, CHAT_PREFIX..."You have no zone to cancel!" );
 		FakeClientCommand(client, "sm_zone");
 		return Plugin_Handled;
 	}
@@ -194,7 +194,7 @@ public Action Command_Admin_ZoneEdit_SelectCur( int client, int args )
 	int len = g_hZones.Length;
 	if ( g_hZones == null || !len )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."There are no zones to change!" );
+		CPrintToChat( client, CHAT_PREFIX..."There are no zones to change!" );
 		
 		FakeClientCommand( client, "sm_zone" );
 		
@@ -234,7 +234,7 @@ public Action Command_Admin_ZoneEdit_SelectCur( int client, int args )
 		}
 	}
 	
-	PRINTCHAT( client, CHAT_PREFIX..."Sorry, couldn't find zones." );
+	CPrintToChat( client, CHAT_PREFIX..."Sorry, couldn't find zones." );
 	
 	FakeClientCommand( client, "sm_zoneedit" );
 	

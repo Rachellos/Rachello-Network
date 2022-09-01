@@ -7,7 +7,7 @@
 
 #define PLUGIN_VERSION_CORE	"2.2"
 #define PLUGIN_AUTHOR_CORE	"Rachello"
-#define PLUGIN_NAME_CORE	"Timer"
+#define PLUGIN_NAME_CORE	"Rachello Debug | "
 #define PLUGIN_URL_CORE		"https://github.com/Rachellos"
 
 
@@ -22,16 +22,8 @@
 
 #define CHATLOGS_WEBHOOK "https://discord.com/api/webhooks/1005816476512551023/yimvfcup59j4IPfmQKqE4e9ySit-MZZjWDH-tLOmqARSwmtOv-OjK767fAsB55a-fa8K"
 
-#define CLR_CUSTOM1		"\x0766CCCC" // Teal
-#define CLR_CUSTOM2		"\x073399FF" // Light blue
-#define CLR_CUSTOM3		"\x07E71470" // Purple
-#define CLR_CUSTOM4		"\x07434343" // Gray
-
-#define CLR_TEXT		"\x07FFFFFF" // Default text color. (White)
-#define CLR_TEAM		"\x0750DCFF" // Team color
-
-#define CHAT_PREFIX		"\x07C8C8C8Tempus| "...CLR_TEXT
-#define CHAT_PREFIX_TIP		"\x07C8C8C8Tip | "...CLR_TEXT
+#define CHAT_PREFIX		"\x07C8C8C8Rachellos| {white}"
+#define CHAT_PREFIX_TIP		"\x07C8C8C8Hint| {white}"
 
 #define NUM_REALZONES	42
 #define NUM_REALZONES2	21

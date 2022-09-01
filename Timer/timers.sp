@@ -3,7 +3,7 @@ public Action Timer_Connected( Handle hTimer, int client )
 {
     if ( !(client = GetClientOfUserId( client )) ) return Plugin_Handled;
 
-    CPrintToChat( client,  CHAT_PREFIX..."Welcome to the \x0750DCFFRachello Network {white}!");
+    CPrintToChat( client,  CHAT_PREFIX..."Welcome to the {lightskyblue}Rachello Network {white}!");
 
     char i_SteamID[50];
 	GetClientAuthId(client, AuthId_Steam3, i_SteamID, sizeof(i_SteamID));
@@ -11,7 +11,7 @@ public Action Timer_Connected( Handle hTimer, int client )
  
     if ( !g_bIsLoaded[RUN_MAIN] && !g_bIsLoaded[RUN_COURSE1])
     {
-        PRINTCHAT( client, CHAT_PREFIX..."No records are available for this map!" );
+        CPrintToChat( client, CHAT_PREFIX..."No records are available for this map!" );
     }
    
     return Plugin_Handled;
@@ -40,15 +40,15 @@ public Action Timer_Ad( Handle hTimer )
 {
 	char ad[9][300] = 
     {
-    	"Use \x0750DCFF/settings {white}to customise your HUD, chat and more!",
-    	"Welcome to the \x0750DCFFRachello Jump Network{white}!",
-        "You can activate fast rendering of the HUD in \x0750DCFF/settings {white}-> Central HUD",
+    	"Use {lightskyblue}/settings {white}to customise your HUD, chat and more!",
+    	"Welcome to the {lightskyblue}Rachello Jump Network{white}!",
+        "You can activate fast rendering of the HUD in {lightskyblue}/settings {white}-> Central HUD",
     	"Join us on Discord at {lightskyblue}discord.gg/8khRBCEu5C",
-    	"Does your game freeze sometimes when another player joins? Try setting \x0750DCFFcl_allowdownload 0 {white}to disable downloading player sprays.",
-    	"Type \x0750DCFF/p {white}to view your stats!",
-    	"Type \x0750DCFF/top {white}for the best times.",
-    	"Need an admin? Use \x0750DCFF!calladmin {white}for any urgent issues and we'll get back to you when possible.",
-    	"Don't know where to go, or how to do a jump? Try \x0750DCFF/svid {white}and \x0750DCFF/dvid {white}to watch a showcase (not available for all maps).",
+    	"Does your game freeze sometimes when another player joins? Try setting {lightskyblue}cl_allowdownload 0 {white}to disable downloading player sprays.",
+    	"Type {lightskyblue}/p {white}to view your stats!",
+    	"Type {lightskyblue}/top {white}for the best times.",
+    	"Need an admin? Use {lightskyblue}!calladmin {white}for any urgent issues and we'll get back to you when possible.",
+    	"Don't know where to go, or how to do a jump? Try {lightskyblue}/svid {white}and {lightskyblue}/dvid {white}to watch a showcase (not available for all maps).",
     };
 
     int arr_len = 8;
@@ -466,11 +466,11 @@ public Action Timer_DrawZoneBeams( int client, int args )
 
         if (zone != ZONE_CP)
         {
-            CPrintToChat(client, CHAT_PREFIX..."Drawing \x0750DCFF%i {white}trigger%s for \x0750DCFF%s!", indexes, (indexes > 1) ? "s":"", g_szZoneNames[zone]);    
+            CPrintToChat(client, CHAT_PREFIX..."Drawing {lightskyblue}%i {white}trigger%s for {lightskyblue}%s!", indexes, (indexes > 1) ? "s":"", g_szZoneNames[zone]);    
         }
         else
         {
-            CPrintToChat(client, CHAT_PREFIX..."Drawing \x0750DCFF1 {white}trigger%s for \x0750DCFFCheckpoint %i!", (Cp_Id > 1) ? "s":"", Cp_Id+1);     
+            CPrintToChat(client, CHAT_PREFIX..."Drawing {lightskyblue}1 {white}trigger%s for {lightskyblue}Checkpoint %i!", (Cp_Id > 1) ? "s":"", Cp_Id+1);     
         }
     }
     return Plugin_Continue;

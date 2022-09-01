@@ -33,11 +33,11 @@ stock void DB_LogError( const char[] szMsg, int client = 0, const char[] szClien
 	{
 		if ( szClientMsg[0] != '\0' )
 		{
-			PRINTCHAT( client, CHAT_PREFIX..."%s", szClientMsg );
+			CPrintToChat( client, CHAT_PREFIX..."%s", szClientMsg );
 		}
 		else
 		{
-			PRINTCHAT( client, CHAT_PREFIX..."Sorry, something went wrong." );
+			CPrintToChat( client, CHAT_PREFIX..."Sorry, something went wrong." );
 		}
 	}
 }
@@ -852,7 +852,7 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 
 			if (DeleteFile(path))
 			{
-				CPrintToChat(client, CHAT_PREFIX..."\x0750DCFFSuccess. {white}Demo {red}Deleted{white}!");
+				CPrintToChat(client, CHAT_PREFIX..."{lightskyblue}Success. {white}Demo {red}Deleted{white}!");
 				g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_DELETED, DemoUrlClient[client]);
 			}
 			else
@@ -990,9 +990,9 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 			if (!g_iClientCpsEntered[client][i])
 			{
 				if (count > 0)
-					FormatEx(miss, sizeof(miss), "%s, \x0750DCFF%i{white}", miss, i+1);
+					FormatEx(miss, sizeof(miss), "%s, {lightskyblue}%i{white}", miss, i+1);
 				else
-					FormatEx(miss, sizeof(miss), "\x0750DCFF%i{white}", i+1);
+					FormatEx(miss, sizeof(miss), "{lightskyblue}%i{white}", i+1);
 
 				missed = true;
 				count++;

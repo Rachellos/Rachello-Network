@@ -215,7 +215,7 @@ public Action Command_Admin_Levels( int client, int args )
 	if (!IsPlayerAlive(client)) return Plugin_Handled;
 	if ( g_iBuilderZone[client] != ZONE_INVALID )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."You've started to build a zone!" );
+		CPrintToChat( client, CHAT_PREFIX..."You've started to build a zone!" );
 		return Plugin_Handled;
 	}
 	
@@ -256,7 +256,7 @@ public void CreateZone(int client, int type)
 	
 	if ( g_iBuilderZone[client] != ZONE_INVALID )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."You've already started to build a zone!" );
+		CPrintToChat( client, CHAT_PREFIX..."You've already started to build a zone!" );
 		return;
 	}
 
@@ -604,7 +604,7 @@ public int Handler_LevelCreate( Menu mMenu, MenuAction action, int client, int i
 		g_hDatabase.Format(query, sizeof(query), "INSERT INTO levels VALUES( %i, '%s', %.1f, %.1f, %.1f, %.1f, %.1f, %.1f )", levels_count, g_szCurrentMap, g_fClientLevelPos[levels_count][0], g_fClientLevelPos[levels_count][1], g_fClientLevelPos[levels_count][2], g_fClientLevelAng[levels_count][0], g_fClientLevelAng[levels_count][1], g_fClientLevelAng[levels_count][2]);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
 
-		CPrintToChat(client, CHAT_PREFIX..."Level \x0750DCFF%i {white}has been created!", levels_count+1);
+		CPrintToChat(client, CHAT_PREFIX..."Level {lightskyblue}%i {white}has been created!", levels_count+1);
 		FakeClientCommand( client, "sm_startlevels" );
 	}
 	else if (item == 1)
@@ -677,7 +677,7 @@ public int Handler_ChangeLevel( Menu mMenu, MenuAction action, int client, int i
 		g_hDatabase.Format(query, sizeof(query), "Update levels SET pos0 = %.1f, pos1 = %.1f, pos2 = %.1f, ang0 = %.1f, ang1 = %.1f, ang2 = %.1f WHERE level = %i AND map = '%s'", g_fClientLevelPos[lvl][0], g_fClientLevelPos[lvl][1], g_fClientLevelPos[lvl][2], g_fClientLevelAng[lvl][0], g_fClientLevelAng[lvl][1], g_fClientLevelAng[lvl][2], lvl, g_szCurrentMap);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
 
-		CPrintToChat(client, CHAT_PREFIX..."Level \x0750DCFF%i {white}has been updated!", lvl+1);
+		CPrintToChat(client, CHAT_PREFIX..."Level {lightskyblue}%i {white}has been updated!", lvl+1);
 
 		ChangeLevels(client);
 		return 0;
@@ -747,7 +747,7 @@ public int Handler_MissLevel( Menu mMenu, MenuAction action, int client, int ite
 		g_hDatabase.Format(query, sizeof(query), "INSERT INTO levels VALUES( %i, '%s', %.1f, %.1f, %.1f, %.1f, %.1f, %.1f )", lvl, g_szCurrentMap, g_fClientLevelPos[lvl][0], g_fClientLevelPos[lvl][1], g_fClientLevelPos[lvl][2], g_fClientLevelAng[lvl][0], g_fClientLevelAng[lvl][1], g_fClientLevelAng[lvl][2]);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
 
-		CPrintToChat(client, CHAT_PREFIX..."Level \x0750DCFF%i {white}has been created!", lvl+1);
+		CPrintToChat(client, CHAT_PREFIX..."Level {lightskyblue}%i {white}has been created!", lvl+1);
 
 		MissLevels(client);
 		return 0;
@@ -804,7 +804,7 @@ public int Handler_DelLevels( Menu mMenu, MenuAction action, int client, int ite
 	g_hDatabase.Format(query, sizeof(query), "DELETE FROM levels WHERE map = '%s' and level = %i", g_szCurrentMap, lvl);
 	SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
 
-	CPrintToChat(client, CHAT_PREFIX..."Level \x0750DCFF%i {white}has been Deleted!", lvl+1);
+	CPrintToChat(client, CHAT_PREFIX..."Level {lightskyblue}%i {white}has been Deleted!", lvl+1);
 	for (int i = 0; i<3; i++)
 	{
 		g_fClientLevelAng[lvl][i] = 0.0;
@@ -821,14 +821,14 @@ public Action Command_Admin_ZoneEdit( int client, int args )
 	
 	if ( g_iBuilderZone[client] != ZONE_INVALID )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."You are still making a zone!" );
+		CPrintToChat( client, CHAT_PREFIX..."You are still making a zone!" );
 		return Plugin_Handled;
 	}
 	
 	int len = g_hZones.Length;
 	if ( !len )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."There are no zones to change!" );
+		CPrintToChat( client, CHAT_PREFIX..."There are no zones to change!" );
 		
 		FakeClientCommand( client, "sm_zone" );
 		
@@ -971,7 +971,7 @@ public Action Command_Admin_ZoneDelete( int client, int args )
 	
 	if ( !bFound )
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."There are no zones to delete!" );
+		CPrintToChat( client, CHAT_PREFIX..."There are no zones to delete!" );
 		
 		delete mMenu;
 		return Plugin_Handled;
@@ -1039,7 +1039,7 @@ public int Handler_ZoneDeleteByIndex( Menu mMenu, MenuAction action, int client,
 
 		g_bZoneExists[zone][index] = false;
 
-		CPrintToChatAll( CHAT_PREFIX...""...CLR_TEAM..."%s {white}::index {orange}%i{white}::"...CLR_TEXT..." deleted.", g_szZoneNames[zone], index+1 );
+		CPrintToChatAll( CHAT_PREFIX..."{lightskyblue}%s {white}::index {orange}%i{white}::{white} deleted.", g_szZoneNames[zone], index+1 );
 		
 	}
 	return Plugin_Handled;
@@ -1097,14 +1097,14 @@ public int Handler_ZoneDelete( Menu mMenu, MenuAction action, int client, int it
 			g_bZoneExists[zone][0] = false;
 			DeleteZoneBeams( zone );
 		}
-		PrintColorChatAll( client, CHAT_PREFIX...""...CLR_TEAM..."%s"...CLR_TEXT..." deleted!", g_szZoneNames[zone] );
+		PrintColorChatAll( client, CHAT_PREFIX..."{lightskyblue}%s{white} deleted!", g_szZoneNames[zone] );
 		
 		for (int i = 0; i < NUM_RUNS+20; i+=2)
 		{
 			if ( (zone == i || zone == i+1) && g_bIsLoaded[i/2] )
 			{
 				g_bIsLoaded[i/2] = false;
-				PrintColorChatAll( client, CHAT_PREFIX...""...CLR_TEAM..."%s"...CLR_TEXT..." is no longer available for running!", g_szRunName[NAME_LONG][i/2] );
+				PrintColorChatAll( client, CHAT_PREFIX..."{lightskyblue}%s{white} is no longer available for running!", g_szRunName[NAME_LONG][i/2] );
 			}
 		}
 		
@@ -1181,11 +1181,11 @@ public int Handler_ZoneDelete_S( Menu mMenu, MenuAction action, int client, int 
 		
 		RemoveEdict( ent );
 		
-		PRINTCHATV( client, CHAT_PREFIX...""...CLR_TEAM..."%s"...CLR_TEXT..." zone deleted.", g_szZoneNames[zone] );
+		CPrintToChat( client, CHAT_PREFIX..."{lightskyblue}%s{white} zone deleted.", g_szZoneNames[zone] );
 	}
 	else
 	{
-		PRINTCHATV( client, CHAT_PREFIX..."Couldn't remove "...CLR_TEAM..."%s"...CLR_TEXT..." zone entity! Reloading the map will get rid of it.", g_szZoneNames[zone] );
+		CPrintToChat( client, CHAT_PREFIX..."Couldn't remove {lightskyblue}%s{white} zone entity! Reloading the map will get rid of it.", g_szZoneNames[zone] );
 		LogError( CONSOLE_PREFIX..."Attemped to remove %s zone but found invalid entity index (%i)!", g_szZoneNames[zone], ent );
 		
 		return 0;
@@ -1259,7 +1259,7 @@ public int Handler_ZoneDelete_CP( Menu mMenu, MenuAction action, int client, int
 	}
 	else
 	{
-		PRINTCHAT( client, CHAT_PREFIX..."Couldn't remove checkpoint entity! Reloading the map will get rid of it." );
+		CPrintToChat( client, CHAT_PREFIX..."Couldn't remove checkpoint entity! Reloading the map will get rid of it." );
 		
 		LogError( CONSOLE_PREFIX..."Attemped to remove a checkpoint but found invalid entity index (%i)!", ent );
 		

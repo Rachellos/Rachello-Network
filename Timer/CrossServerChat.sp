@@ -2,7 +2,7 @@ public Action CMD_SendMessage(client, args)
 {
 	if (args < 1)
 	{
-		CPrintToChat(client, CHAT_PREFIX..."Use \x0750DCFF!msg {white}<message>");
+		CPrintToChat(client, CHAT_PREFIX..."Use {lightskyblue}!msg {white}<message>");
 		return Plugin_Handled;
 	}
 
@@ -39,7 +39,7 @@ public Action CMD_SendMessage(client, args)
 	if (IRC_Connected)
 		SocketSend(ClientSocket, finalMessage, sizeof(finalMessage));
 	else
-		PrintToChat(client, CHAT_PREFIX..."IRC server is down now");
+		CPrintToChat(client, CHAT_PREFIX..."IRC server is down now");
 }
    
 //In case a client get disconnected, reconnect him every X seconds

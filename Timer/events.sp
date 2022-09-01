@@ -27,7 +27,7 @@ public Action Event_ClientDeath( Handle hEvent, const char[] szEvent, bool bDont
 
 	g_iClientState[client] = STATE_INVALID;			
 	g_iClientRun[client] = RUN_INVALID;
-	//PRINTCHAT( client, CHAT_PREFIX..."Type "...CLR_TEAM..."!r"...CLR_TEXT..." to spawn." );
+	//CPrintToChat( client, CHAT_PREFIX..."Type {lightskyblue}!r{white} to spawn." );
 }
 
 // Hide bot name changes.
@@ -126,7 +126,7 @@ public void CPrintToChatClientAndSpec(int client, const char[] text, any...)
 				CPrintToChat( i, szBuffer );
 }
 
-public void Event_Touch_Zone( int trigger, int client )
+public void Event_StartTouch_Zone( int trigger, int client )
 {
 	if ( client < 1 || client > MaxClients || !IsClientInGame(client) || !IsClientConnected(client) ) return;
 
@@ -140,7 +140,7 @@ public void Event_Touch_Zone( int trigger, int client )
 	bool IsStartZone = (zone % 2 == 0 );
 	if ( IsStartZone )
 	{
-		if (EnteredZone[client] == zone && g_iClientState[client] == STATE_START) return;
+		//if (EnteredZone[client] == zone && g_iClientState[client] == STATE_START) return;
 
 		if ( (!RunIsCourse(run) || run == RUN_COURSE1))
 		{
@@ -158,13 +158,19 @@ public void Event_Touch_Zone( int trigger, int client )
 			{
 				if (g_iClientRun[client] != RUN_MAIN && !g_bClientPractising[client] )
 				{
+					float displayTime = GetEngineTime() - g_flClientStartTime[client];
+					char szTime[TIME_SIZE_DEF];
+					FormatSeconds( displayTime, szTime, FORMAT_2DECI );
+
 					EmitSoundToClient( client, g_szSoundsMissCp[0] );
 
-					CPrintToChatClientAndSpec(client, "{red}ERROR {white}| Your run has been closed. You missed:");
+					CPrintToChatClientAndSpec(client, CHAT_PREFIX..."{red}ERROR: {white}Could not progress run at {lightskyblue}%s {white}({green}%s{white}). You missed required zone(s):",
+																		g_szRunName[NAME_LONG][run], szTime);
 
 					for (int i = ( ( run - ( run - g_iClientRun[client] ) ) * 2) + 1; i < run * 2; i++)
-						CPrintToChatClientAndSpec(client, "{red}ERROR {white}| {orange}%s",
-							g_szZoneNames[i]);
+						CPrintToChatClientAndSpec(client, CHAT_PREFIX..."{lightskyblue}%s", g_szZoneNames[i]);
+					
+					return;
 				}
 				IsMapMode[client] = false;
 				DisplayCpTime[client] = false;
@@ -224,6 +230,8 @@ public void Event_EndTouchPost_Zone( int trigger, int client )
 	, id = iData[ZONE_ID]
 	, run = zone/2;
 
+	if (g_iClientRun[client] != run) return;
+
 	bool IsStartZone = (zone % 2 == 0 );
 
 	if ( !IsStartZone) return;
@@ -281,7 +289,7 @@ public void Event_StartTouchPost_Block( int trigger, int ent )
 	zone = GetTriggerIndex( trigger );
 	EnteredZone[ent] = zone;
 	
-	PRINTCHAT( ent, CHAT_PREFIX..."You are not allowed to go there!" );
+	CPrintToChat( ent, CHAT_PREFIX..."You are not allowed to go there!" );
 	
 	if ( g_bIsLoaded[RUN_MAIN] )
 	{
@@ -309,7 +317,7 @@ public void Event_StartTouchPost_NextCours( int trigger, int ent )
 	if (g_iClientRun[ent]+1 < NUM_RUNS && RUN_COURSE1 < g_iClientRun[ent]+1 <= RUN_COURSE10 && g_bIsLoaded[g_iClientRun[ent]+1])
 		TeleportEntity( ent, g_vecSpawnPos[g_iClientRun[ent]+1], g_vecSpawnAngles[g_iClientRun[ent]+1], g_vecNull );
 	else
-		PrintToChat(ent, CHAT_PREFIX... "You cannot teleport to the next course because it does not exist.");
+		CPrintToChat(ent, CHAT_PREFIX... "You cannot teleport to the next course because it does not exist.");
 }
 
 public void Event_StartTouchPost_Skip( int trigger, int ent )
@@ -420,7 +428,7 @@ public void Event_StartTouchPost_CheckPoint( int trigger, int ent )
 		if (flBestTime > TIME_INVALID)
 		{
 			DisplayCpTime[ent] = true;
-			FormatEx(CheckpointInfo, sizeof(CheckpointInfo), " {white}( \x0750DCFF%s %c%s {white})", g_fClientHideFlags[ent] & HIDEHUD_PRTIME ? "PR" : "WR", prefix, szCPTime);
+			FormatEx(CheckpointInfo, sizeof(CheckpointInfo), " {white}( {lightskyblue}%s %c%s {white})", g_fClientHideFlags[ent] & HIDEHUD_PRTIME ? "PR" : "WR", prefix, szCPTime);
 		}
 		else
 		{
@@ -428,7 +436,7 @@ public void Event_StartTouchPost_CheckPoint( int trigger, int ent )
 			FormatEx(CheckpointInfo, sizeof(CheckpointInfo), "");
 		}
 
-		CPrintToChatClientAndSpec( ent, CHAT_PREFIX..."Entered \x0750DCFFCheckpoint %i. {white}Total: \x0764E664%s%s", id + 1, szTime, CheckpointInfo );
+		CPrintToChatClientAndSpec( ent, CHAT_PREFIX..."Entered {lightskyblue}Checkpoint %i. {white}Total: {green}%s%s", id + 1, szTime, CheckpointInfo );
 	}
 	else
 	{

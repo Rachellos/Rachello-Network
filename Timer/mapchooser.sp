@@ -7,10 +7,6 @@ enum MapChange
 
 bool g_bLate;
 
-#if defined DEBUG
-bool g_bDebug;
-#endif
-
 /* ConVars */
 ConVar g_cvMapVoteStartTime;
 ConVar g_cvMapVoteDuration;
@@ -42,6 +38,8 @@ bool g_bMapVoteStarted;
 bool g_bMapVoteFinished;
 bool MenuClosedByServer = false;
 
+bool IsVoteDisplay[MAXPLAYERS+1];
+
 int	g_VotesVe = 0;
 int	g_Votes = 0;
 int	g_VotersVe=0;
@@ -66,12 +64,17 @@ public Action Command_Revote(int client, int args)
 	}
 	if (g_bMapVoteFinished || !g_bMapVoteStarted)
 	{
-		PrintToChat(client, CHAT_PREFIX..."No vote ongoing.");
+		CPrintToChat(client, CHAT_PREFIX..."No vote ongoing.");
 		return Plugin_Handled;
 	}
 	if (!Client_in_vote[client])
 	{
-		PrintToChat(client, CHAT_PREFIX..."You cannot vote.");
+		CPrintToChat(client, CHAT_PREFIX..."You cannot vote.");
+		return Plugin_Handled;
+	}
+	if (IsVoteDisplay[client])
+	{
+		CPrintToChat(client, CHAT_PREFIX..."Vote menu display already.");
 		return Plugin_Handled;
 	}
 	g_VoteMenu.Display(client, MENU_TIME_FOREVER);
@@ -109,7 +112,7 @@ void AttemptVE(int client)
 			iSec -= 60;
 		}
 		
-		CPrintToChat(client, CHAT_PREFIX..."You need wait \x0750DCFF%i min %i sec{white} for !ve", iMins, iSec);
+		CPrintToChat(client, CHAT_PREFIX..."You need wait {lightskyblue}%i min %i sec{white} for !ve", iMins, iSec);
 		return;
 	}
 	if (g_bMapVoteStarted)
@@ -120,7 +123,7 @@ void AttemptVE(int client)
 	VeVotersCount();
 	if (g_VotedVe[client])
 	{
-		PrintToChat(client, CHAT_PREFIX..."You have already vote to extend. (%i/%i required)", g_VotesVe, g_VotesNeededVe);
+		CPrintToChat(client, CHAT_PREFIX..."You have already vote to extend. (%i/%i required)", g_VotesVe, g_VotesNeededVe);
 		return;
 	}	
 	
@@ -131,7 +134,7 @@ void AttemptVE(int client)
 
 	VeVotersCount();
 	
-	CPrintToChatAll(CHAT_PREFIX..."\x0764E664%N {white}wants extend (%i/%i required)", client, g_VotesVe, g_VotesNeededVe);
+	CPrintToChatAll(CHAT_PREFIX..."{green}%N {white}wants extend (%i/%i required)", client, g_VotesVe, g_VotesNeededVe);
 	
 	if (g_VotesVe >= g_VotesNeededVe)
 	{
@@ -144,8 +147,8 @@ void StartVE()
 	int time;
 	GetMapTimeLimit(time);
 	ServerCommand("mp_timelimit %i", time + 30 );
-	CPrintToChatAll(CHAT_PREFIX..."\x0750DCFFmp_timelimit {white}changed to \x0764E664%i.0", time + 30);
-	CPrintToChatAll(CHAT_PREFIX..."Map has been \x0750DCFFextended");
+	CPrintToChatAll(CHAT_PREFIX..."{lightskyblue}mp_timelimit {white}changed to {green}%i.0", time + 30);
+	CPrintToChatAll(CHAT_PREFIX..."Map has been {lightskyblue}extended");
 	ResetVE();
 	return;
 }
@@ -311,7 +314,7 @@ void InitiateMapVote( MapChange when )
 	}
 	
 	g_VoteMenu.ExitButton = true;
-	PrintToChatAll(CHAT_PREFIX..."Voting for next map has started.");
+	CPrintToChatAll(CHAT_PREFIX..."Voting for next map has started.");
 	for (int i = 1; i <= MaxClients; i++) {
 		ClientVote[i] = -1;
 		Client_in_vote[i] = false;
@@ -447,7 +450,7 @@ public void FinishMapVote( Menu menu, bool TimeEnd )
 			}
 		}
 
-		CPrintToChatAll(CHAT_PREFIX..."\x0750DCFFExtend Map {white}won the vote with %i%c (%i/%i)", RoundToFloor(float(item_votes[winner_index])/float(num_votes)*100), c, item_votes[winner_index], num_votes);
+		CPrintToChatAll(CHAT_PREFIX..."{lightskyblue}Extend Map {white}won the vote with %i%c (%i/%i)", RoundToFloor(float(item_votes[winner_index])/float(num_votes)*100), c, item_votes[winner_index], num_votes);
 		
 		// We extended, so we'll have to vote again.
 		g_bMapVoteStarted = false;
@@ -459,7 +462,7 @@ public void FinishMapVote( Menu menu, bool TimeEnd )
 		g_bMapVoteFinished = false;
 		g_bMapVoteStarted = false;
 		
-		CPrintToChatAll(CHAT_PREFIX..."\x0750DCFFDon't Change {white}won the vote with %i%c (%i/%i)", RoundToFloor(float(item_votes[winner_index])/float(num_votes)*100), c, item_votes[winner_index], num_votes);
+		CPrintToChatAll(CHAT_PREFIX..."{lightskyblue}Don't Change {white}won the vote with %i%c (%i/%i)", RoundToFloor(float(item_votes[winner_index])/float(num_votes)*100), c, item_votes[winner_index], num_votes);
 		
 		ClearRTV();
 	}
@@ -480,9 +483,9 @@ public void FinishMapVote( Menu menu, bool TimeEnd )
 		g_bMapVoteFinished = true;
 		
 		if (random)
-			CPrintToChatAll(CHAT_PREFIX..."No one voted. Randomly selected: \x0750DCFF%s", map);
+			CPrintToChatAll(CHAT_PREFIX..."No one voted. Randomly selected: {lightskyblue}%s", map);
 		else
-			CPrintToChatAll(CHAT_PREFIX..."\x0750DCFF%s {white}won the vote with %i%c (%i/%i)", map, RoundToFloor(float(item_votes[winner_index])/float(num_votes)*100), c, item_votes[winner_index], num_votes);
+			CPrintToChatAll(CHAT_PREFIX..."{lightskyblue}%s {white}won the vote with %i%c (%i/%i)", map, RoundToFloor(float(item_votes[winner_index])/float(num_votes)*100), c, item_votes[winner_index], num_votes);
 
 		LogAction(-1, -1, "Voting for next map has finished. Nextmap: %s.", map);
 	}
@@ -529,11 +532,13 @@ public int Handler_MapVoteMenu( Menu menu, MenuAction action, int param1, int pa
 			if ( (param2 == MenuCancel_Exit || param2 == MenuCancel_Interrupted) && !MenuClosedByServer )
 			{
 				CPrintToChat(param1, CHAT_PREFIX..."Vote menu hidden ({lightskyblue}!revote {white}to vote again)");
+				IsVoteDisplay[param1] = false;
 				return 0;
 			}
 		}
 		case MenuAction_Display:
 		{
+			IsVoteDisplay[param1] = true;
 			Panel panel = view_as<Panel>(param2);
 			panel.SetTitle( "Vote for next map\n \n" );
 		}		
@@ -586,6 +591,7 @@ public int Handler_MapVoteMenu( Menu menu, MenuAction action, int param1, int pa
 				if (IsPressSpamming(param1))
 				{
 					CPrintToChat(param1, CHAT_PREFIX..."Vote menu hidden ({lightskyblue}!revote {white}to vote again)");
+					IsVoteDisplay[param1] = false;
 					return 0;
 				}
 			}
@@ -595,7 +601,7 @@ public int Handler_MapVoteMenu( Menu menu, MenuAction action, int param1, int pa
 			MenuClosedByServer = true;
 			for (int i = 1; i <= MaxClients; i++)
 			{
-				if (!IsClientInGame(i) || IsFakeClient(i) || !Client_in_vote[i])
+				if (!IsClientInGame(i) || IsFakeClient(i) || !Client_in_vote[i] || !IsVoteDisplay[param1])
 				{
 					continue;
 				}
@@ -640,7 +646,7 @@ void ExtendMap( int time = 0 )
 	}
 
 	ExtendMapTimeLimit( time );
-	PrintToChatAll( "[SMC] The map was extended for %.1f minutes", time / 60.0 );
+	CPrintToChatAll( "The map was extended for {green}%.1f {white}minutes", time / 60.0 );
 	
 	g_bMapVoteStarted = false;
 	g_bMapVoteFinished = false;
@@ -655,15 +661,15 @@ void LoadMapList()
 	char buffer[512];
 
 	Format( buffer, sizeof(buffer), "SELECT map_name, stier, dtier FROM `map_info` WHERE run = 0 ORDER BY `map_name`" );
-	g_hDatabase.Query( LoadZonedMapsCallback, buffer, _, DBPrio_High );
+	g_hDatabase.Query( LoadMapsTiersCallback, buffer, _, DBPrio_High );
 
 }
 
-public void LoadZonedMapsCallback( Database db, DBResultSet results, const char[] error, any data )
+public void LoadMapsTiersCallback( Database db, DBResultSet results, const char[] error, any data )
 {
 	if( results == null )
 	{
-		LogError( "(LoadMapZonesCallback) - %s", error );
+		LogError( "(LoadMapsTiersCallback) - %s", error );
 		return;	
 	}
 
@@ -794,7 +800,7 @@ public Action Command_Nominate( int client, int args )
 	}
 	else
 	{
-		PrintToChatAll( CHAT_PREFIX..."Could not find map {lightskyblue}%s", mapname );
+		CPrintToChatAll( CHAT_PREFIX..."Could not find map {lightskyblue}%s", mapname );
 	}
 	
 	return Plugin_Handled;
@@ -916,7 +922,7 @@ public Action Command_RockTheVote( int client, int args )
 			}
 		}
 
-		PrintToChat(client, CHAT_PREFIX..."You have already voted. (%i/%i required)", rtvcount, total);
+		CPrintToChat(client, CHAT_PREFIX..."You have already voted. (%i/%i required)", rtvcount, total);
 	}
 	else
 	{
@@ -936,20 +942,20 @@ public Action Command_RockTheVote( int client, int args )
 			}
 		}
 
-		CPrintToChatAll(CHAT_PREFIX..."\x0764E664%N {white}wants rock the vote! (%i/%i required)", client, rtvcount, total );
-		CheckRTV( client );
+		CPrintToChatAll(CHAT_PREFIX..."{green}%N {white}wants rock the vote! (%i/%i required)", client, rtvcount, total );
+		CheckRTV();
 	}
 	
 	return Plugin_Handled;
 }
 
-void CheckRTV( int client = 0 )
+void CheckRTV()
 {
 	int needed = GetRTVVotesNeeded();
 
 	int total = 0;
 	int rtvcount = 0;
-	for( int i = 1; i <= MaxClients; i++ )
+	for( int i = 1; i <= MaxClients; i++ ) 
 	{
 		if( IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i) && !g_iClientIdle[i])
 		{
@@ -968,7 +974,7 @@ void CheckRTV( int client = 0 )
 			char map[PLATFORM_MAX_PATH];
 			GetNextMap( map, sizeof(map) );
 		
-			CPrintToChatAll(CHAT_PREFIX..."Changing map to \x0750DCFF%s", map);
+			CPrintToChatAll(CHAT_PREFIX..."Changing map to {lightskyblue}%s", map);
 			
 			ChangeMapDelayed( map );
 		}
@@ -989,30 +995,11 @@ public Action Command_UnRockTheVote( int client, int args )
 	{
 		g_bRockTheVote[client] = false;
 		
-		int needed = GetRTVVotesNeeded();
-		if( needed > 0 )
-		{
-			PrintToChatAll( "[SMC] %N no longer wants to rock the vote! (%i more votes needed)", client, needed );
-		}
+		CPrintToChatAll( CHAT_PREFIX..."{green}%N {white}no longer wants to rock the vote!", client );
 	}
 
 	return Plugin_Handled;
 }
-
-#if defined DEBUG
-public Action Command_Debug( int client, int args )
-{
-	if( IsSlidy( client ) )
-	{
-		g_bDebug = !g_bDebug;
-		ReplyToCommand( client, "[SMC] Debug mode: %s", g_bDebug ? "ENABLED" : "DISABLED" );
-		
-		return Plugin_Handled;
-	}
-	
-	return Plugin_Continue;
-}
-#endif
 
 /* Stocks */
 
@@ -1057,20 +1044,4 @@ stock int GetRTVVotesNeeded()
 	}
 	
 	return totalNeeded - rtvcount;
-}
-
-stock void DebugPrint( const char[] message, any ... )
-{		
-	char buffer[256];
-	VFormat( buffer, sizeof( buffer ), message, 2 );
-	
-	for( int i = 1; i <= MaxClients; i++ )
-	{
-		// STEAM_1:1:159678344 (SlidyBat)
-		if( GetSteamAccountID( i ) == 319356689 )
-		{
-			PrintToChat( i, buffer );
-			return;
-		}
-	}
 }
