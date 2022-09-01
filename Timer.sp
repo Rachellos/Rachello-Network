@@ -1315,6 +1315,9 @@ public void OnAllPluginsLoaded()
 		BuildPath(Path_SM, filename, sizeof(filename), "plugins/%s.smx", vote_plugins[i]);
 		if(FileExists(filename))
 		{
+			if (!DirExists("plugins/disabled/"))
+				CreateDirectory("plugins/disabled/", FPERM_U_READ|FPERM_U_WRITE|FPERM_U_EXEC|FPERM_G_READ|FPERM_G_EXEC|FPERM_O_READ|FPERM_O_EXEC);
+				
 			char newfilename[200];
 			BuildPath(Path_SM, newfilename, sizeof(newfilename), "plugins/disabled/%s.smx", vote_plugins[i]);
 			ServerCommand("sm plugins unload %s", vote_plugins[i]);
