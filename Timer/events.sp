@@ -126,21 +126,24 @@ public void CPrintToChatClientAndSpec(int client, const char[] text, any...)
 				CPrintToChat( i, szBuffer );
 }
 
-public void Event_StartTouch_Zone( int trigger, int client )
+bool IsWarningZoneMissDisplayed[MAXPLAYERS + 1] = {false, ...};
+
+public void Event_Touch_Zone( int trigger, int client )
 {
 	if ( client < 1 || client > MaxClients || !IsClientInGame(client) || !IsClientConnected(client) ) return;
 
 	int	iData[ZONE_SIZE];
 	g_hZones.GetArray( GetTriggerIndex( trigger ), iData, view_as<int>( ZoneData ) );
-	int zone = iData[ZONE_TYPE];
 
+	int zone = iData[ZONE_TYPE];
 	int id = iData[ZONE_ID];
 	int run = zone/2;
 
 	bool IsStartZone = (zone % 2 == 0 );
+
 	if ( IsStartZone )
 	{
-		//if (EnteredZone[client] == zone && g_iClientState[client] == STATE_START) return;
+		if (EnteredZone[client] == zone && g_iClientState[client] == STATE_START) return;
 
 		if ( (!RunIsCourse(run) || run == RUN_COURSE1))
 		{
@@ -158,18 +161,22 @@ public void Event_StartTouch_Zone( int trigger, int client )
 			{
 				if (g_iClientRun[client] != RUN_MAIN && !g_bClientPractising[client] )
 				{
-					float displayTime = GetEngineTime() - g_flClientStartTime[client];
-					char szTime[TIME_SIZE_DEF];
-					FormatSeconds( displayTime, szTime, FORMAT_2DECI );
+					if (!IsWarningZoneMissDisplayed[client])
+					{
+						float displayTime = GetEngineTime() - g_flClientStartTime[client];
+						char szTime[TIME_SIZE_DEF];
+						FormatSeconds( displayTime, szTime, FORMAT_2DECI );
 
-					EmitSoundToClient( client, g_szSoundsMissCp[0] );
+						EmitSoundToClient( client, g_szSoundsMissCp[0] );
 
-					CPrintToChatClientAndSpec(client, CHAT_PREFIX..."{red}ERROR: {white}Could not progress run at {lightskyblue}%s {white}({green}%s{white}). You missed required zone(s):",
-																		g_szRunName[NAME_LONG][run], szTime);
+						CPrintToChatClientAndSpec(client, CHAT_PREFIX..."{red}ERROR: {white}Could not progress run at {lightskyblue}%s {white}({green}%s{white}). You missed required zone(s):",
+																			g_szRunName[NAME_LONG][run], szTime);
 
-					for (int i = ( ( run - ( run - g_iClientRun[client] ) ) * 2) + 1; i < run * 2; i++)
-						CPrintToChatClientAndSpec(client, CHAT_PREFIX..."{lightskyblue}%s", g_szZoneNames[i]);
-					
+						for (int i = ( ( run - ( run - g_iClientRun[client] ) ) * 2) + 1; i < run * 2; i++)
+							CPrintToChatClientAndSpec(client, CHAT_PREFIX..."{lightskyblue}%s", g_szZoneNames[i]);
+
+						IsWarningZoneMissDisplayed[client] = true;
+					}
 					return;
 				}
 				IsMapMode[client] = false;
@@ -178,6 +185,7 @@ public void Event_StartTouch_Zone( int trigger, int client )
 			}
 		}
 		ChangeClientState( client, STATE_START );
+		IsWarningZoneMissDisplayed[client] = false;
 	}
 	else
 	{
@@ -223,6 +231,8 @@ public void Event_EndTouchPost_Zone( int trigger, int client )
 {
 	if ( client < 1 || client > MaxClients || !IsClientInGame(client) || !IsClientConnected(client) ) return;
 	
+	IsWarningZoneMissDisplayed[client] = false;
+
 	int	iData[ZONE_SIZE];
 	g_hZones.GetArray( GetTriggerIndex( trigger ), iData, view_as<int>( ZoneData ) );
 

@@ -1400,17 +1400,16 @@ public void OnConfigsExecuted()
 public void OnMapStart()
 {
 	char vote_plugins[3][100] = {"mapchooser", "nominations", "rockthevote"};
-	char filename[200];
+	char filename[200], newfilename[200];
+
+	if (!DirExists("plugins/disabled/"))
+		CreateDirectory("plugins/disabled/", FPERM_U_READ|FPERM_U_WRITE|FPERM_U_EXEC|FPERM_G_READ|FPERM_G_EXEC|FPERM_O_READ|FPERM_O_EXEC);
 
 	for (int i; i < 3; i++)
 	{
 		BuildPath(Path_SM, filename, sizeof(filename), "plugins/%s.smx", vote_plugins[i]);
 		if(FileExists(filename))
 		{
-			if (!DirExists("plugins/disabled/"))
-				CreateDirectory("plugins/disabled/", FPERM_U_READ|FPERM_U_WRITE|FPERM_U_EXEC|FPERM_G_READ|FPERM_G_EXEC|FPERM_O_READ|FPERM_O_EXEC);
-				
-			char newfilename[200];
 			BuildPath(Path_SM, newfilename, sizeof(newfilename), "plugins/disabled/%s.smx", vote_plugins[i]);
 			ServerCommand("sm plugins unload %s", vote_plugins[i]);
 			if(FileExists(newfilename))
@@ -1984,7 +1983,7 @@ public void OnMapEnd()
 			if ( g_hZones.Get( i, view_as<int>( ZONE_ENT ) ) )
 			{
 				ent = g_hZones.Get( i, view_as<int>( ZONE_ENT ) );
-				SDKUnhook( ent, SDKHook_StartTouch, Event_StartTouch_Zone );
+				SDKUnhook( ent, SDKHook_Touch, Event_Touch_Zone );
 				SDKUnhook( ent, SDKHook_EndTouch, Event_EndTouchPost_Zone );
 			}
 		}
@@ -2996,7 +2995,7 @@ stock void CreateZoneEntity( int zone )
 		}
 		default :
 		{
-			SDKHook( ent, SDKHook_StartTouch, Event_StartTouch_Zone );
+			SDKHook( ent, SDKHook_Touch, Event_Touch_Zone );
 			SDKHook( ent, SDKHook_EndTouch, Event_EndTouchPost_Zone );
 		}
 	}
@@ -3081,7 +3080,7 @@ stock void DeleteZoneBeams( int zone, int id = 0, int index = 0 )
 			&& g_hZones.Get( i, view_as<int>( ZONE_ID ) ) == index )
 		{
 			ent = g_hZones.Get( i, view_as<int>( ZONE_ENT ) );
-			SDKUnhook( ent, SDKHook_StartTouch, Event_StartTouch_Zone );
+			SDKUnhook( ent, SDKHook_Touch, Event_Touch_Zone );
 			SDKUnhook( ent, SDKHook_EndTouch, Event_EndTouchPost_Zone );
 			return;
 		}
