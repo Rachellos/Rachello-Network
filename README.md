@@ -13,13 +13,15 @@ Discord: Rachello#8326
 * Download this repo and upload all the files to tf/addons/sourcemod directory
 * Add this in tftf/addons/sourcemod/configs/databases.cfg :
     
-    ```"Timer"
+    ```
+    "Timer"
 	{
 		 "driver"    "mysql"
 		 "host"    "Your database host ip"
 		 "database"    "Your database" //Database name
 		 "user"    "Your user" //Name of database user
 		 "pass"    "Your pass" //Database user password
-	}```
+	}
+    ```
 
 Discord: Rachello#8326
