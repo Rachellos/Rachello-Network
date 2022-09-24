@@ -1,3 +1,16 @@
+public bool IsLinux()
+{
+    char cmdline[32];
+    GetCommandLine(cmdline, sizeof(cmdline));
+
+    if (StrContains(cmdline, "./srcds_linux ", false) != -1)
+    {
+		return true;
+    }
+
+	return false;
+}
+
 stock void ArrayCopy( const any[] oldArray, any[] newArray, int size = 1 )
 {
 	for ( int i = 0; i < size; i++ ) newArray[i] = oldArray[i];

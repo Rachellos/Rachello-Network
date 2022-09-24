@@ -14,7 +14,7 @@ public Action CMD_SendMessage(client, args)
 
 	Format(playerName, sizeof(playerName), "%N", client); //Little hack for chat colors user
 	Format(finalMessage, sizeof(finalMessage), "| {lightskyblue}(%s) - {green}%s{grey}: %s",
-												(System2_GetOS() == OS_WINDOWS) ? "LOCAL" : server_name[NAME_SHORT][server_id],
+												(ServerOSIsLinux) ? server_name[NAME_SHORT][server_id] : "LOCAL",
 												playerName,
 												Message);
 	
@@ -22,7 +22,7 @@ public Action CMD_SendMessage(client, args)
 	DiscordWebHook hook = new DiscordWebHook(WEBHOOK_IRC);
 	hook.SlackMode = true;
 	hook.SetUsername( "Chat" );
-	Format(text, sizeof(text), "`%s` **%N:** %s", (System2_GetOS() == OS_WINDOWS) ? "LOCAL" : server_name[NAME_SHORT][server_id], client, Message);	
+	Format(text, sizeof(text), "`%s` **%N:** %s", (ServerOSIsLinux) ? server_name[NAME_SHORT][server_id] : "LOCAL", client, Message);	
 	hook.SetContent(text);
 	hook.Send();
 	delete hook;

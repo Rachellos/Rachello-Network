@@ -17,7 +17,7 @@ public Action:Timer_Delay(Handle:timer) {
 	decl String:date[64], String:map[64];
 	GetCurrentMap(map, sizeof(map));
 
-	if (System2_GetOS() == OS_WINDOWS) {
+	if (!ServerOSIsLinux) {
 		FormatTime(date, sizeof(date), "%Y-%m-%d_%H-%S", GetTime());
 		Format(currentDemoFilename, sizeof(currentDemoFilename), "%s.dem", date);
 		FormatEx(DemoUrl, sizeof(DemoUrl), "%s.dem.bz2", date);
@@ -48,19 +48,6 @@ public Action:Timer_CompressDemo(Handle:timer, any:pack) {
 	}
 	BuildPath(Path_SM, output, sizeof(output), "recordings/bz2/%s.bz2", filename);
 	BZ2_CompressFile(input, output, 2, OnDemoCompressed, pack);
-}
-
-public void FtpResponseCallback(bool success, const char[] error, System2FTPRequest request, System2FTPResponse response) {
-    if (success) {
-        char file[PLATFORM_MAX_PATH];
-        request.GetInputFile(file, sizeof(file));
-
-        if (strlen(file) > 0) {
-            PrintToServer("Uploaded %d bytes with %d bytes / second", response.UploadSize, response.UploadSpeed);
-        } else {
-            PrintToServer("Downloaded %d bytes with %d bytes / second", response.DownloadSize, response.DownloadSpeed);
-        }
-    }
 }
 
 
@@ -142,14 +129,14 @@ public EasyFTP_CallBack(const String:sTarget[], const String:sLocalFile[], const
     {
     	char demo[400], query[400];
     	FormatEx(demo, sizeof(demo), "%s", sLocalFile);
-		if (System2_GetOS() == OS_WINDOWS)
+		if (!ServerOSIsLinux)
     		ReplaceString(demo, sizeof(demo), "addons\\sourcemod\\recordings\\bz2\\", "");
 		else
 			ReplaceString(demo, sizeof(demo), "addons/sourcemod/recordings/bz2/", "");
     	g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demo_status = %i WHERE demourl = '%s'", DEMO_UPLOADED, demo);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, query);
 
-		if (System2_GetOS() == OS_WINDOWS)
+		if (!ServerOSIsLinux)
 		{
 			g_hDatabase.Format(query, sizeof(query), "UPDATE maprecs SET demourl = '%s' WHERE demourl = '%s'", sLocalFile, demo);
 			SQL_TQuery(g_hDatabase, Threaded_Empty, query);

@@ -11,7 +11,6 @@
 #include <basecomm>
 #include <stocks>
 #include <tEasyFTP>
-#include <system2>
 #include <Timer_core>
 #include <smlib/entities>
 #include <SteamWorks>
@@ -117,6 +116,8 @@
 #define SENDERNAME		"[SENDER NAME]"
 #define SERVERTAG		"[SERVER TAG]"
 #define SENDERMSG		"[MESSAGE]"
+
+bool ServerOSIsLinux;
 
 Socket ClientSocket;
 
@@ -1016,6 +1017,8 @@ public Action OnRestrictCommand(int client, const char[] command, int argc)
 
 public void OnPluginStart()
 {
+	ServerOSIsLinux = IsLinux();
+
 	ServerCommand("sv_hudhint_sound 0");
 	AddCommandListener(OnRestrictCommand, "setpos");
 	AddCommandListener(OnRestrictCommand, "setpos_exact");
@@ -3326,7 +3329,7 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 	char			szFormTime[TIME_SIZE_DEF], szName[32];
 	GetClientName( client, szName, sizeof( szName ) );
 	FormatSeconds( flNewTime, szFormTime, FORMAT_2DECI );
-	Format(server_tag, sizeof(server_tag), (System2_GetOS() == OS_WINDOWS) ? "LOCAL" : server_name[NAME_SHORT][server_id]);
+	Format(server_tag, sizeof(server_tag), (ServerOSIsLinux) ? server_name[NAME_SHORT][server_id] : "LOCAL");
 
 	char buffer[500];
 

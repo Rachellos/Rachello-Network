@@ -7,7 +7,7 @@ public Action CMD_Weather(int client, int args)
 	char request[300], ip[64];
 	int iPublicIP[4];
 
-	if (System2_GetOS() == OS_WINDOWS)
+	if (!ServerOSIsLinux)
 	{
 		if (SteamWorks_GetPublicIP(iPublicIP))
 		{
