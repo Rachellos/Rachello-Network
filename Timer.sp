@@ -293,21 +293,11 @@ char server_name[NUM_NAMES][][] =
 {
 	{
 		"N/A",
-	 	"RG #1488 - Finland | Rachello Network",
-		"RG #1488 - London | Rachello Network",
-		"RG #1488 - Australia | Rachello Network", 
-		"RG #1488 - US East | Rachello Network", 
-		"RG #1488 US West California | Rachello Network",
-	 	"RG #1488 Asia Singapore | Rachello Network" 
+	 	"Sweden Gaming | Rachello Network"
 	},
 	{ 
 		"N/A", 
-		"Finland",
-		"London",
-		"AU", 
-		"US-East", 
-		"US-West", 
-		"SG" 
+		"SE"
 	}
 };
 
