@@ -58,7 +58,7 @@ public Action Timer_Ad( Handle hTimer )
 
     for ( int iclient = 1; iclient <= MaxClients; iclient++ )
     {
-        if (IsClientConnected(iclient) && IsClientInGame(iclient) && (!(g_fClientHideFlags[iclient] & HIDEHUD_CHAT) || !(g_fClientHideFlags[iclient] & HIDEHUD_CHAT_AD)))
+        if (IsClientConnected(iclient) && IsClientInGame(iclient) && !(g_fClientHideFlags[iclient] & HIDEHUD_CHAT) && !(g_fClientHideFlags[iclient] & HIDEHUD_CHAT_AD))
         {
             CPrintToChat(iclient, CHAT_PREFIX_TIP..."%s", ad[msg]);
         }
