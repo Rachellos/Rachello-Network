@@ -253,8 +253,10 @@ void InitiateMapVote( MapChange when )
 	
 	int mapsToAdd = 5;
 
-	
+	bool b_skip = false;
+
 	char map[PLATFORM_MAX_PATH];
+	char mapToSkipTemp[PLATFORM_MAX_PATH];
 	char mapdisplay[PLATFORM_MAX_PATH + 32];
 	
 	int nominateMapsToAdd = ( mapsToAdd > g_aNominateList.Length ) ? g_aNominateList.Length : mapsToAdd;
@@ -281,7 +283,7 @@ void InitiateMapVote( MapChange when )
 	{
 		int rand = GetRandomInt( 0, g_aMapList.Length - 1 );
 		g_aMapList.GetString( rand, map, sizeof(map) );
-		
+
 		if( StrEqual( map, g_cMapName ) )
 		{
 			// don't add current map to vote
@@ -293,6 +295,26 @@ void InitiateMapVote( MapChange when )
 		if( idx != -1 )
 		{
 			// map already played recently, get another map
+			i--;
+			continue;
+		}
+
+		b_skip = false;
+
+		if ( g_aNominateList.Length > 0 )
+		{
+			for( int i2 = 0; i2 < nominateMapsToAdd; i2++ )
+			{
+				g_aNominateList.GetString( i2, mapToSkipTemp, sizeof(mapToSkipTemp) );
+
+				if ( StrEqual(map, mapToSkipTemp) )
+				{
+					b_skip = true;
+				}
+			}
+		}
+		if ( b_skip )
+		{
 			i--;
 			continue;
 		}
