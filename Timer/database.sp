@@ -814,8 +814,8 @@ public int demo_control(Menu mMenu, MenuAction action, int client, int item) {
 		if(item == 1) {
 			char link[256];
 			FormatEx(link, sizeof(link), DemoUrlClient[client]);
-			ReplaceString(link, sizeof(link), "\\", "%5c");
-			CPrintToChat(client, CHAT_PREFIX..."\n{orange}game339233.ourserver.ru/demos/server_%i/%s", server_id_database[client], link);
+			ReplaceString(link, sizeof(link), "\\", "/");
+			CPrintToChat(client, CHAT_PREFIX..."\n{orange}garrysfastdl.com/marcos320/demos/%s", link);
 			DemoInfo(client, DemoInfoId[client] );
 			return 0;
 		}
