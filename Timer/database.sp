@@ -207,15 +207,10 @@ stock void DB_InitializeDatabase()
   		`multipler` float DEFAULT NULL\
 		)" );
 	
-	g_hDatabase.Query( Threaded_Empty,
-		"REPLACE INTO `points` VALUES\ 
-		('map',1,10,200),('map',2,20,250),('map',3,30,300),('map',4,50,350),('map',5,100,400),\
-		('map',6,200,500),('course',1,5,100),('course',2,10,150),('course',3,20,200),('course',4,30,250),\
-		('course',5,50,300),('course',6,100,400),('bonus',1,2,10),('bonus',2,5,20),\
-		('bonus',3,10,40),('bonus',4,20,60),('bonus',5,30,80),('bonus',6,50,100);" );
-
-	g_hDatabase.Query( Threaded_Empty,
-		"REPLACE INTO `points_multipler` VALUES (1,1),(2,0.7),(3,0.5),(4,0.4),(5,0.35),(6,0.3),(7,0.25),(8,0.2),(9,0.15),(10,0.1),(11,0);" );
+	g_hDatabase.Query( Threaded_CheckPointsDefault,
+		"SELECT * FROM `points`" );
+	g_hDatabase.Query( Threaded_CheckPointsDefault,
+		"SELECT * FROM `points_multipler`" );
 }
 
 // Get map zones, mimics and vote-able maps

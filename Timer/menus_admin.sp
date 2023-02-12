@@ -1104,7 +1104,7 @@ public int Handler_ZoneDelete( Menu mMenu, MenuAction action, int client, int it
 			if ( (zone == i || zone == i+1) && g_bIsLoaded[i/2] )
 			{
 				g_bIsLoaded[i/2] = false;
-				PrintColorChatAll( client, CHAT_PREFIX..."{lightskyblue}%s{white} is no longer available for running!", g_szRunName[NAME_LONG][i/2] );
+				CPrintToChatAll( CHAT_PREFIX..."{lightskyblue}%s{white} is no longer available for running!", g_szRunName[NAME_LONG][i/2] );
 			}
 		}
 		
