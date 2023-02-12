@@ -904,7 +904,7 @@ void Nominate( int client, const char mapname[PLATFORM_MAX_PATH] )
 	int idx = g_aNominateList.FindString( mapname );
 	if( idx != -1 )
 	{
-		ReplyToCommand( client, CHAT_PREFIX..."{green}%s {white}has already been nominated", mapname );
+		CReplyToCommand( client, CHAT_PREFIX..."{green}%s {white}has already been nominated", mapname );
 		return;
 	}
 	
