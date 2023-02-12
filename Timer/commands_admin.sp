@@ -116,7 +116,7 @@ public Action Command_Admin_ZoneEnd( int client, int args )
 			SetupZoneSpawns();
 			
 			g_bIsLoaded[i/2] = true;
-			PrintColorChatAll( client, CHAT_PREFIX..."{lightskyblue}%s{white} is now available!", g_szRunName[NAME_LONG][i/2] );
+			CPrintToChatAll( CHAT_PREFIX..."{lightskyblue}%s{white} is now available!", g_szRunName[NAME_LONG][i/2] );
 			for (int r=0; r < NUM_RUNS; r++)
 				if (g_bIsLoaded[r] && g_Tiers[r][MODE_DEMOMAN] == -1)
 					CPrintToChat(client, CHAT_PREFIX..."No tiers set for the {green}%s {white}({lightskyblue}/settier{white})", g_szRunName[NAME_LONG][r]);
