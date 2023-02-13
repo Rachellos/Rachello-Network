@@ -208,9 +208,9 @@ stock void DB_InitializeDatabase()
 		)" );
 	
 	g_hDatabase.Query( Threaded_CheckPointsDefault,
-		"SELECT * FROM `points`" );
+		"SELECT * FROM `points`", 1 );
 	g_hDatabase.Query( Threaded_CheckPointsDefault,
-		"SELECT * FROM `points_multipler`" );
+		"SELECT * FROM `points_multipler`", 2 );
 }
 
 // Get map zones, mimics and vote-able maps
