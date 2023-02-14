@@ -323,6 +323,9 @@ stock void DB_Profile( int client, int args, int how, char[] Name, int id, int m
 {
 	static char szQuery[4000];
 
+	if (mode != MODE_SOLDIER && mode != MODE_DEMOMAN) 
+		mode = MODE_SOLDIER;
+
 	Panel hPanel = new Panel();
 	hPanel.DrawText( "..." );
 	

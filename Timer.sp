@@ -2591,14 +2591,13 @@ stock void RespawnPlayerRun( int client)
 {
 	if(g_fClientRespawnPosition[client][0] != 0){
 		if (TF2_GetPlayerClass(client) == TFClass_DemoMan) {
-			SetEntityGravity(client, 1.0);
 			SetEntityHealth(client, 175);
 		   	DestroyProjectilesDemo(client);
 		} else if (TF2_GetPlayerClass(client) == TFClass_Soldier) {
-			SetEntityGravity(client, 1.0);
 		    DestroyProjectilesSoldier(client);
 		}
 
+		SetEntityGravity(client, 1.0);
 		TeleportEntity(client, g_fClientRespawnPosition[client], g_fClientRespawnEyes[client], g_vecNull );
 		
 		//SetPlayerPractice(client, true);
@@ -2616,26 +2615,24 @@ stock void RespawnPlayerRun( int client)
 	if ( g_bIsLoaded[RUN_COURSE1] )
 	{
 		if (TF2_GetPlayerClass(client) == TFClass_DemoMan) {
-			SetEntityGravity(client, 1.0);
 			SetEntityHealth(client, 175);
 		   	DestroyProjectilesDemo(client);
 		} else if (TF2_GetPlayerClass(client) == TFClass_Soldier) {
-			SetEntityGravity(client, 1.0);
 		    DestroyProjectilesSoldier(client);
 		}
+		SetEntityGravity(client, 1.0);
 		SetPlayerRun(client, RUN_COURSE1);
 		return;
 	}
 	if ( g_bIsLoaded[RUN_MAIN] )
 	{
 		if (TF2_GetPlayerClass(client) == TFClass_DemoMan) {
-			SetEntityGravity(client, 1.0);
 			SetEntityHealth(client, 175);
 		   	DestroyProjectilesDemo(client);
 		} else if (TF2_GetPlayerClass(client) == TFClass_Soldier) {
-			SetEntityGravity(client, 1.0);
 		    DestroyProjectilesSoldier(client);
 		}
+		SetEntityGravity(client, 1.0);
 		SetPlayerRun(client, RUN_MAIN);
 		return;
 	}

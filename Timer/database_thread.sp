@@ -728,9 +728,9 @@ public void Threaded_GetRank( Database hOwner, DBResultSet hQuery, const char[] 
 		int srank = hQuery.FetchInt( 2 );
 		int drank = hQuery.FetchInt( 3 );
 
-		if ((solly > 0.0 || solly > 0.0) && (srank > 0 || drank > 0))
+		if (drank > 0 || srank > 0)
 		{
-			if (drank >= srank)
+			if (drank >= srank && srank > 0 && drank > 0)
 			{
 				CPrintToChatAll("{lightskyblue}%s {orange}(Rank %d Soldier){white} joining from {green}%s", name, srank, Country );
 			}
