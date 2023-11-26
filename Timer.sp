@@ -117,6 +117,8 @@
 #define SERVERTAG		"[SERVER TAG]"
 #define SENDERMSG		"[MESSAGE]"
 
+#define TempusURL		"https://tempus2.xyz"
+
 bool ServerOSIsLinux;
 
 Socket ClientSocket;
@@ -1558,11 +1560,11 @@ while ((iCP = FindEntityByClassname(iCP, "trigger_capture_area")) != -1)
 
 	DB_InitializeMap();
 
-	httpClient = new HTTPClient("https://tempus.xyz");
+	httpClient = new HTTPClient(TempusURL);
 	httpClient.SetHeader("Accept", "application/json");
 
 	char req[96];
-	Format(req, sizeof(req), "api/maps/name/%s/fullOverview",g_szCurrentMap);
+	Format(req, sizeof(req), "api/v0/maps/name/%s/fullOverview",g_szCurrentMap);
 
 	//Pass the client and the type of request to the data receiving function
 	httpClient.Get(req, OnMapInfoGained);
@@ -1656,11 +1658,11 @@ public void OnMapInfoGained(HTTPResponse response, any value)
 
 	int i;
 
-	http = new HTTPClient("https://tempus.xyz");
+	http = new HTTPClient(TempusURL);
 	http.SetHeader("Accept", "application/json");
 
 
-	Format(query, sizeof(query), "api/maps/name/%s/zones/typeindex/map/1/records/list?limit=1", g_szCurrentMap);
+	Format(query, sizeof(query), "api/v0/maps/name/%s/zones/typeindex/map/1/records/list?limit=1", g_szCurrentMap);
 
 	http.Get(query, OnTempusWrInfoReceived, 0);
 
@@ -1668,7 +1670,7 @@ public void OnMapInfoGained(HTTPResponse response, any value)
 	if(courses > 0) {
 		run = RUN_COURSE1-1;
 		for(i = 1; i < courses+1;i++) {
-			Format(query, sizeof(query), "api/maps/name/%s/zones/typeindex/course/%d/records/list?limit=1", g_szCurrentMap, i);
+			Format(query, sizeof(query), "api/v0/maps/name/%s/zones/typeindex/course/%d/records/list?limit=1", g_szCurrentMap, i);
 			run++;
 			http.Get(query, OnTempusWrInfoReceived, run);
 		}
@@ -1677,7 +1679,7 @@ public void OnMapInfoGained(HTTPResponse response, any value)
 	if(bonuses > 0) {
 		run = RUN_BONUS1-1;
 		for(i = 1; i < bonuses+1;i++) {
-			Format(query, sizeof(query), "api/maps/name/%s/zones/typeindex/bonus/%d/records/list?limit=1", g_szCurrentMap, i);
+			Format(query, sizeof(query), "api/v0/maps/name/%s/zones/typeindex/bonus/%d/records/list?limit=1", g_szCurrentMap, i);
 			run++;
 			http.Get(query, OnTempusWrInfoReceived, run);
 		}
@@ -1805,10 +1807,10 @@ public void OnMapInfoGainedPR(HTTPResponse response, any client)
 	int i;
 
 
-	http = new HTTPClient("https://tempus.xyz");
+	http = new HTTPClient(TempusURL);
 	http.SetHeader("Accept", "application/json");
 
-	Format(query, sizeof(query), "api/maps/name/%s/zones/typeindex/map/1/records/list?limit=300", g_szCurrentMap);
+	Format(query, sizeof(query), "api/v0/maps/name/%s/zones/typeindex/map/1/records/list?limit=300", g_szCurrentMap);
 
 	http.Get(query, OnTempusPrInfoReceived, client);
 
@@ -1816,7 +1818,7 @@ public void OnMapInfoGainedPR(HTTPResponse response, any client)
 	if(courses > 0) {
 		run = RUN_COURSE1-1;
 		for(i = 1; i < courses+1;i++) {
-			Format(query, sizeof(query), "api/maps/name/%s/zones/typeindex/course/%d/records/list?limit=300", g_szCurrentMap, i);
+			Format(query, sizeof(query), "api/v0/maps/name/%s/zones/typeindex/course/%d/records/list?limit=300", g_szCurrentMap, i);
 			http.Get(query, OnTempusPrInfoReceived, client);
 		}
 	}
@@ -1824,7 +1826,7 @@ public void OnMapInfoGainedPR(HTTPResponse response, any client)
 	if(bonuses > 0) {
 		run = RUN_BONUS1-1;
 		for(i = 1; i < bonuses+1;i++) {
-			Format(query, sizeof(query), "api/maps/name/%s/zones/typeindex/bonus/%d/records/list?limit=300", g_szCurrentMap, i);
+			Format(query, sizeof(query), "api/v0/maps/name/%s/zones/typeindex/bonus/%d/records/list?limit=300", g_szCurrentMap, i);
 			http.Get(query, OnTempusPrInfoReceived, client);
 		}
 	}
@@ -2155,11 +2157,11 @@ public void OnClientConnected(int client) {
 	}
 
 	/*
-	httpClient = new HTTPClient("https://tempus.xyz");
+	httpClient = new HTTPClient(TempusURL);
 	httpClient.SetHeader("Accept", "application/json");
 
 	char req[96];
-	Format(req, sizeof(req), "api/maps/name/%s/fullOverview",g_szCurrentMap);
+	Format(req, sizeof(req), "api/v0/maps/name/%s/fullOverview",g_szCurrentMap);
 	//Pass the client and the type of request to the data receiving function
 	httpClient.Get(req, OnMapInfoGainedPR, client);*/
 }

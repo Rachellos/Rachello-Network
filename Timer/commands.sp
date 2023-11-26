@@ -2084,11 +2084,11 @@ public Action Command_SVid(int client, int args)
 		}
 	}
 
-	http = new HTTPClient("https://tempus.xyz");
+	http = new HTTPClient(TempusURL);
 	http.SetHeader("Accept", "application/json");
 
 	char req[96];
-	Format(req, sizeof(req), "api/maps/name/%s/fullOverview", g_szCurrentMap);
+	Format(req, sizeof(req), "api/v0/maps/name/%s/fullOverview", g_szCurrentMap);
 
 	http.Get(req, OnVideoInfoReceivedSolly, client);
 }
@@ -2113,11 +2113,11 @@ public Action Command_DVid(int client, int args)
 		FormatEx(displayName, sizeof(displayName), "%s", g_szCurrentMap);
 	}
 
-	http = new HTTPClient("https://tempus.xyz");
+	http = new HTTPClient(TempusURL);
 	http.SetHeader("Accept", "application/json");
 
 	char req[96];
-	Format(req, sizeof(req), "api/maps/name/%s/fullOverview", displayName);
+	Format(req, sizeof(req), "api/v0/maps/name/%s/fullOverview", displayName);
 
 	http.Get(req, OnVideoInfoReceivedDemo, client);
 }

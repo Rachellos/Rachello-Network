@@ -13,7 +13,6 @@ char g_mapName[64];
 
 HTTPClient httpClient;
 
-
 //Map info requests
 char g_mapReqName[MAXPLAYERS+1][64];
 char g_mapReqData[MAXPLAYERS+1][999999];
@@ -89,11 +88,11 @@ public void DisplayMapInfo( int client, int type,char m[64]) {
 	}
 	g_mapReqName[client] = m;
 
-	httpClient = new HTTPClient("https://tempus.xyz");
+	httpClient = new HTTPClient(TempusURL);
 	httpClient.SetHeader("Accept", "application/json");
 
 	char req[96];
-	Format(req, sizeof(req), "api/maps/name/%s/fullOverview",m);
+	Format(req, sizeof(req), "api/v0/maps/name/%s/fullOverview",m);
 
 	//Pass the client and the type of request to the data receiving function
 	int client_type = client*2 + type;
@@ -135,11 +134,11 @@ public void OnMapInfoReceived(HTTPResponse response, any value)
 
 public void DisplayMapInfoFromQuery(int client,int type,char mapQuery[64]) {
 
-	httpClient = new HTTPClient("https://tempus.xyz");
+	httpClient = new HTTPClient(TempusURL);
 	httpClient.SetHeader("Accept", "application/json");
 
 	char req[96];
-	Format(req, sizeof(req), "api/search/playersAndMaps/%s",mapQuery);
+	Format(req, sizeof(req), "api/v0/search/playersAndMaps/%s",mapQuery);
 
 	//Pass the client and the type of request to the data receiving function
 	int client_type = client*2 + type;
@@ -331,11 +330,11 @@ public void DisplayTopTimes(int client,int type,char m[64],char info[16],int max
 	}
 	g_recordReqName[client] = request;
 
-	httpClient = new HTTPClient("https://tempus.xyz");
+	httpClient = new HTTPClient(TempusURL);
 	httpClient.SetHeader("Accept", "application/json");
 
 	char req[128];
-	Format(req, sizeof(req), "api/maps/name/%s/zones/typeindex/%s/records/list?limit=%d",m,info,maxRecords);
+	Format(req, sizeof(req), "api/v0/maps/name/%s/zones/typeindex/%s/records/list?limit=%d",m,info,maxRecords);
 
 	int client_type = client*2 + type;
 
@@ -401,11 +400,11 @@ public void DownloadSingleRecord(int client, int record_id) {
 
 	char request[72];
 
-	httpClient = new HTTPClient("https://tempus.xyz");
+	httpClient = new HTTPClient(TempusURL);
 	httpClient.SetHeader("Accept", "application/json");
 
 	char req[128];
-	Format(req, sizeof(req), "api/records/id/%d/overview",record_id);
+	Format(req, sizeof(req), "api/v0/v0/records/id/%d/overview",record_id);
 
 	httpClient.Get(req, OnSingleRecordDownloaded, client);
 }
@@ -814,7 +813,7 @@ public Action SM_MapInfo(int client, int args) {
 	}
 
 	//Search for maps containing the substring provided
-	//tempus.xyz/api/search/playersAndMaps/""
+	//tempus.xyz/api/v0/search/playersAndMaps/""
 
 	char query[64];
 	GetCmdArg(1,query,sizeof(query));
