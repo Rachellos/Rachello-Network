@@ -1,3 +1,41 @@
+
+public void GuildList(DiscordBot bot, char[] id, char[] name, char[] icon, bool owner, int permissions, any data)
+{
+	bot.GetGuildChannels(id, ChannelList);
+}
+
+public void ChannelList(DiscordBot bot, char[] guild, DiscordChannel Channel, any data)
+{
+	//Verify that the channel is a text channel
+	if(Channel.IsText) {
+		char name[32];
+		Channel.GetName(name, sizeof(name));
+		
+		//Compare name of channel to 'call-admin'
+		if(StrEqual(name, "cross-server", false))
+		{
+			PrintToServer("Added Cross Server Channel");
+			
+			dBot.StartListeningToChannel(Channel, OnMessage);
+		}
+	}
+}
+
+public void OnMessage(DiscordBot Bot, DiscordChannel Channel, DiscordMessage hMsg)
+{
+	DiscordUser user = hMsg.GetAuthor();
+
+	if (!user.IsBot())
+	{
+		char message[128], author[32];
+
+		hMsg.GetContent(message, sizeof(message));
+		user.GetUsername(author, sizeof(author));
+
+		CPrintToChatAll("| {lightskyblue}(Discord) - {green}%s{grey}: %s", author, message);
+	}
+}
+
 public Action CMD_SendMessage(client, args)
 {
 	if (args < 1)
@@ -14,7 +52,7 @@ public Action CMD_SendMessage(client, args)
 
 	Format(playerName, sizeof(playerName), "%N", client); //Little hack for chat colors user
 	Format(finalMessage, sizeof(finalMessage), "| {lightskyblue}(%s) - {green}%s{grey}: %s",
-												(ServerOSIsLinux) ? server_name[NAME_SHORT][server_id] : "LOCAL",
+												(ServerOSIsLinux) ? ServerRegionCode : "LOCAL",
 												playerName,
 												Message);
 	
@@ -22,7 +60,7 @@ public Action CMD_SendMessage(client, args)
 	DiscordWebHook hook = new DiscordWebHook(WEBHOOK_IRC);
 	hook.SlackMode = true;
 	hook.SetUsername( "Chat" );
-	Format(text, sizeof(text), "`%s` **%N:** %s", (ServerOSIsLinux) ? server_name[NAME_SHORT][server_id] : "LOCAL", client, Message);	
+	Format(text, sizeof(text), "`%s` **%N:** %s", (ServerOSIsLinux) ? ServerRegionCode : "LOCAL", client, Message);
 	hook.SetContent(text);
 	hook.Send();
 	delete hook;

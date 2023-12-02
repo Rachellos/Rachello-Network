@@ -618,7 +618,7 @@ public void Threaded_RecordInfo( Database hOwner, DBResultSet hQuery, const char
 		DrawPanelText(panel,buffer);
 		Format(buffer,sizeof(buffer),"Date: %s (Moscow)", date);
 		DrawPanelText(panel,buffer);
-		Format(buffer,sizeof(buffer),"Server: %s", server_name[NAME_LONG][s_id] );
+		Format(buffer,sizeof(buffer),"Server: %s", server_name[NAME_LONG][0] );
 		DrawPanelText(panel,buffer);
 
 		DrawPanelText(panel," ");
