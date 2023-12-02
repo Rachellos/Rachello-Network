@@ -244,6 +244,7 @@ int db_id[MAXPLAYERS+1];
 ConVar gHostPort;
 ConVar gHostname;
 ConVar srv_id = null;
+ConVar DiscordToken = null;
 
 //To prevent spam
 int LastUsage[MAXPLAYERS + 1];
@@ -1058,6 +1059,8 @@ public void OnPluginStart()
 
 	srv_id = CreateConVar("server_id", "0", "Server id");
 
+	DiscordToken = CreateConVar("discord", "TOKEN", "Discord BOT tocken for communication via discord chat (channel must be named cross-server");
+
 	AutoExecConfig(true, "Timer");
 
 	LoadTranslations("nominations.phrases");
@@ -1301,7 +1304,11 @@ public void OnAllPluginsLoaded()
     {
         Updater_AddPlugin(UPDATE_URL);
     }
-	dBot = new DiscordBot("Nzk5OTUwNTUzNzkwNjc2OTkz.GXTtWK.dfWR2OVaYwztPdmupo7jV2_FVJVdKBQZoiGKsQ");
+	char token[128];
+
+	DiscordToken.GetString(token, sizeof(token));
+
+	dBot = new DiscordBot(token);
 	dBot.GetGuilds(GuildList);
 	dBot.MessageCheckInterval = 0.5;
 
