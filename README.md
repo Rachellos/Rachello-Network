@@ -1,4 +1,4 @@
-Sourcemod version the Tempus Timer for servers
+Sourcemod version of the Tempus Timer for servers
 
 ## Installation
 
@@ -16,8 +16,8 @@ Sourcemod version the Tempus Timer for servers
 		 "pass"    "Your pass" //Database user password
 	}
     ```
-Before launching, I recommend filling in the configuration file if you want to use all available functions
-```addons/sourcemod/configs/TimerSettings.cfg```
+* Before launching, I recommend filling in the configuration file if you want to use all available functions
+  ```addons/sourcemod/configs/TimerSettings.cfg```
 
 
 	"Settings"
