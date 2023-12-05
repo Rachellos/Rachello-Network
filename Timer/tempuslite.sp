@@ -404,7 +404,7 @@ public void DownloadSingleRecord(int client, int record_id) {
 	httpClient.SetHeader("Accept", "application/json");
 
 	char req[128];
-	Format(req, sizeof(req), "api/v0/v0/records/id/%d/overview",record_id);
+	Format(req, sizeof(req), "api/v0/records/id/%d/overview",record_id);
 
 	httpClient.Get(req, OnSingleRecordDownloaded, client);
 }

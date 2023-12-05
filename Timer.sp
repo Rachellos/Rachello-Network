@@ -123,6 +123,8 @@ bool ServerOSIsLinux;
 char ServerRegionCode[4];
 
 Socket ClientSocket;
+Socket ServerSocket;
+ArrayList IRC_Connections_Array;
 
 Menu PrevMenu[MAXPLAYERS+1][10];
 
@@ -130,6 +132,16 @@ int gagState[MAXPLAYERS+1];
 
 bool IRC_Connected;
 bool requested = false;
+
+//Discord shit
+DiscordBot dBot = null;
+char s_DiscordBotToken[255];
+
+char sIRC_Channel[255];
+char sActions_Channel[255];
+char sChatLogs_Channel[255];
+char sCallAdmin_Channel[255];
+
 
 // Zones
 bool g_bIsLoaded[NUM_RUNS];
@@ -226,8 +238,6 @@ float g_flClientWarning[MAXPLAYERS+1]; // Used for anti-spam.
 
 Function Func;
 
-DiscordBot dBot = null;
-
 // Practice
 bool g_bClientPractising[MAXPLAYERS+1];
 
@@ -245,6 +255,7 @@ ConVar gHostPort;
 ConVar gHostname;
 ConVar srv_id = null;
 ConVar DiscordToken = null;
+ConVar IRC_Server = null;
 
 //To prevent spam
 int LastUsage[MAXPLAYERS + 1];
@@ -307,7 +318,6 @@ char server_name[NUM_NAMES][][] =
 	}
 };
 
-Handle hPlugin = INVALID_HANDLE;
 int server_id=0;
 
 enum { COMMAND, COMMAND_DESC };
@@ -672,6 +682,21 @@ public void OnPluginEnd() {
 		WritePackString(pack, currentDemoFilename);
 		CreateTimer(1.0, Timer_CompressDemo, pack);
 	}
+	Transaction t;
+	char trans[300];
+	bool isTransNotEmpty = false;
+	for (int i = 1; i <= MaxClients; i++)
+	{	
+		if (IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i))
+		{
+			ClientConnectTime[i] = GetGameTime() - ClientConnectTime[i];
+			FormatEx(trans, sizeof(trans), "UPDATE "...TABLE_PLYDATA..." SET lastseen = CURRENT_TIMESTAMP, total_hours = total_hours + %.1f, online = 0 WHERE uid = %i", ClientConnectTime[i], g_iClientId[i]);
+			t.AddQuery(trans);
+			isTransNotEmpty = true;
+		}
+	}
+	if (isTransNotEmpty)
+		SQL_ExecuteTransaction(g_hDatabase, t);
 }
 
 public int Native_IsAutoExtendEnabled(Handle handler, int numParams)
@@ -732,12 +757,10 @@ public Action OnClientSayCommand( int client, const char[] szCommand, const char
 	else
 		FormatEx(live, sizeof(live), "");
 
-	DiscordWebHook hook = new DiscordWebHook(CHATLOGS_WEBHOOK);
 	FormatEx(discord_msg, sizeof(discord_msg), "``%s`` **%N:** %s", ServerRegionCode, client, msg);
-	hook.SetUsername("Chat");
-	hook.SetContent(discord_msg);
-	hook.Send();
-	delete hook;
+
+	if (sChatLogs_Channel[0])
+		dBot.SendMessageToChannelID(sChatLogs_Channel, discord_msg);
 
 	if (g_fClientHideFlags[client] & HIDEHUD_CHATRANKSOLLY)
 	{
@@ -1018,12 +1041,6 @@ public void OnPluginStart()
 	AddCommandListener(OnRestrictCommand, "setpos");
 	AddCommandListener(OnRestrictCommand, "setpos_exact");
 	AddCommandListener(OnRestrictCommand, "noclip");
-	Handle pIterator = GetPluginIterator();
-	hPlugin = ReadPlugin(pIterator);
-	CloseHandle(pIterator);
-
-	ClientSocket = SocketCreate(SOCKET_TCP, OnClientSocketError);
-	ConnecToMasterServer();
 
 	requested = false;
 	char path[PLATFORM_MAX_PATH];
@@ -1057,11 +1074,50 @@ public void OnPluginStart()
 	LoadTranslations("sourceirc.phrases");
 	g_cvColor.GetString(g_sColor, sizeof(g_sColor));*/
 
-	srv_id = CreateConVar("server_id", "0", "Server id");
-
-	DiscordToken = CreateConVar("discord", "TOKEN", "Discord BOT tocken for communication via discord chat (channel must be named cross-server");
-
 	AutoExecConfig(true, "Timer");
+
+	BuildPath(Path_SM, path, sizeof(path), "configs/TimerSettings.cfg");
+
+	if(!FileExists(path)) {
+		Handle FileHandle = OpenFile(path, "a+");
+    
+		WriteFileLine(FileHandle, "\"Settings\"");
+		WriteFileLine(FileHandle, "{");
+		WriteFileLine(FileHandle, "		\"server_id\"	\"\"");
+		WriteFileLine(FileHandle, "		\"discord\"	\"<DISCORD_BOT_TOCKEN>\"");
+		WriteFileLine(FileHandle, "		\"IRC_Host\"	\"<IP>\"");
+		WriteFileLine(FileHandle, "		\"IRC_Port\"	\"<PORT>\"");
+		WriteFileLine(FileHandle, "		\"Create_IRC_server\"	\"0 | 1\"");
+		WriteFileLine(FileHandle, "}");
+		
+		CloseHandle(FileHandle); 
+	}
+
+	KeyValues kv = new KeyValues("Settings");
+
+	if (!kv.ImportFromFile(path)) {
+		LogToGame("Error loading Timer Config");
+		SetFailState("Unable to import Timer Config from file.");
+	}
+
+	kv.Rewind();
+
+	server_id = kv.GetNum("server_id", 0);
+	kv.GetString("discord", s_DiscordBotToken, sizeof(s_DiscordBotToken));
+	kv.GetString("IRC_Host", IRC_ServerIp, sizeof(IRC_ServerIp));
+	IRC_ServerPort = kv.GetNum("IRC_Port", 12345);
+
+	isMasterServer = view_as<bool>(kv.GetNum("Create_IRC_server", 0));
+	delete kv;
+
+	if (isMasterServer)
+	{
+		CreateMasterServer();
+		FormatEx(IRC_ServerIp, sizeof(IRC_ServerIp), "localhost");
+	}
+
+	ClientSocket = SocketCreate(SOCKET_TCP, OnClientSocketError);
+	ConnecToMasterServer();
 
 	LoadTranslations("nominations.phrases");
 	g_hForward_Timer_OnStateChanged = CreateGlobalForward( "Timer_OnStateChanged", ET_Ignore, Param_Cell, Param_Cell );
@@ -1275,23 +1331,6 @@ public void OnPluginStart()
 	gHostname = FindConVar("hostname");
 	gHostPort = FindConVar("hostport");
 
-	//RegConsoleCmd("sm_irc", cmdIRC, "Toggles IRC chat");
-	//RegAdminCmd("sm_irccolor", cmdIRCColor, ADMFLAG_ROOT, "Set IRC tag color");
-	// CONVARS
-	
-	/*g_cvAllowHide = CreateConVar("irc_allow_hide", "0", "Sets whether players can hide IRC chat", FCVAR_NOTIFY);
-	g_cvAllowFilter = CreateConVar("irc_allow_filter", "0", "Sets whether IRC filters messages beginning with !", FCVAR_NOTIFY);
-	g_cvHideDisconnect = CreateConVar("irc_disconnect_filter", "0", "Sets whether IRC filters disconnect messages", FCVAR_NOTIFY);
-	g_cvColor = CreateConVar("irc_color", "65bca6", "Set irc tag color");
-
-	g_cvarPctRequired = CreateConVar("anti_caps_lock_percent", "0.9", "Force all letters to lowercase when this percent of letters is uppercase (not counting symbols)", _, true, 0.0, true, 1.0);
-	g_cvarMinLength = CreateConVar("anti_caps_lock_min_length", "5", "Only force letters to lowercase when a message has at least this many letters (not counting symbols)", _, true, 0.0);
-
-	g_cvColor.AddChangeHook(cvarColorChanged);
-
-	LoadTranslations("sourceirc.phrases");
-	g_cvColor.GetString(g_sColor, sizeof(g_sColor));*/
-
 	LoadTranslations( "common.phrases" ); // So FindTarget() can work.
 	//LoadTranslations( "opentimer.phrases" );
 
@@ -1304,11 +1343,8 @@ public void OnAllPluginsLoaded()
     {
         Updater_AddPlugin(UPDATE_URL);
     }
-	char token[128];
 
-	DiscordToken.GetString(token, sizeof(token));
-
-	dBot = new DiscordBot(token);
+	dBot = new DiscordBot(s_DiscordBotToken);
 	dBot.GetGuilds(GuildList);
 	dBot.MessageCheckInterval = 0.5;
 
@@ -1411,7 +1447,6 @@ public Action OnGetMaxHealth(int client, int &maxhealth)
 
 public void OnConfigsExecuted()
 {
-	server_id = srv_id.IntValue;
 	for (int i = 1; i <= MaxClients; i++)
     {
         if (IsClientInGame(i))
@@ -1960,6 +1995,10 @@ public void OnTempusPrInfoReceived(HTTPResponse response, any client)
 
 public void OnMapEnd()
 {
+	Transaction t;
+	char trans[300];
+	bool isTransactionNotEmpty = false;
+
 	for (int i = 1; i <= MaxClients; i++)
 	{	
 		for (int d = 0; d < 3; d++)
@@ -1967,7 +2006,17 @@ public void OnMapEnd()
 			g_SavePointOrig[i][d] = 0.0;
 	 		g_SavePointEye[i][d] = 0.0;
 	 	}
+		if (IsClientInGame(i) && IsClientConnected(i) && !IsFakeClient(i))
+		{
+			ClientConnectTime[i] = GetGameTime() - ClientConnectTime[i];
+			FormatEx(trans, sizeof(trans), "UPDATE "...TABLE_PLYDATA..." SET lastseen = CURRENT_TIMESTAMP, total_hours = total_hours + %.1f, online = 0 WHERE uid = %i", ClientConnectTime[i], g_iClientId[i]);
+			t.AddQuery(trans);
+			isTransactionNotEmpty = true;
+		}
 	}
+	
+	if (isTransactionNotEmpty)
+		SQL_ExecuteTransaction(g_hDatabase, t);
 
 	if( g_cvMapVoteBlockMapInterval.IntValue > 0 )
 	{
@@ -2203,7 +2252,7 @@ public void OnClientPostAdminCheck( int client )
 		DB_RetrieveClientData( client );
 		GetJoiningRank(client);
 		
-		ClientConnectTime[client] = GetEngineTime();
+		ClientConnectTime[client] = GetGameTime();
 
 		char query[200];
 		DB_SaveClientData(client);
@@ -2273,7 +2322,7 @@ public void OnClientDisconnect( int client )
 	FormatTime(sTime, sizeof(sTime), "%Y-%m-%d %H:%M:%S", GetTime() );
 
 	Weather_delayTime[client] = 0.0;
-	ClientConnectTime[client] = GetEngineTime() - ClientConnectTime[client];
+	ClientConnectTime[client] = GetGameTime() - ClientConnectTime[client];
 
 	// Id can be 0 if quitting before getting authorized.
 	if (g_iClientId[client] > 0)
@@ -3351,11 +3400,9 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 	char			szFormTime[TIME_SIZE_DEF], szName[32];
 	GetClientName( client, szName, sizeof( szName ) );
 	FormatSeconds( flNewTime, szFormTime, FORMAT_2DECI );
-	Format(server_tag, sizeof(server_tag), (ServerOSIsLinux) ? server_name[NAME_SHORT][server_id] : "LOCAL");
+	Format(server_tag, sizeof(server_tag), ServerRegionCode);
 
 	char buffer[500];
-
-	DiscordWebHook hook = new DiscordWebHook( WEBHOOK_SERVER_ACTIONS );
 
 
 	static float flImprove;
@@ -3381,8 +3428,8 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 
 			FormatEx(buffer, sizeof(buffer), "(*%s*) **%N** Beat the **%s** • ***%s (WR -%s)!***", g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime, wr_improve);
 
-			hook.SetContent( buffer );
-			hook.Send();
+			if (sActions_Channel[0])
+				dBot.SendMessageToChannelID(sActions_Channel, buffer);
 
 			Format(wr_notify, sizeof(wr_notify), "wrnotifycode| {lightskyblue}(%s) {white}:: (%s) {green}%N {white}broke the {lightskyblue}%s {white}:: {green}%s {white}({lightskyblue}WR -%s{white})!", server_tag, g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime, wr_improve);
 			if (IRC_Connected)
@@ -3406,8 +3453,8 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 
 				FormatEx(buffer, sizeof(buffer), "(*%s*) **%N** broke ***%s*** on **%s** • ***%s (WR -%s)!***", g_szModeName[NAME_SHORT][mode], client, g_szRunName[NAME_LONG][run], g_szCurrentMap, szFormTime, wr_improve);
 
-				hook.SetContent( buffer );
-				hook.Send();
+				if (sActions_Channel[0])
+					dBot.SendMessageToChannelID(sActions_Channel, buffer);
 			}
 
 			Format(update_records, sizeof(update_records), "update_records");
@@ -3450,8 +3497,8 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 
 			FormatEx(buffer, sizeof(buffer), "(*%s*) **%N** Set the **%s** • ***%s***", g_szModeName[NAME_SHORT][mode], client, g_szCurrentMap, szFormTime);
 
-			hook.SetContent( buffer );
-			hook.Send();
+			if (sActions_Channel[0])
+				dBot.SendMessageToChannelID(sActions_Channel, buffer);
 
 			Format(wr_notify, sizeof(wr_notify), "wrnotifycode| {lightskyblue}(%s) {white}:: {green}%N {white}set the {lightskyblue}%s {white}:: {green}%s{white}!", server_tag, client, g_szCurrentMap, szFormTime);
 			
@@ -3465,8 +3512,6 @@ stock void DoRecordNotification( int client, int run, int style, int mode, float
 				SocketSend(ClientSocket, update_records, sizeof(update_records));
 		}
 	}
-
-	delete hook;
 
 	if ( g_fClientHideFlags[client] & HIDEHUD_PRTIME )	
 	{

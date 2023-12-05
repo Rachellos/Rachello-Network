@@ -2227,7 +2227,12 @@ public Action Cmd_CallAdmin(int client, int argc) {
 			return Plugin_Continue;
 		}
 
-		DiscordWebHook hook = new DiscordWebHook(WEBHOOK_CALLADMIN);
+		if (!sCallAdmin_Channel[0])
+		{
+			CPrintToChat(client, CHAT_PREFIX..."There is no available channel for call admin");
+			return Plugin_Continue;
+		}
+
 		//Format Message to send
 		char message[400];
 
@@ -2251,12 +2256,8 @@ public Action Cmd_CallAdmin(int client, int argc) {
 		
 		FormatEx(message, sizeof(message), "`%s` (`%s`) has called an Admin on %s\nMessage: %s\nConnect: steam://connect/%s", name, authid, hostname, reason, ip);
 		
-		//Send Message to all channels we stored
-		
-		hook.SetUsername("Call Admin");
-		hook.SetContent(message);
-		hook.Send();
-		delete hook;
+		//Send Message to discord
+		dBot.SendMessageToChannelID(sCallAdmin_Channel, message);
 
 		CPrintToChat(client, CHAT_PREFIX..."{lightskyblue}Called {white}an Admin");
 		LastUsage[client] = GetTime();
