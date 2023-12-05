@@ -1,4 +1,4 @@
-Sourcemod version the Tempus Timer for servers
+Sourcemod version of the Tempus Timer for servers
 
 ## Installation
 
