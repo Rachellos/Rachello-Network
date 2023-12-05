@@ -19,7 +19,7 @@ Sourcemod version of the Tempus Timer for servers
 * Before launching, I recommend filling in the configuration file if you want to use all available functions
   ```addons/sourcemod/configs/TimerSettings.cfg```
 
-
+```cpp
 	"Settings"
 	{
 		"server_id"	"" //dont works yet.
@@ -40,6 +40,6 @@ Sourcemod version of the Tempus Timer for servers
 		// 1 to CREATE IRC server
 		"Create_IRC_server"	"0 | 1"
 	}
-
+```
 
 Discord for help: rachello_
