@@ -575,7 +575,7 @@ public void Threaded_RetrieveClientData( Database hOwner, DBResultSet hQuery, co
 	// Then we get the times.
 	if ( g_iClientId[client] )
 	{
-		FormatEx( szQuery, sizeof( szQuery ), "SELECT run, mode, time FROM "...TABLE_RECORDS..." WHERE map = '%s' AND uid = %i ORDER BY run", g_szCurrentMap, g_iClientId[client] );
+		FormatEx( szQuery, sizeof( szQuery ), "SELECT run, mode, time, recordid FROM "...TABLE_RECORDS..." WHERE map = '%s' AND uid = %i ORDER BY run", g_szCurrentMap, g_iClientId[client] );
 		g_hDatabase.Query( Threaded_RetrieveClientTimes, szQuery, GetClientUserId( client ), DBPrio_Normal );
 	}
 	delete hQuery;
@@ -693,14 +693,29 @@ public void Threaded_RetrieveClientTimes( Database hOwner, DBResultSet hQuery, c
 	int run;
 	int style;
 	int mode;
+
+	char query[255];
 	
-	while ( hQuery.FetchRow() )
+	if (hQuery.RowCount)
 	{
-		run = hQuery.FetchInt( 0 );
+		while ( hQuery.FetchRow() )
+		{
+			run = hQuery.FetchInt( 0 );
+			
+			mode = hQuery.FetchInt( 1 );
 		
-		mode = hQuery.FetchInt( 1 );
-	
-		g_flClientBestTime[client][run][mode] = hQuery.FetchFloat( 2 );
+			g_flClientBestTime[client][run][mode] = hQuery.FetchFloat( 2 );
+
+			if (run == RUN_MAIN)
+				g_iClientMapPR_id[client][mode] = hQuery.FetchInt( 3 );
+		}
+
+		g_hDatabase.Format(query, sizeof(query), "SELECT id, run, style, mode, time FROM mapcprecs where ( recordid = %i OR recordid = %i ) and map = '%s'", 
+			g_iClientMapPR_id[client][MODE_SOLDIER], 
+			g_iClientMapPR_id[client][MODE_DEMOMAN], 
+			g_szCurrentMap);
+
+		g_hDatabase.Query( Threaded_Init_CP_PR_Times, query, client, DBPrio_High );
 	}
 }
 
@@ -1099,26 +1114,79 @@ public void Threaded_NewID_Final( Database hOwner, DBResultSet hQuery, const cha
 	}
 }
 
-public void Threaded_OnAddRecordDone( Database hOwner, DBResultSet hQuery, const char[] szError, ArrayList hData )
+public void OnAddRecordDone(Database g_hDatabase, any client, int numQueries, DBResultSet[] results, any[] queryData)
 {
-	int client;
-	if ( (client = GetClientOfUserId( hData.Get( 0, 0 ) )) )
+	if (client <= 0) return;
+
+	if ( results[1] == DBVal_Error || results[1] == DBVal_Null || results[1] == DBVal_TypeMismatch || results[1] == null ) 
 	{
-		if ( !(StrEqual( szError, "")) )
+		char error[200];
+
+		if (SQL_GetError(g_hDatabase, error, sizeof(error)))
 		{
-			DB_LogError( "Unable to add record!" );
-			
-			return;
+			DB_LogError( error );
 		}
-		else
-		{
-			int run = hData.Get( 0, 1 );
-			int style = hData.Get( 0, 2 );
-			int mode = hData.Get( 0, 3 );
-			DB_DisplayClientRank( client, run, style, mode );
-		}
+
+		return;
 	}
-	delete hData;
+
+	if (!results[1].HasResults) return;
+
+	if (results[1].FetchRow())
+	{	
+		char szQuery[255];
+
+		int run = results[1].FetchInt(0);
+		int style = results[1].FetchInt(1);
+		int mode = results[1].FetchInt(2);
+
+		g_iClientMapPR_id[client][mode] = results[1].FetchInt(3);
+
+		// Save checkpoint time differences.
+		if ( g_hCPs != null && run == RUN_MAIN )
+		{
+			int len = g_hClientCPData[client].Length;
+
+			for ( int i = 0; i < len; i++ )
+			{
+				int iData[C_CP_SIZE];
+				
+				static float flPrevTime;
+				
+				flPrevTime = g_flClientStartTime[client];
+				
+				g_hClientCPData[client].GetArray( i, iData, view_as<int>( C_CPData ) );
+				
+				
+				float flRecTime;
+				flRecTime = view_as<float>( iData[C_CP_GAMETIME] ) - flPrevTime;
+				
+				if (f_CpPr[client][mode][i] <= TIME_INVALID)
+				{
+					FormatEx( szQuery, sizeof( szQuery ), "INSERT INTO mapcprecs VALUES (%i, '%s', %i, %i, %i, %i, %i, %.16f)",
+					g_iClientMapPR_id[client][mode],
+					g_szCurrentMap,
+					iData[C_CP_ID],
+					run,
+					style,
+					mode,
+					g_iClientId[client],
+					flRecTime );
+				}
+				else
+				{
+					FormatEx( szQuery, sizeof( szQuery ), "UPDATE mapcprecs SET time = %.16f WHERE recordid = %i and id = %i", flRecTime, g_iClientMapPR_id[client][mode], iData[C_CP_ID] );
+				}
+
+				g_hDatabase.Query(Threaded_Empty, szQuery);
+
+				SetPrCpTime( iData[C_CP_INDEX], mode, flRecTime, client  );
+			}
+		}
+
+		DB_DisplayClientRank( client, run, style, mode );
+	}
+	return;
 }
 
 public void Threaded_CheckPointsDefault( Database hOwner, DBResultSet hQuery, const char[] szError, any data )
@@ -1238,7 +1306,7 @@ public void Threaded_Init_Zones( Database hOwner, DBResultSet hQuery, const char
 			
 			for (int b=1; b < 4; b+=2)
 			{
-				FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, run, style, mode, time, name FROM maprecs natural join plydata WHERE map = '%s' and run = %i and mode = %i order by time asc", g_szCurrentMap, i, b );
+				FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, run, style, mode, time, name, recordid FROM maprecs natural join plydata WHERE map = '%s' and run = %i and mode = %i order by time asc limit 1", g_szCurrentMap, i, b );
 				
 				g_hDatabase.Query( Threaded_Init_Records, szQuery, _, DBPrio_Normal );
 			}
@@ -1251,7 +1319,6 @@ public void Threaded_Init_Zones( Database hOwner, DBResultSet hQuery, const char
 		g_hDatabase.Query( Threaded_Init_Levels, szQuery, _, DBPrio_High );
 		
 		g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT run, id, min0, min1, min2, max0, max1, max2 FROM "...TABLE_CP..." WHERE map = '%s'", g_szCurrentMap );
-		// SELECT run, id, min0, min1, min2, max0, max1, max2, rec_time FROM mapcprecs NATURAL JOIN mapcps WHERE map = 'bhop_gottagofast' ORDER BY run, id
 		g_hDatabase.Query( Threaded_Init_CPs, szQuery, _, DBPrio_Normal );
 
 		g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT mode, pos0, pos1, pos2, ang0, ang1, ang2 FROM skip_zones WHERE map = '%s'", g_szCurrentMap);
@@ -1331,6 +1398,9 @@ public void Threaded_Init_Records( Database hOwner, DBResultSet hQuery, const ch
 			g_flMapBestTime[iRun][iStyle][iMode] = hQuery.FetchFloat( 4 );
 
 			hQuery.FetchString( 5, szWrName[iRun][iMode], sizeof(szWrName) );
+
+			if (iRun == RUN_MAIN)
+				g_iMapWR_id[iMode] = hQuery.FetchInt( 6 );
 		}
 	}
 }
@@ -1435,7 +1505,7 @@ public void Threaded_Init_CPs( Database hOwner, DBResultSet hQuery, const char[]
 	
 	// GET CHECKPOINT TIMES
 	char szQuery[500];
-	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, min(time), map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' GROUP BY id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE recordid = %i OR recordid = %i", g_iMapWR_id[MODE_SOLDIER], g_iMapWR_id[MODE_DEMOMAN] );
 	
 	g_hDatabase.Query( Threaded_Init_CP_WR_Times, szQuery, _, DBPrio_High );
 }

