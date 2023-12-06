@@ -77,7 +77,8 @@ stock void DB_InitializeDatabase()
 		  orank int(11) DEFAULT '0',\
 		  ip varchar(30) DEFAULT NULL,\
 		  online int(11) DEFAULT '0',\
-		  total_hours float NOT NULL DEFAULT '0.0' \
+		  total_hours float NOT NULL DEFAULT '0.0',\
+		  isadmin int DEFAULT '0'\
 		)");
 	
 	g_hDatabase.Query( Threaded_Empty,
@@ -521,7 +522,7 @@ public int Handler_Prifile( Menu mMenu, MenuAction action, int client, int item 
 	if ( item == 5 )
 	{
 		char szQuery[192];
-		FormatEx( szQuery, sizeof( szQuery ), "SELECT country, lastseen, firstseen, uid, name, CURRENT_TIMESTAMP, total_hours FROM "...TABLE_PLYDATA..." WHERE uid = %i", db_id[client] );
+		FormatEx( szQuery, sizeof( szQuery ), "SELECT country, lastseen, firstseen, uid, name, CURRENT_TIMESTAMP, total_hours, isadmin FROM "...TABLE_PLYDATA..." WHERE uid = %i", db_id[client] );
 		g_hDatabase.Query( Threaded_ProfileInfo, szQuery, GetClientUserId( client ), DBPrio_Normal );
 	}
 	if ( item == 6 )
@@ -1163,7 +1164,7 @@ stock void DB_RetrieveClientData( int client )
 	
 	static char szQuery[192];
 
-	FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, hideflags, overall, solly, demo, srank, drank FROM "...TABLE_PLYDATA..." WHERE steamid = '%s'", szSteam );
+	FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, hideflags, overall, solly, demo, srank, drank, isadmin FROM "...TABLE_PLYDATA..." WHERE steamid = '%s'", szSteam );
 	
 	g_hDatabase.Query( Threaded_RetrieveClientData, szQuery, GetClientUserId( client ), DBPrio_Normal );
 }
@@ -1306,15 +1307,12 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 		{
 			if ( StrEqual( map, g_szCurrentMap) && g_flClientBestTime[i][run][mode] != TIME_INVALID )
 			{
-				DB_RetrieveClientData( i );
-
 				if (g_iClientId[i] == uid)
 				{
 					if (g_flClientBestTime[i][run][mode] <= g_flMapBestTime[run][style][mode])
 					{
 						g_flMapBestTime[run][style][mode] = TIME_INVALID;
 
-						
 						FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, run, style, mode, time, name, recordid FROM maprecs natural join plydata WHERE map = '%s' and run = %i and mode = %i order by time asc LIMIT 1", g_szCurrentMap, run, mode );
 								
 						g_hDatabase.Query( Threaded_Init_Records, szQuery, _, DBPrio_High );
@@ -1335,6 +1333,7 @@ stock void DB_DeleteRecord( int client, int run, int mode, int uid, char[] map )
 						f_CpPr[i][mode][cp] = TIME_INVALID;
 					}
 				}
+				DB_RetrieveClientData( i );
 			}
 		}
 	}

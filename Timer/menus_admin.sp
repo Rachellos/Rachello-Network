@@ -1107,6 +1107,13 @@ public int Handler_ZoneDelete( Menu mMenu, MenuAction action, int client, int it
 				CPrintToChatAll( CHAT_PREFIX..."{lightskyblue}%s{white} is no longer available for running!", g_szRunName[NAME_LONG][i/2] );
 			}
 		}
+
+		char query[150];
+		FormatEx(query, sizeof(query), "DELETE FROM map_info WHERE map_name = '%s' and run = %i", g_szCurrentMap, zone/2);
+		g_hDatabase.Query(Threaded_Empty, query);
+
+		g_Tiers[zone/2][MODE_DEMOMAN] = -1;
+		g_Tiers[zone/2][MODE_SOLDIER] = -1;
 		
 		// Erase them from the database.
 		DB_EraseMapZone( zone );

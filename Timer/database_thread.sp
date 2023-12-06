@@ -111,6 +111,57 @@ public void Threaded_printsteam( Database hOwner, DBResultSet hQuery, const char
 	delete hQuery;
 }	
 
+public void Threaded_AdminManagement( Database hOwner, DBResultSet hQuery, const char[] szError, int client )
+{
+	if ( !(client = GetClientOfUserId( client )) ) return;
+	
+	if ( hQuery == null )
+	{
+		DB_LogError( "Couldn't retrieve player data!" );
+		
+		return;
+	}
+
+	if ( hQuery.RowCount )
+	{
+		hQuery.FetchRow();
+		char szQuery[192], name[32];
+
+		int isadmin = hQuery.FetchInt( 0 );
+		hQuery.FetchString(1, name, sizeof(name));
+		
+		FormatEx( szQuery, sizeof( szQuery ), "UPDATE plydata SET isadmin = %i WHERE uid = %i",
+		isadmin ? 0 : 1,
+		db_id[client] );
+
+		g_hDatabase.Query( Threaded_Empty, szQuery );
+		
+		CPrintToChat(client, CHAT_PREFIX..."Player {lightskyblue}%s {white}%s.", name, isadmin ? "not an Admin anymore!" : "became an Admin!");
+
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if (g_iClientId[i] == db_id[client])
+			{
+				if (!isadmin)
+				{
+					CPrintToChat(i, CHAT_PREFIX..."You have become an {lightskyblue}Admin!");
+					SetUserFlagBits(i, ADMFLAG_ROOT);
+				}
+				else
+				{
+					CPrintToChat(i, CHAT_PREFIX..."You are no longer an {red}Admin!");
+					SetUserFlagBits(i, 0);
+				}
+				break;
+			}
+		}
+
+		FormatEx( szQuery, sizeof( szQuery ), "SELECT country, lastseen, firstseen, uid, name, CURRENT_TIMESTAMP, total_hours, isadmin FROM "...TABLE_PLYDATA..." WHERE uid = %i", db_id[client] );
+		g_hDatabase.Query( Threaded_ProfileInfo, szQuery, GetClientUserId( client ), DBPrio_Normal );
+	}
+	delete hQuery;
+}	
+
 public void Threaded_ProfileInfo( Database hOwner, DBResultSet hQuery, const char[] szError, int client )
 {
 	if ( !(client = GetClientOfUserId( client )) ) return;
@@ -127,6 +178,7 @@ public void Threaded_ProfileInfo( Database hOwner, DBResultSet hQuery, const cha
 	char link[120];
 	char country[99];
 	int id;
+	int isAdmin;
 	char last[100];
 	char first[100];
 	char item[192];
@@ -145,18 +197,32 @@ public void Threaded_ProfileInfo( Database hOwner, DBResultSet hQuery, const cha
 		hQuery.FetchString( 5, cur_date, sizeof( cur_date ) );
 		total_hours = hQuery.FetchFloat( 6 ) / 60 / 60;
 
+		isAdmin = hQuery.FetchInt( 7 );
+
 		char time_ago_last[40], time_ago_first[40]; 
 		FormatTimeDuration(time_ago_last, sizeof(time_ago_last), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(last));
 
 		if (!hQuery.IsFieldNull(2))
 			FormatTimeDuration(time_ago_first, sizeof(time_ago_first), DateTimeToTimestamp(cur_date) - DateTimeToTimestamp(first));
 
-		FormatEx( item, sizeof( item ), "Details:\n Country: %s \n User id: %i \n Last seen: %s \n First seen: %s \n Total online hours: %.1f \n ", country, id, time_ago_last, time_ago_first, total_hours );
+		FormatEx( item, sizeof( item ), "Details:\n Country: %s \n User id: %i \n Last seen: %s \n First seen: %s \n Total online hours: %.1f \n %s", country, id, time_ago_last, time_ago_first, total_hours, isAdmin ? "Thats Admin!\n " : "");
 		mMenu.AddItem("", item );
 		mMenu.AddItem("", "Get Steam Profile Link\n ");
 		if (GetUserFlagBits(client) & ADMFLAG_ROOT)
 		{
-			mMenu.AddItem("", "Wipe player stats");
+			mMenu.AddItem("", "Wipe player stats\n ");
+
+			if (id != g_iClientId[client])
+			{
+				if (!isAdmin)
+				{
+					mMenu.AddItem("", "Make player an Admin\n ");
+				}
+				else
+				{
+					mMenu.AddItem("", "Revoke Admin\n ");
+				}
+			}
 		}
 		mMenu.ExitBackButton = true;
 	}
@@ -194,7 +260,13 @@ public int Handler_ProfileInfo( Menu mMenu, MenuAction action, int client, int i
 			{
 				WipePlayer( client, db_id[client], DBS_Name[client] );
 			}
-		}	
+			if (index == 3)
+			{
+				char szQuery[192];
+				FormatEx( szQuery, sizeof( szQuery ), "SELECT isadmin, name FROM "...TABLE_PLYDATA..." WHERE uid = %i", db_id[client] );
+				g_hDatabase.Query( Threaded_AdminManagement, szQuery, GetClientUserId( client ), DBPrio_Normal );
+			}
+		}
 	}
 }
 
@@ -567,6 +639,11 @@ public void Threaded_RetrieveClientData( Database hOwner, DBResultSet hQuery, co
 		g_iClientPointsDemo[client] = hQuery.FetchFloat(  4 );
 		ranksolly[client] = (g_iClientPointsSolly[client] > 0.0) ? hQuery.FetchInt( 5 ) : 0;
 		rankdemo[client] = (g_iClientPointsDemo[client] > 0.0) ? hQuery.FetchInt( 6 ) : 0;
+		int isAdmin = hQuery.FetchInt( 7 );
+
+		if (isAdmin)
+			SetUserFlagBits(client, ADMFLAG_ROOT);
+
 		g_hDatabase.Format( szQuery, sizeof( szQuery ), "UPDATE plydata SET overall = COALESCE((select sum(pts) from maprecs where uid = %i), 0.0), solly = COALESCE((select sum(pts) from maprecs where uid = %i and mode = 1), 0.0), demo = COALESCE((select sum(pts) from maprecs where uid = %i and mode = 3), 0.0) WHERE uid = %i", g_iClientId[client], g_iClientId[client], g_iClientId[client], g_iClientId[client] );
 		
 		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
