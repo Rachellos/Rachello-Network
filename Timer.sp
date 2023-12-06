@@ -2762,7 +2762,7 @@ stock void SetPlayerRun( int client, int reqrun )
 public void CheckpointTimes( int client, int uid, char[] map, int mode )
 {
 	char query[800];
-	g_hDatabase.Format(query, sizeof(query), "SELECT id, (select @curId := id), time, (select time from maprecs where uid = %i and map = '%s' and run = 0 and mode = %i), (select time from maprecs where map = '%s' and run = 0 and mode = %i order by time ASC limit 1), (SELECT time FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' and run = 0 and mode = %i and id = (@curId) ORDER BY id ASC) FROM mapcprecs WHERE map = '%s' and mode = %i and uid = %i ORDER BY id ASC", uid, map, mode, map, mode, map, map, mode, map, mode, uid);
+	g_hDatabase.Format(query, sizeof(query), "SELECT id, (select @curId := id), time, (select time from maprecs where uid = %i and map = '%s' and run = 0 and mode = %i), (select time from maprecs where map = '%s' and run = 0 and mode = %i and `rank` = 1 order by time ASC LIMIT 1), (SELECT time FROM mapcprecs WHERE uid = (select maprecs.uid from maprecs where maprecs.map = '%s' and maprecs.run = mapcprecs.run and maprecs.mode = mapcprecs.mode order by maprecs.time ASC limit 1) and map = '%s' and run = 0 and mode = %i and id = (@curId) ORDER BY id ASC) FROM mapcprecs WHERE map = '%s' and mode = %i and uid = %i ORDER BY id ASC", uid, map, mode, map, mode, map, map, mode, map, mode, uid);
 
 	g_hDatabase.Query(Threaded_Checkpoint_Times, query, client);
 }

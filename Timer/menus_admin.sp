@@ -1097,7 +1097,7 @@ public int Handler_ZoneDelete( Menu mMenu, MenuAction action, int client, int it
 			g_bZoneExists[zone][0] = false;
 			DeleteZoneBeams( zone );
 		}
-		PrintColorChatAll( client, CHAT_PREFIX..."{lightskyblue}%s{white} deleted!", g_szZoneNames[zone] );
+		CPrintToChatAll( CHAT_PREFIX..."{lightskyblue}%s{white} deleted!", g_szZoneNames[zone] );
 		
 		for (int i = 0; i < NUM_RUNS+20; i+=2)
 		{

@@ -1130,17 +1130,16 @@ public void OnAddRecordDone(Database g_hDatabase, any client, int numQueries, DB
 		return;
 	}
 
-	if (!results[1].HasResults) return;
+	results[1].FetchRow();
+	int run = results[1].FetchInt(0);
+	int style = results[1].FetchInt(1);
+	int mode = results[1].FetchInt(2);
 
-	if (results[1].FetchRow())
+	if (results[2].FetchRow())
 	{	
 		char szQuery[255];
 
-		int run = results[1].FetchInt(0);
-		int style = results[1].FetchInt(1);
-		int mode = results[1].FetchInt(2);
-
-		g_iClientMapPR_id[client][mode] = results[1].FetchInt(3);
+		g_iClientMapPR_id[client][mode] = results[2].FetchInt(0);
 
 		// Save checkpoint time differences.
 		if ( g_hCPs != null && run == RUN_MAIN )
@@ -1183,9 +1182,8 @@ public void OnAddRecordDone(Database g_hDatabase, any client, int numQueries, DB
 				SetPrCpTime( iData[C_CP_INDEX], mode, flRecTime, client  );
 			}
 		}
-
-		DB_DisplayClientRank( client, run, style, mode );
 	}
+	DB_DisplayClientRank( client, run, style, mode );
 	return;
 }
 

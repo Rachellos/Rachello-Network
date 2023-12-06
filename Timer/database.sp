@@ -196,8 +196,8 @@ stock void DB_InitializeDatabase()
 
 	g_hDatabase.Query( Threaded_Empty,
 		"CREATE TABLE IF NOT EXISTS `points` (\
-		`run_type` varchar(45) DEFAULT NULL,\
-		`tier` int DEFAULT NULL,\
+		`run_type` varchar(45) NOT NULL,\
+		`tier` int NOT NULL,\
 		`completion` float DEFAULT NULL,\
 		`wr_pts` float DEFAULT NULL,\
 		PRIMARY KEY(run_type, tier)\
@@ -1078,7 +1078,10 @@ stock bool DB_SaveClientRecord( int client, float flNewTime )
 		sql_trans.AddQuery(szQuery, hData_);
 		isTransactionEmpty = false;
 
-		FormatEx( szQuery, sizeof( szQuery ), "SELECT run, style, mode, recordid FROM "...TABLE_RECORDS..." WHERE map = '%s' AND uid = %i AND run = 0 AND mode = %i", g_szCurrentMap, g_iClientId[client], mode );
+		FormatEx( szQuery, sizeof( szQuery ), "SELECT %i, %i, %i", run, style, mode);
+		sql_trans.AddQuery(szQuery);
+
+		FormatEx( szQuery, sizeof( szQuery ), "SELECT recordid FROM "...TABLE_RECORDS..." WHERE map = '%s' AND uid = %i AND run = 0 AND mode = %i", g_szCurrentMap, g_iClientId[client], mode );
 		sql_trans.AddQuery(szQuery);
 
 		g_flClientBestTime[client][run][mode] = flNewTime;
