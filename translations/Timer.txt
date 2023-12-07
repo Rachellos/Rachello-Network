@@ -3,37 +3,55 @@
 	"1"
 	{
 		"en"		"Use {lightskyblue}/settings {white}to customise your HUD, chat and more!"
+		"en"		"Use {lightskyblue}/settings {white}to customise your HUD, chat and more!"
+		"es"		"¡Usa {lightskyblue} / settings {white}para personalizar tu HUD, chat y más!"
 	}
 	"2"
 	{
 		"en"		"Welcome to the {lightskyblue}Rachello Jump Network{white}!"
+		"en"		"Use {lightskyblue}/settings {white}to customise your HUD, chat and more!"
+		"es"		"Bienvenido a la {lightskyblue}Rachello Jump Network{white}!"
 	}
 	"3"
 	{
 		"en"		"You can activate fast rendering of the HUD in {lightskyblue}/settings {white}-> Central HUD"
+		"en"		"Use {lightskyblue}/settings {white}to customise your HUD, chat and more!"
+		"es"		"Puede activar la representación rápida del HUD en {lightskyblue} / settings {white} - > HUD central"
 	}
 	"4"
 	{
 		"en"		"Join us on Discord at {lightskyblue}discord.gg/8khRBCEu5C"
+		"en"		"Use {lightskyblue}/settings {white}to customise your HUD, chat and more!"
+		"es"		"Únase a nosotros en Discord en {lightskyblue}discord.gg/8khRBCEu5C"
 	}
 	"5"
 	{
 		"en"		"Does your game freeze sometimes when another player joins? Try setting {lightskyblue}cl_allowdownload 0 {white}to disable downloading player sprays."
+		"en"		"Use {lightskyblue}/settings {white}to customise your HUD, chat and more!"
+		"es"		"¿Tu partida se congela a veces cuando se une otro jugador? Intente configurar {lightskyblue}cl_allowdownload 0 {white} para deshabilitar la descarga de sprays del reproductor."
 	}
 	"6"
 	{
 		"en"		"Type {lightskyblue}/p {white}to view your stats!"
+		"en"		"Use {lightskyblue}/settings {white}to customise your HUD, chat and more!"
+		"es"		"¡Escribe {lightskyblue} / p {white} para ver tus estadísticas!"
 	}
 	"7"
 	{
 		"en"		"Type {lightskyblue}/top {white}for the best times."
+		"en"		"Use {lightskyblue}/settings {white}to customise your HUD, chat and more!"
+		"es"		"Escriba {lightskyblue} / top {white} para los mejores tiempos."
 	}
 	"8"
 	{
-		"en"		"Need an admin? Use {lightskyblue}!calladmin {white}for any urgent issues and we'll get back to you when possible."
+		"en"		"Need an admin? Use {lightskyblue}!calladmin <report>{white}for any urgent issues and we'll get back to you when possible."
+		"en"		"Нужен Админ? Используйте {lightskyblue}/calladmin <жалоба>{white}lkz "
+		"es"		"¿Necesita un administrador? ¡Usa {lightskyblue}!calladmin <report>{white} para cualquier problema urgente y nos pondremos en contacto con usted cuando sea posible."
 	}
 	"9"
 	{
 		"en"		"Don't know where to go, or how to do a jump? Try {lightskyblue}/svid {white}and {lightskyblue}/dvid {white}to watch a showcase (not available for all maps)."
+		"en"		"Используйте {lightskyblue}/settings {white}для кастомизации HUD, чата и тд.!"
+		"es"		"¿No sabes a dónde ir o cómo hacer un salto? Pruebe {lightskyblue} / svid {white} y {lightskyblue} / dvid {white}para ver una vitrina (no disponible para todos los mapas)."
 	}
 }

@@ -38,19 +38,6 @@ public Action Timer_regencheck( Handle hTimer )
 
 public Action Timer_Ad( Handle hTimer )
 {
-	char ad[9][300] = 
-    {
-    	"Use {lightskyblue}/settings {white}to customise your HUD, chat and more!",
-    	"Welcome to the {lightskyblue}Rachello Jump Network{white}!",
-        "You can activate fast rendering of the HUD in {lightskyblue}/settings {white}-> Central HUD",
-    	"Join us on Discord at {lightskyblue}discord.gg/8khRBCEu5C",
-    	"Does your game freeze sometimes when another player joins? Try setting {lightskyblue}cl_allowdownload 0 {white}to disable downloading player sprays.",
-    	"Type {lightskyblue}/p {white}to view your stats!",
-    	"Type {lightskyblue}/top {white}for the best times.",
-    	"Need an admin? Use {lightskyblue}!calladmin {white}for any urgent issues and we'll get back to you when possible.",
-    	"Don't know where to go, or how to do a jump? Try {lightskyblue}/svid {white}and {lightskyblue}/dvid {white}to watch a showcase (not available for all maps).",
-    };
-
     int arr_len = 8;
 
     char numOfTranslate[10];
@@ -65,7 +52,7 @@ public Action Timer_Ad( Handle hTimer )
     {
         if (IsClientConnected(iclient) && IsClientInGame(iclient) && !(g_fClientHideFlags[iclient] & HIDEHUD_CHAT) && !(g_fClientHideFlags[iclient] & HIDEHUD_CHAT_AD))
         {
-            CPrintToChat(iclient, CHAT_PREFIX_TIP..."%T", numOfTranslate, LANG_SERVER);
+            CPrintToChat(iclient, CHAT_PREFIX_TIP..."%T", numOfTranslate, iclient);
         }
     }
     msg++;

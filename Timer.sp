@@ -1405,15 +1405,6 @@ public Action cmdPluginUpdate(int args)
     }
 }
 
-public int Updater_OnPluginUpdated()
-{
-
-    if (LibraryExists("updater"))
-    {
-        ReloadPlugin();
-    }
-}
-
 public Action EventDisconnect(Handle event, const char[] name, bool dontBroadcast)
 {
     SetEventBroadcast(event, true);
