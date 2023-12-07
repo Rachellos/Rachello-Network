@@ -963,6 +963,12 @@ public Action Command_RockTheVote( int client, int args )
 	if (g_iClientIdle[client])
 		g_iClientIdle[client] = false;
 
+	if (g_aMapList.Length <= 0)
+	{
+		CReplyToCommand( client, CHAT_PREFIX..."No enabled maps." );
+		return Plugin_Handled;
+	}
+
 	if( g_bMapVoteStarted )
 	{
 		CReplyToCommand( client, CHAT_PREFIX..."Rock The Vote already started." );
