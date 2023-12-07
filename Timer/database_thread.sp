@@ -1856,6 +1856,9 @@ void EnableMap(int client, char[] map, bool isAll = false)
 		FormatEx(link, sizeof(link), "https://static.tempus2.xyz/tempus/server/maps/%s.bsp.bz2", map);
 		FormatEx(output, sizeof(output), "addons/sourcemod/data/%s.bsp.bz2", map);
 
+		if (System2_GetOS() == OS_WINDOWS)
+			FormatEx(output, sizeof(output), "addons\\sourcemod\\data\\%s.bsp.bz2", map);
+
 		System2HTTPRequest httpRequest = new System2HTTPRequest(HttpResponseCallback, link);
 		httpRequest.SetData(map);
 		httpRequest.SetOutputFile(output);
@@ -1874,6 +1877,12 @@ public void HttpResponseCallback(bool success, const char[] error, System2HTTPRe
 
 		FormatEx(infile, sizeof(infile), "addons/sourcemod/data/%s.bsp.bz2", map);
 		FormatEx(out, sizeof(out), "addons/sourcemod/data/%s.bsp", map);
+
+		if (System2_GetOS() == OS_WINDOWS)
+		{
+			FormatEx(infile, sizeof(infile), "addons\\sourcemod\\data\\%s.bsp.bz2", map);
+			FormatEx(out, sizeof(out), "addons\\sourcemod\\data\\%s.bsp", map);
+		}
 
 		Handle pack = CreateDataPack();
 		WritePackString(pack, map);
@@ -1912,11 +1921,21 @@ public OnMapDecompressed(BZ_Error:iError, String:inFile[], String:outFile[], any
 	FormatEx(DecompressedDir, sizeof(DecompressedDir), "%s/addons/sourcemod/data/%s.bsp", gamedir, map);
 	FormatEx(mapsDir, sizeof(mapsDir), "%s/maps/%s.bsp", gamedir, map);
 
+	if (System2_GetOS() == OS_WINDOWS)
+	{
+		ReplaceString(DecompressedDir, sizeof(DecompressedDir), "/", "\\");
+		ReplaceString(mapsDir, sizeof(mapsDir), "/", "\\");
+	}
+
 
 	if (System2_ExecuteFormatted(CommandOutput, sizeof(CommandOutput), "%s %s %s", System2_GetOS() == OS_WINDOWS ? "move" : "mv", DecompressedDir, mapsDir ))
 	{
 		char bspFilePath[200];
-		BuildPath(Path_SM, bspFilePath, sizeof(bspFilePath), "data/%s.bsp.bz2", map);
+
+		if (System2_GetOS() != OS_WINDOWS)
+			BuildPath(Path_SM, bspFilePath, sizeof(bspFilePath), "data/%s.bsp.bz2", map);
+		else
+			BuildPath(Path_SM, bspFilePath, sizeof(bspFilePath), "data\\%s.bsp.bz2", map);
 
 		if(FileExists(bspFilePath))
 			DeleteFile(bspFilePath);
