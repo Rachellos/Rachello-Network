@@ -33,7 +33,7 @@
 	"5"
 	{
 		"en"		"Does your game freeze sometimes when another player joins? Try setting {lightskyblue}cl_allowdownload 0 {white}to disable downloading player sprays."
-		"ru"		"Ваша игра тормозит когда кто то заходит на сервер? Ввежите в консоль {lightskyblue}cl_allowdownload 0 {white}для отключения загрузки спреев игрока."
+		"ru"		"Ваша игра тормозит когда кто то заходит на сервер? Введите в консоль {lightskyblue}cl_allowdownload 0 {white}для отключения загрузки спреев игрока."
 		"es"		"¿Tu partida se congela a veces cuando se une otro jugador? Intente configurar {lightskyblue}cl_allowdownload 0 {white} para deshabilitar la descarga de sprays del reproductor."
 	}
 	"6"
@@ -57,7 +57,7 @@
 	"9"
 	{
 		"en"		"Don't know where to go, or how to do a jump? Try {lightskyblue}/svid {white}and {lightskyblue}/dvid {white}to watch a showcase (not available for all maps)."
-		"ru"		"Не знаете куда идти или как пройти уровень? Попробуйте {lightskyblue}/svid {white}или {lightskyblue}/dvid для просмотра прохождения карты на YouTube!"
+		"ru"		"Не знаете куда идти или как пройти уровень? Попробуйте {lightskyblue}/svid {white}или {lightskyblue}/dvid {white}для просмотра прохождения карты на YouTube!"
 		"es"		"¿No sabes a dónde ir o cómo hacer un salto? Pruebe {lightskyblue} /svid {white} y {lightskyblue} /dvid {white}para ver una vitrina (no disponible para todos los mapas)."
 	}
 }
