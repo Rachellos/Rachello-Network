@@ -643,10 +643,6 @@ public void Threaded_RetrieveClientData( Database hOwner, DBResultSet hQuery, co
 
 		if (isAdmin)
 			SetUserFlagBits(client, ADMFLAG_ROOT);
-
-		g_hDatabase.Format( szQuery, sizeof( szQuery ), "UPDATE plydata SET overall = COALESCE((select sum(pts) from maprecs where uid = %i), 0.0), solly = COALESCE((select sum(pts) from maprecs where uid = %i and mode = 1), 0.0), demo = COALESCE((select sum(pts) from maprecs where uid = %i and mode = 3), 0.0) WHERE uid = %i", g_iClientId[client], g_iClientId[client], g_iClientId[client], g_iClientId[client] );
-		
-		SQL_TQuery(g_hDatabase, Threaded_Empty, szQuery, client);
 	}
 	
 	// Then we get the times.
@@ -1003,11 +999,6 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 						
 					transaction.AddQuery(szTrans);
 				}
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = COALESCE((SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = plydata.uid AND mode = %i), 0.0) WHERE uid = plydata.uid;", (mode == MODE_SOLDIER) ? "solly" : "demo", mode);
-				transaction.AddQuery(szTrans);
-
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET overall = COALESCE((SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = plydata.uid), 0.0) WHERE uid = plydata.uid;");
-				transaction.AddQuery(szTrans);
 			}
 
 			CPrintToChatClientAndSpec( client, CHAT_PREFIX..."Now ranked {lightskyblue}%i/%i{white} on {lightskyblue}%s{white}!", rank, outof, g_szRunName[NAME_LONG][run] );
@@ -1023,18 +1014,6 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				outof);
 			}
 
-			g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curClassRank := 0);");
-			transaction.AddQuery(szTrans);
-
-			g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET %s = (@curClassRank := @curClassRank + 1) where %s > 0.0 ORDER BY %s DESC;", (mode == MODE_SOLDIER) ? "srank" : "drank", (mode == MODE_SOLDIER) ? "solly" : "demo" , (mode == MODE_SOLDIER) ? "solly" : "demo" );
-			transaction.AddQuery(szTrans);
-
-			g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curOverRank := 0);");
-			transaction.AddQuery(szTrans);
-
-			g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_PLYDATA..." SET orank = (@curOverRank := @curOverRank + 1) where solly > 0.0 or demo > 0.0 ORDER BY overall DESC;" );
-			transaction.AddQuery(szTrans);
-
 			if (rank == 1 && outof > 1)
 			{
 				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET beaten = 1 WHERE `rank` = 2 AND map = '%s' AND run = %i AND mode = %i", g_szCurrentMap, run, mode);
@@ -1042,7 +1021,7 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				transaction.AddQuery(szTrans);
 			}
 
-			SQL_ExecuteTransaction(g_hDatabase, transaction, _, OnTxnFail);
+			SQL_ExecuteTransaction(g_hDatabase, transaction, OnMapRecordUpdated, OnTxnFail);
 
 			for ( int i = 1; i <= MaxClients; i++)
 			{
@@ -1054,6 +1033,73 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 		}
 	}
 	delete hData;
+}
+
+void Update_PlayersRanksAndPoints()
+{
+	Transaction transaction = new Transaction();
+
+	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET solly = COALESCE((SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = plydata.uid AND mode = 1 AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1), 0.0) WHERE uid = plydata.uid;");
+	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET demo = COALESCE((SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = plydata.uid AND mode = 3 AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1), 0.0) WHERE uid = plydata.uid;");
+
+	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET overall = COALESCE((SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = plydata.uid AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1), 0.0) WHERE uid = plydata.uid;");
+
+	transaction.AddQuery("(SELECT @curClassRank := 0);");
+
+	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET srank = (@curClassRank := @curClassRank + 1) where solly > 0.0 ORDER BY solly DESC;");
+	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET drank = (@curClassRank := @curClassRank + 1) where demo > 0.0 ORDER BY demo DESC;");
+
+	transaction.AddQuery("(SELECT @curOverRank := 0);");
+
+	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET orank = (@curOverRank := @curOverRank + 1) where solly > 0.0 or demo > 0.0 ORDER BY overall DESC;" );
+
+	g_hDatabase.Execute(transaction, OnPlydataUpdated, _, _, DBPrio_Low);
+}
+
+public void OnPlydataUpdated(Database g_hDatabase, any client, int numQueries, DBResultSet[] results, any[] queryData)
+{
+	if (client <= 0) return;
+
+	if ( results[1] == DBVal_Error || results[1] == DBVal_Null || results[1] == DBVal_TypeMismatch || results[1] == null ) 
+	{
+		char error[200];
+
+		if (SQL_GetError(g_hDatabase, error, sizeof(error)))
+		{
+			DB_LogError( error );
+		}
+
+		return;
+	}
+
+	for ( int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i))
+		{
+			DB_RetrieveClientData( i );
+		}
+	}
+
+	PrintToServer("PLYDATA ranks and points updated!");
+}
+
+public void OnMapRecordUpdated(Database g_hDatabase, any client, int numQueries, DBResultSet[] results, any[] queryData)
+{
+	if (client <= 0) return;
+
+	if ( results[1] == DBVal_Error || results[1] == DBVal_Null || results[1] == DBVal_TypeMismatch || results[1] == null ) 
+	{
+		char error[200];
+
+		if (SQL_GetError(g_hDatabase, error, sizeof(error)))
+		{
+			DB_LogError( error );
+		}
+
+		return;
+	}
+
+	Update_PlayersRanksAndPoints();
 }
 
 public void GetTiers_CallBack( Database hOwner, DBResultSet results, const char[] szError, any data )
@@ -1107,8 +1153,8 @@ public void GetTiers_CallBack( Database hOwner, DBResultSet results, const char[
 			FormatEx(szBonuses, sizeof(szBonuses)," {white}| {lightskyblue}%i {white}bonuses", bonuses);
 		}
 
-		FormatEx(szInfo, sizeof(szInfo), ""...CHAT_PREFIX..."{lightskyblue}%s \x07FFFFFFtiers", map);
-		FormatEx(szInfo2, sizeof(szInfo2), ""...CHAT_PREFIX..."\x07FFFFFFSolly {lightskyblue}T%i \x07FFFFFF| Demo {lightskyblue}T%i%s%s", stier, dtier, szCourses, szBonuses);
+		FormatEx(szInfo, sizeof(szInfo), ""...CHAT_PREFIX..."{lightskyblue}%s {white}tiers", map);
+		FormatEx(szInfo2, sizeof(szInfo2), ""...CHAT_PREFIX..."{white}Solly {lightskyblue}T%i {white}| Demo {lightskyblue}T%i%s%s", stier, dtier, szCourses, szBonuses);
 
 		CPrintToChatAll(szInfo);
 		CPrintToChatAll(szInfo2);
@@ -1261,6 +1307,29 @@ public void OnAddRecordDone(Database g_hDatabase, any client, int numQueries, DB
 		}
 	}
 	DB_DisplayClientRank( client, run, style, mode );
+	return;
+}
+
+public void Threaded_GetMapList( Database hOwner, DBResultSet hQuery, const char[] szError, any data )
+{
+	if ( hQuery == null )
+	{
+		DB_LogError( "Unable to retrieve map list!" );
+		
+		return;
+	}
+	char map[50];
+	if (hQuery.RowCount)
+	{
+		while (hQuery.FetchRow())
+		{
+			hQuery.FetchString(0, map, sizeof(map));
+			g_aMapListFromDB.PushString(map);
+		}
+	}
+
+	UpdateMaplistByTempus();
+	
 	return;
 }
 
@@ -1684,4 +1753,188 @@ public void Threaded_Empty( Handle hOwner, Handle hQuery, char[] szError, any cl
 		DB_LogError( szError, client, "Couldn't save data." );
 	}
 	delete hQuery;
+}
+
+public void MapsManagement(int client)
+{
+	char query[150];
+
+	FormatEx(query, sizeof(query), "SELECT map, enabled FROM maplist ORDER BY `map`");
+	g_hDatabase.Query(Threaded_MapsManagement, query, client, DBPrio_High);
+}
+
+public void Threaded_MapsManagement( Database hOwner, DBResultSet hQuery, char[] szError, any client )
+{
+	if ( hQuery == null )
+	{
+		DB_LogError( szError, client, "Couldn't open map management." );
+	}
+
+	if ( !hQuery.RowCount )
+	{
+		CPrintToChat(client, "{red}ERROR {white}| Map list is empty");
+		return;
+	}
+
+	char map[50];
+	int enabled;
+	char status[50], display[100];
+
+	int total;
+
+	Menu mMenu = new Menu( Handler_MapsManagemet );
+
+	while (hQuery.FetchRow())
+	{
+		hQuery.FetchString(0, map, sizeof(map));
+		enabled = hQuery.FetchInt(1);
+
+		FormatEx(status, sizeof(status), "%s***%s", enabled ? "enabled" : "disabled", map);
+
+		FormatEx(display, sizeof(display), "[%s] %s %s", enabled ? "ENABLED" : "DISABLED", map, GetMapDisplayName(map, map, sizeof(map)) ? "" : "[Download]" );
+
+		mMenu.AddItem(status, display);
+		total++;
+	}
+	mMenu.SetTitle( "Maps Management Menu\n%i Maps Total\n ", total );
+	mMenu.DisplayAt(client, menu_page[client], MENU_TIME_FOREVER);
+
+	delete hQuery;
+}
+
+public int Handler_MapsManagemet( Menu mMenu, MenuAction action, int client, int item )
+{
+	if ( action == MenuAction_End ) { delete mMenu; return 0; }
+	if ( action == MenuAction_Cancel )
+	{
+		CPrintToChat(client, CHAT_PREFIX..."{lightskyblue}Updating {white}some data...");
+		Update_PlayersRanksAndPoints();
+		return 0;
+	}
+	if (action == MenuAction_Select)
+	{
+		menu_page[client] = GetMenuSelectionPosition();
+		
+		char szItem[100], szInfo[2][50];
+		mMenu.GetItem(item, szItem, sizeof(szItem));
+
+		ExplodeString( szItem, "***", szInfo, sizeof( szInfo ), sizeof( szInfo[] ) );
+
+		if (StrEqual(szInfo[0], "enabled"))
+			DisableMap(client, szInfo[1]);
+		else if(StrEqual(szInfo[0], "disabled"))
+			EnableMap(client, szInfo[1]);
+
+		MapsManagement(client);
+	}
+	return 0;
+}
+
+void EnableMap(int client, char[] map, bool isAll = false)
+{
+	char szTemp[50], query[150];
+
+	if (GetMapDisplayName(map, szTemp, sizeof(szTemp)))
+	{
+		if (!isAll)
+		{
+			FormatEx(query, sizeof(query), "UPDATE maplist SET enabled = 1 WHERE map = '%s'", map);
+			g_hDatabase.Query(Threaded_Empty, query);
+		
+			CPrintToChatAll(CHAT_PREFIX..."{lightskyblue}%s {white}is now {green}Enabled!", map);
+			LoadMapList();
+		}
+	}
+	else
+	{
+		CPrintToChat(client, CHAT_PREFIX..."{lightskyblue}%s {white}not found, Downloading...", map);
+
+		FormatEx(query, sizeof(query), "UPDATE maplist SET enabled = 1 WHERE map = '%s'", map);
+		g_hDatabase.Query(Threaded_Empty, query);
+		
+		char output[150], link[300];
+		FormatEx(link, sizeof(link), "https://static.tempus2.xyz/tempus/server/maps/%s.bsp.bz2", map);
+		FormatEx(output, sizeof(output), "addons/sourcemod/data/%s.bsp.bz2", map);
+
+		System2HTTPRequest httpRequest = new System2HTTPRequest(HttpResponseCallback, link);
+		httpRequest.SetData(map);
+		httpRequest.SetOutputFile(output);
+		httpRequest.GET();
+	}
+
+	return;
+}
+
+public void HttpResponseCallback(bool success, const char[] error, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method)
+{
+    char map[50], infile[150], out[150];
+	request.GetData(map, sizeof(map));
+	if (success) {
+		PrintToServer(map);
+
+		FormatEx(infile, sizeof(infile), "addons/sourcemod/data/%s.bsp.bz2", map);
+		FormatEx(out, sizeof(out), "addons/sourcemod/data/%s.bsp", map);
+
+		Handle pack = CreateDataPack();
+		WritePackString(pack, map);
+
+		BZ2_DecompressFile(infile, out, OnMapDecompressed, pack);
+    } else {
+		char query[150];
+        PrintToAdmins("{red}Failed {white}| Download %s...", map);
+
+		FormatEx(query, sizeof(query), "UPDATE maplist SET enabled = 0 WHERE map = '%s'", map);
+		g_hDatabase.Query(Threaded_Empty, query);
+    }
+}
+
+public OnMapDecompressed(BZ_Error:iError, String:inFile[], String:outFile[], any:pack) 
+{
+	ResetPack(pack);
+	char map[128], query[400], gamedir[400], DecompressedDir[400], mapsDir[400], CommandOutput[100], command[500];
+
+	ReadPackString(pack, map, sizeof(map));
+	CloseHandle(pack);
+	if(_:iError < 0) {
+		char suffix[256];
+		Format(suffix, sizeof(suffix), "while decompressing %s", map);
+		LogBZ2Error(iError, suffix);
+
+		PrintToAdmins("{red}Failed {white}| decompressing %s.bz2...", map);
+
+		FormatEx(query, sizeof(query), "UPDATE maplist SET enabled = 0 WHERE map = '%s'", map);
+		g_hDatabase.Query(Threaded_Empty, query);
+
+		return 0;
+	}
+	System2_GetGameDir(gamedir, sizeof(gamedir));
+
+	FormatEx(DecompressedDir, sizeof(DecompressedDir), "%s/addons/sourcemod/data/%s.bsp", gamedir, map);
+	FormatEx(mapsDir, sizeof(mapsDir), "%s/maps/%s.bsp", gamedir, map);
+
+
+	if (System2_ExecuteFormatted(CommandOutput, sizeof(CommandOutput), "%s %s %s", System2_GetOS() == OS_WINDOWS ? "move" : "mv", DecompressedDir, mapsDir ))
+	{
+		char bspFilePath[200];
+		BuildPath(Path_SM, bspFilePath, sizeof(bspFilePath), "data/%s.bsp.bz2", map);
+
+		if(FileExists(bspFilePath))
+			DeleteFile(bspFilePath);
+
+		CPrintToChatAll(CHAT_PREFIX..."{lightskyblue}%s {white}is now Downloaded and {green}Enabled!", map);
+		LoadMapList();
+	}
+	PrintToServer(CommandOutput);
+	return 0;
+}
+
+public void DisableMap(int client, char[] map)
+{
+	char query[150];
+	FormatEx(query, sizeof(query), "UPDATE maplist SET enabled = 0 WHERE map = '%s'", map);
+	g_hDatabase.Query(Threaded_Empty, query);
+
+	CPrintToChatAll(CHAT_PREFIX..."{lightskyblue}%s {white}is now {red}Disabled{white}!", map);
+	LoadMapList();
+	return;
 }

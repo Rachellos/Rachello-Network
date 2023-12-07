@@ -14,9 +14,6 @@ ConVar g_cvMapVoteBlockMapInterval;
 ConVar g_cvMapVoteExtendTime;
 
 /* Map arrays */
-ArrayList g_aMapList;
-ArrayList g_aMapTiersSolly;
-ArrayList g_aMapTiersDemo;
 ArrayList g_aNominateList;
 ArrayList g_aOldMaps;
 
@@ -272,7 +269,10 @@ void InitiateMapVote( MapChange when )
 			dtier = g_aMapTiersDemo.Get( idx );
 		}
 		
-		Format( mapdisplay, sizeof(mapdisplay), "S%i|D%i %s ", stier, dtier, map );
+		if (stier != -1 || dtier != -1)
+			Format( mapdisplay, sizeof(mapdisplay), "S%i|D%i %s ", stier, dtier, map );
+		else
+			Format( mapdisplay, sizeof(mapdisplay), "Sx|Dx %s ", map );
 		
 		g_VoteMenu.AddItem( map, mapdisplay );
 		
@@ -321,7 +321,11 @@ void InitiateMapVote( MapChange when )
 		
 		int stier = g_aMapTiersSolly.Get( rand );
 		int dtier = g_aMapTiersDemo.Get( rand );
-		Format( mapdisplay, sizeof(mapdisplay), "S%i|D%i %s ", stier, dtier, map );
+
+		if (stier != -1 || dtier != -1)
+			Format( mapdisplay, sizeof(mapdisplay), "S%i|D%i %s ", stier, dtier, map );
+		else
+			Format( mapdisplay, sizeof(mapdisplay), "Sx|Dx %s ", map );
 		
 		g_VoteMenu.AddItem( map, mapdisplay );
 	}
@@ -602,7 +606,12 @@ public int Handler_MapVoteMenu( Menu menu, MenuAction action, int param1, int pa
 					stier = g_aMapTiersSolly.Get( idx );
 					dtier = g_aMapTiersDemo.Get( idx );
 				}
-				Format(buffer, sizeof(buffer), "S%i|D%i %s%s", stier, dtier, changed, szVotes);
+
+				if (stier != -1 || dtier != -1)
+					Format(buffer, sizeof(buffer), "S%i|D%i %s%s", stier, dtier, changed, szVotes);
+				else
+					Format(buffer, sizeof(buffer), "Sx|Dx %s%s", changed, szVotes);
+
 				return RedrawMenuItem(buffer);
 			}
 		}
@@ -682,33 +691,59 @@ void LoadMapList()
 	
 	char buffer[512];
 
-	Format( buffer, sizeof(buffer), "SELECT map_name, stier, dtier FROM `map_info` WHERE run = 0 ORDER BY `map_name`" );
-	g_hDatabase.Query( LoadMapsTiersCallback, buffer, _, DBPrio_High );
+	Transaction t = new Transaction();
 
+	t.AddQuery("SELECT map_name, stier, dtier FROM `map_info` WHERE run = 0 and (select enabled from maplist where map = map_name) = 1 ORDER BY `map_name`");
+	t.AddQuery("SELECT `map` FROM maplist WHERE enabled = 1 ORDER BY `map`");
+	g_hDatabase.Execute( t, LoadMapsTiersCallback, _, 0 );
 }
 
-public void LoadMapsTiersCallback( Database db, DBResultSet results, const char[] error, any data )
+public void LoadMapsTiersCallback(Database g_hDatabase, any client, int numQueries, DBResultSet[] results, any[] queryData)
 {
-	if( results == null )
-	{
-		LogError( "(LoadMapsTiersCallback) - %s", error );
-		return;	
-	}
 
-	char map[PLATFORM_MAX_PATH];
-	while( results.FetchRow() )
+	if ( results[1] == DBVal_Error || results[1] == DBVal_Null || results[1] == DBVal_TypeMismatch || results[1] == null ) 
+	{
+		char error[200];
+
+		if (SQL_GetError(g_hDatabase, error, sizeof(error)))
+		{
+			DB_LogError( error );
+		}
+
+		return;
+	}
+	
+	char map[PLATFORM_MAX_PATH], buff[PLATFORM_MAX_PATH];
+
+	while( results[0].FetchRow() )
 	{	
-		results.FetchString( 0, map, sizeof(map) );
+		results[0].FetchString( 0, map, sizeof(map) );
 		
 		// TODO: can this cause duplicate entries?
-		if( FindMap( map, map, sizeof(map) ) != FindMap_NotFound )
+		if( GetMapDisplayName(map, buff, sizeof(buff)) )
 		{
-			GetMapDisplayName( map, map, sizeof(map) );
 			g_aMapList.PushString( map );
-			g_aMapTiersSolly.Push( results.FetchInt( 1 ) );
-			g_aMapTiersDemo.Push( results.FetchInt( 2 ) );
+			g_aMapTiersSolly.Push( results[0].FetchInt( 1 ) );
+			g_aMapTiersDemo.Push( results[0].FetchInt( 2 ) );
 		}
 	}
+
+	while( results[1].FetchRow() )
+	{	
+		results[1].FetchString( 0, map, sizeof(map) );
+		
+		// TODO: can this cause duplicate entries?
+		if( GetMapDisplayName(map, buff, sizeof(buff)) )
+		{
+			if (g_aMapList.FindString(map) == -1)
+			{
+				g_aMapList.PushString( map );
+				g_aMapTiersSolly.Push( -1 );
+				g_aMapTiersDemo.Push( -1 );
+			}
+		}
+	}
+
 	
 	CreateNominateMenu();
 }
@@ -877,7 +912,11 @@ void CreateNominateMenu()
 		}
 		
 		char mapdisplay[PLATFORM_MAX_PATH + 32];
-		Format( mapdisplay, sizeof(mapdisplay), "S%i|D%i %s ", stier, dtier, mapname);
+
+		if (stier != -1 || dtier != -1)
+			Format( mapdisplay, sizeof(mapdisplay), "S%i|D%i %s ", stier, dtier, mapname);
+		else
+			Format( mapdisplay, sizeof(mapdisplay), "Sx|Dx %s ", mapname);
 		
 		g_hNominateMenu.AddItem( mapname, mapdisplay );
 	}
@@ -926,7 +965,7 @@ public Action Command_RockTheVote( int client, int args )
 
 	if( g_bMapVoteStarted )
 	{
-		ReplyToCommand( client, CHAT_PREFIX..."Rock The Vote already started." );
+		CReplyToCommand( client, CHAT_PREFIX..."Rock The Vote already started." );
 	}
 	else if( g_bRockTheVote[client] )
 	{

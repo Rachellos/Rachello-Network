@@ -53,14 +53,19 @@ public Action Timer_Ad( Handle hTimer )
 
     int arr_len = 8;
 
+    char numOfTranslate[10];
+
     static int msg;
+
+    IntToString(msg+1, numOfTranslate, sizeof(numOfTranslate));
+
     if (msg >= arr_len) msg = 0;
 
     for ( int iclient = 1; iclient <= MaxClients; iclient++ )
     {
         if (IsClientConnected(iclient) && IsClientInGame(iclient) && !(g_fClientHideFlags[iclient] & HIDEHUD_CHAT) && !(g_fClientHideFlags[iclient] & HIDEHUD_CHAT_AD))
         {
-            CPrintToChat(iclient, CHAT_PREFIX_TIP..."%s", ad[msg]);
+            CPrintToChat(iclient, CHAT_PREFIX_TIP..."%T", numOfTranslate, LANG_SERVER);
         }
     }
     msg++;

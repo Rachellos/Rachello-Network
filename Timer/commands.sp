@@ -1933,11 +1933,11 @@ public void MapListQuery(int client, int tier, int mode)
 
 	if (tier > 0)
 	{
-		g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT map_name, stier, dtier from map_info where run = 0 and %s = %i", (mode == MODE_SOLDIER) ? "stier" : "dtier", tier);
+		g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT map_name, stier, dtier from map_info where run = 0 AND %s = %i AND (SELECT enabled FROM maplist where map = map_name) = 1", (mode == MODE_SOLDIER) ? "stier" : "dtier", tier);
 	}
 	else
 	{
-		g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT map_name, stier, dtier from map_info where run = 0");
+		g_hDatabase.Format(szQuery, sizeof(szQuery), "SELECT map_name, stier, dtier from map_info where run = 0 AND (SELECT enabled FROM maplist where map = map_name) = 1");
 	}
 	g_hDatabase.Query(Threaded_MapList, szQuery, client);
 }
@@ -2473,7 +2473,7 @@ public void ShowMapTop(int client, const char[] map, RunType run_type)
 		case COURSE_RUN: FormatEx(run_type_query, sizeof(run_type_query), "AND run BETWEEN %i AND %i", RUN_COURSE1, RUN_COURSE10);
 		case BONUS_RUN: FormatEx(run_type_query, sizeof(run_type_query), "AND run BETWEEN %i AND %i", RUN_BONUS1, RUN_BONUS10);
 	}
-	FormatEx(query, sizeof( query ), "SELECT run FROM map_info WHERE map_name = '%s' %s", map, run_type_query );
+	FormatEx(query, sizeof( query ), "SELECT run FROM map_info WHERE map_name = '%s' %s AND (SELECT enabled FROM maplist where map = map_name) = 1", map, run_type_query );
 	g_hDatabase.Query( NormalTop, query, client );
 }
 
@@ -2494,7 +2494,7 @@ public Action Command_PersonalRecords( int client, int args )
 		(SELECT `rank` from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i), \
 		(SELECT `rank` from maprecs where map = map_info.map_name and run = map_info.run and mode = %i order by `rank` desc limit 1), \
 		(SELECT pts from maprecs where map = map_info.map_name and run = map_info.run and mode = %i and uid = %i) \
-		from map_info where map_name = '%s' ORDER BY run ASC", RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], RunClass[client], RunClass[client], g_iClientId[client], g_szCurrentMap);
+		from map_info where map_name = '%s' AND (SELECT enabled FROM maplist where map = map_name) = 1 ORDER BY run ASC", RunClass[client], g_iClientId[client], RunClass[client], g_iClientId[client], RunClass[client], RunClass[client], g_iClientId[client], g_szCurrentMap);
 	}
 	else
 	{
@@ -2555,7 +2555,7 @@ public void MapPoints(int client, char[] map, int class)
 		(select wr_pts from points where tier = map_info.%s and run_type = if (map_info.run > 0, IF (map_info.run <= %i, 'course', 'bonus'), 'map' ) limit 1), \
 		(select completion from points where tier = map_info.%s and run_type = if (map_info.run > 0, IF (map_info.run <= %i, 'course', 'bonus'), 'map' ) limit 1), \
 		(select time from maprecs where uid = %i and run = map_info.run and mode = %i and map = '%s' limit 1), \
-		map_name FROM `map_info` WHERE map_name = '%s'", (class == MODE_SOLDIER) ? "stier" : "dtier", (class == MODE_SOLDIER) ? "stier" : "dtier", RUN_COURSE5, (class == MODE_SOLDIER) ? "stier" : "dtier", RUN_COURSE5, g_iClientId[client], class, map, map);
+		map_name FROM `map_info` WHERE map_name = '%s' AND (SELECT enabled FROM maplist where map = map_name) = 1", (class == MODE_SOLDIER) ? "stier" : "dtier", (class == MODE_SOLDIER) ? "stier" : "dtier", RUN_COURSE5, (class == MODE_SOLDIER) ? "stier" : "dtier", RUN_COURSE5, g_iClientId[client], class, map, map);
 
 	g_hDatabase.Query(MapPointsCallBack, query, client);
 }
@@ -3257,7 +3257,8 @@ public void NormalTop( Database hOwner, DBResultSet hQuery, const char[] szError
 		}
 		else
 		{
-			mMenu.AddItem( "0", "Map Run\n " );
+			CPrintToChat(client, CHAT_PREFIX..."Map not found");
+			return;
 		}
 		mMenu.Display( client, MENU_TIME_FOREVER );
 

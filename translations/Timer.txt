@@ -1,0 +1,39 @@
+"Phrases"
+{
+	"1"
+	{
+		"en"		"Use {lightskyblue}/settings {white}to customise your HUD, chat and more!"
+	}
+	"2"
+	{
+		"en"		"Welcome to the {lightskyblue}Rachello Jump Network{white}!"
+	}
+	"3"
+	{
+		"en"		"You can activate fast rendering of the HUD in {lightskyblue}/settings {white}-> Central HUD"
+	}
+	"4"
+	{
+		"en"		"Join us on Discord at {lightskyblue}discord.gg/8khRBCEu5C"
+	}
+	"5"
+	{
+		"en"		"Does your game freeze sometimes when another player joins? Try setting {lightskyblue}cl_allowdownload 0 {white}to disable downloading player sprays."
+	}
+	"6"
+	{
+		"en"		"Type {lightskyblue}/p {white}to view your stats!"
+	}
+	"7"
+	{
+		"en"		"Type {lightskyblue}/top {white}for the best times."
+	}
+	"8"
+	{
+		"en"		"Need an admin? Use {lightskyblue}!calladmin {white}for any urgent issues and we'll get back to you when possible."
+	}
+	"9"
+	{
+		"en"		"Don't know where to go, or how to do a jump? Try {lightskyblue}/svid {white}and {lightskyblue}/dvid {white}to watch a showcase (not available for all maps)."
+	}
+}

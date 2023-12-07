@@ -107,6 +107,59 @@ public int Handler_UnzonedMaps( Menu mMenu, MenuAction action, int client, int i
 	return 0;
 }
 
+public Action Command_Admin_MapsManagement( int client, int args )
+{
+	if ( !client ) return Plugin_Handled;
+	
+	menu_page[client] = 0;
+
+	MapsManagement(client);
+	
+	return Plugin_Handled;
+}
+
+public Action Command_Admin_EnableAllMaps( int client, int args )
+{
+	if ( !client ) return Plugin_Handled;
+	
+	char map[50], query[150];
+	Transaction t = new Transaction();
+
+	CPrintToChatAll(CHAT_PREFIX..."<{green}%N{white}> Started To Enable All Maps!", client);
+
+	for (int i = 0; i < g_aMapListFromDB.Length; i++)
+	{
+		g_aMapListFromDB.GetString(i, map, sizeof(map));
+		FormatEx(query, sizeof(query), "UPDATE maplist SET enabled = 1 WHERE map = '%s'", map);
+		t.AddQuery(query);
+		EnableMap(client, map, true);
+	}
+	g_hDatabase.Execute(t, Threaded_OnAllMapsLoaded);
+	
+	return Plugin_Handled;
+}
+
+public void Threaded_OnAllMapsLoaded(Database g_hDatabase, any client, int numQueries, DBResultSet[] results, any[] queryData)
+{
+	if ( results[0] == DBVal_Error || results[0] == DBVal_Null || results[0] == DBVal_TypeMismatch || results[0] == null ) 
+	{
+		char error[200];
+
+		if (SQL_GetError(g_hDatabase, error, sizeof(error)))
+		{
+			DB_LogError( error );
+		}
+
+		return;
+	}
+
+	CPrintToChatAll(CHAT_PREFIX..."All Maps Loaded and {green}Enabled{white}!");
+	LoadMapList();
+	Update_PlayersRanksAndPoints();
+
+	return;
+}
+
 public Action Command_Admin_ZoneMenu( int client, int args )
 {
 	if ( !client ) return Plugin_Handled;

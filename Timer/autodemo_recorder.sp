@@ -32,12 +32,12 @@ public Action:Timer_Delay(Handle:timer) {
 	ServerCommand("tv_record %s", path);
 }
 
-public Action:Timer_CompressDemo(Handle:timer, any:pack) {
+public Action Timer_CompressDemo(Handle timer, any pack) {
 	ResetPack(pack);
 	char query[300];
-	decl String:filename[128];
+	char filename[128];
 	ReadPackString(pack, filename, sizeof(filename));
-	decl String:input[PLATFORM_MAX_PATH], String:output[PLATFORM_MAX_PATH];
+	char input[PLATFORM_MAX_PATH], output[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, input, sizeof(input), "recordings/%s", filename);
 	if (FileSize(input) < 10)
 	{

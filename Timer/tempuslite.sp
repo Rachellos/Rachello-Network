@@ -75,6 +75,62 @@ static const char g_serverNames[36][64] = {
 
 /* Map info menus */
 
+public void UpdateMaplistByTempus()
+{
+	httpClient = new HTTPClient(TempusURL);
+	httpClient.SetHeader("Accept", "application/json");
+
+	char req[96];
+	Format(req, sizeof(req), "api/v0/maps/list");
+
+	httpClient.Get(req, OnGetMapListFromTempus);
+}
+
+public void OnGetMapListFromTempus(HTTPResponse response, any value) 
+{
+	if (response.Status != HTTPStatus_OK) {
+		// Failed to retrieve object
+		if(response.Status == 404) {
+			PrintToServer("Maps not on Tempus",response.Status);
+			return;
+		}
+		PrintToServer("Error %d",response.Status);
+		return;
+	}
+	if (response.Data == null) {
+		// Invalid JSON response
+		PrintToServer("Invalid JSON response");
+		return;
+	}
+
+	JSONArray maps = view_as<JSONArray>(response.Data);
+	JSONObject map;
+	char map_name[50], buffer[150];
+
+	Transaction t = new Transaction();
+	bool isTransEmpty = true;
+
+	for (int i = 0; i < maps.Length; i++)
+	{
+		map = view_as<JSONObject>(maps.Get(i));
+		map.GetString("name", map_name, sizeof(map_name));
+
+		if (g_aMapListFromDB.FindString(map_name) == -1)
+		{
+			g_aMapListFromDB.PushString(map_name);
+			FormatEx(buffer, sizeof(buffer), "INSERT INTO maplist (map) VALUES ('%s')", map_name);
+			t.AddQuery(buffer);
+
+			isTransEmpty = false;
+		}	
+	}
+
+	if (!isTransEmpty)
+		g_hDatabase.Execute(t, Threaded_OnMapsFromTempusUpdated);
+
+	delete map;
+	delete maps;
+}
 
 public void DisplayMapInfo( int client, int type,char m[64]) {
 	for(int i = 0; i < MAXPLAYERS+1;i++) {

@@ -192,7 +192,8 @@ stock void DB_InitializeDatabase()
 	
 	g_hDatabase.Query( Threaded_Empty, 
 		"CREATE TABLE IF NOT EXISTS `maplist` (\
-		  `map` varchar(50) NOT NULL\
+		  `map` varchar(50) NOT NULL PRIMARY KEY,\
+		  `enabled` int DEFAULT 0\
 		)");
 
 	g_hDatabase.Query( Threaded_Empty,
@@ -214,6 +215,8 @@ stock void DB_InitializeDatabase()
 		"SELECT * FROM `points`", 1 );
 	g_hDatabase.Query( Threaded_CheckPointsDefault,
 		"SELECT * FROM `points_multipler`", 2 );
+
+	g_hDatabase.Query( Threaded_GetMapList, "SELECT map FROM maplist");
 }
 
 // Get map zones, mimics and vote-able maps
@@ -236,7 +239,7 @@ stock void DB_PrintRecords0( int client, int iRun = RUN_MAIN, int iMode = MODE_S
 	hPanel.Send( client, Handler_Empty, MENU_TIME_FOREVER );
 	static char szQuery[512];
 
-	Format( szQuery, sizeof( szQuery ),  "SELECT map, time FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND mode = %i ORDER BY time ASC", db_map[client], iRun, iMode );		
+	Format( szQuery, sizeof( szQuery ),  "SELECT map, time FROM "...TABLE_RECORDS..." WHERE map = '%s' AND run = %i AND mode = %i AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1 ORDER BY time ASC", db_map[client], iRun, iMode );		
 	
 	int iData[3];
 	iData[0] = GetClientUserId( client );
@@ -293,6 +296,11 @@ public void DB_PrintRecords( Database hOwner, DBResultSet hQuery, const char[] s
 
 stock void DB_PrintPoints( int client, int args, int top )
 {
+	Panel hPanel = new Panel();
+	hPanel.DrawText( "..." );
+	
+	hPanel.Send( client, Handler_Empty, 5 );
+
 	static char szQuery[512];
 
 	static char szTop[32];
@@ -309,7 +317,7 @@ stock void DB_PrintPoints( int client, int args, int top )
 		Format( szTop, sizeof( szTop ), "AND mode = 1");
 	}
 	
-	Format( szQuery, sizeof( szQuery ),  "SELECT uid, name, (select sum(pts) from maprecs where uid = plydata.uid %s) FROM "...TABLE_PLYDATA..." ORDER BY (select sum(pts) from maprecs where uid = plydata.uid %s) DESC LIMIT 100", szTop, szTop);
+	Format( szQuery, sizeof( szQuery ),  "SELECT uid, name, (select sum(pts) from maprecs where uid = plydata.uid %s AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1) FROM "...TABLE_PLYDATA..." ORDER BY (select sum(pts) from maprecs where uid = plydata.uid %s AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1) DESC LIMIT 100", szTop, szTop);
 	
 	int iData[3];
 	iData[0] = GetClientUserId( client );
@@ -336,14 +344,14 @@ stock void DB_Profile( int client, int args, int how, char[] Name, int id, int m
 
 	Transaction profile = new Transaction();
 
-	g_hDatabase.Format( szQuery, sizeof( szQuery ),  "(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid)), \
-		(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid) and mode = %i), \
-		(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid) AND `rank` = 1 and mode = %i), \
-		(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid) AND `rank` > 1 AND `rank` < 11 and mode = %i), \
+	g_hDatabase.Format( szQuery, sizeof( szQuery ),  "(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid) AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1), \
+		(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid) and mode = %i AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1), \
+		(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid) AND `rank` = 1 and mode = %i AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1), \
+		(SELECT SUM(pts) FROM maprecs WHERE uid = (@dbuid) AND `rank` > 1 AND `rank` < 11 and mode = %i AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1), \
 		(SELECT COUNT(overall) FROM plydata WHERE overall > 0.1), \
 		(SELECT COUNT(%s) FROM plydata WHERE %s > 0.1), \
-		(SELECT COUNT(map) FROM maprecs WHERE uid = (@dbuid) AND mode = %i and run = 0), \
-		(SELECT COUNT(map) FROM mapbounds WHERE (zone = 0 or zone = 2) and number = 0 and (select %s from map_info where map_name = mapbounds.map and run = 0 limit 1) > 0)", mode, mode, mode, (mode == MODE_SOLDIER) ? "solly" : "demo", (mode == MODE_SOLDIER) ? "solly" : "demo", mode, (mode == MODE_SOLDIER) ? "stier" : "dtier" );
+		(SELECT COUNT(map) FROM maprecs WHERE uid = (@dbuid) AND mode = %i and run = 0 AND (SELECT enabled FROM maplist where map = `maprecs`.`map`) = 1), \
+		(SELECT COUNT(map) FROM mapbounds WHERE (zone = 0 or zone = 2) and number = 0 and (select %s from map_info where map_name = mapbounds.map and run = 0 limit 1) > 0 AND (SELECT enabled FROM maplist where map = mapbounds.`map`) = 1)", mode, mode, mode, (mode == MODE_SOLDIER) ? "solly" : "demo", (mode == MODE_SOLDIER) ? "solly" : "demo", mode, (mode == MODE_SOLDIER) ? "stier" : "dtier" );
 
 	if ( how == 1 )
 	{
@@ -521,6 +529,10 @@ public int Handler_Prifile( Menu mMenu, MenuAction action, int client, int item 
 	}
 	if ( item == 5 )
 	{
+		Panel hPanel = new Panel();
+		hPanel.DrawText( "..." );
+		
+		hPanel.Send( client, Handler_Empty, 5 );
 		char szQuery[192];
 		FormatEx( szQuery, sizeof( szQuery ), "SELECT country, lastseen, firstseen, uid, name, CURRENT_TIMESTAMP, total_hours, isadmin FROM "...TABLE_PLYDATA..." WHERE uid = %i", db_id[client] );
 		g_hDatabase.Query( Threaded_ProfileInfo, szQuery, GetClientUserId( client ), DBPrio_Normal );
@@ -545,13 +557,32 @@ public void OnProfileTxnError(Database g_hDatabase, any client, int numQueries, 
 	}
 	return;
 }
+
+public void Threaded_OnMapsFromTempusUpdated(Database g_hDatabase, any client, int numQueries, DBResultSet[] results, any[] queryData)
+{
+	if ( results[0] == DBVal_Error || results[0] == DBVal_Null || results[0] == DBVal_TypeMismatch || results[0] == null ) 
+	{
+		char error[200];
+
+		if (SQL_GetError(g_hDatabase, error, sizeof(error)))
+		{
+			DB_LogError( error );
+		}
+
+		return;
+	}
+
+	PrintToServer("Tempus maps uploaded to db!");
+}
+
 stock void DB_RecordInfo( int client, int id )
 {
 	Panel hPanel = new Panel();
 	hPanel.DrawText( "..." );
 	
+	hPanel.Send( client, Handler_Empty, 5 );
+	
 	static char szQuery[512];
-	hPanel.Send( client, Handler_Empty, MENU_TIME_FOREVER );
 	FormatEx( szQuery, sizeof( szQuery ),  "SELECT uid, map, run, style, mode, time, pts, date, name, recordid, `rank`, (select `rank` from maprecs where map = record.map and run = record.run and mode = record.mode order by `rank` desc limit 1), server_id FROM "...TABLE_RECORDS..." as record NATURAL JOIN "...TABLE_PLYDATA..." WHERE recordid = %i", id );	
 	
 	g_hDatabase.Query( Threaded_RecordInfo, szQuery, client, DBPrio_Normal );
@@ -619,7 +650,7 @@ public void Threaded_RecordInfo( Database hOwner, DBResultSet hQuery, const char
 		DrawPanelText(panel,buffer);
 		Format(buffer,sizeof(buffer),"Points Gained: %.1f", pts);
 		DrawPanelText(panel,buffer);
-		Format(buffer,sizeof(buffer),"Date: %s (Moscow)", date);
+		Format(buffer,sizeof(buffer),"Date: %s", date);
 		DrawPanelText(panel,buffer);
 		Format(buffer,sizeof(buffer),"Server: %s", server_name[NAME_LONG][0] );
 		DrawPanelText(panel,buffer);

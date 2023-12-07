@@ -17,6 +17,7 @@
 #include <idlesystem>
 #include <discord>
 #include <socket>
+#include <system2>
 #undef REQUIRE_PLUGIN
 #include <updater>
 #define UPDATE_URL    "https://raw.githubusercontent.com/Rachellos/rachellos-tempus/master/Timer-Updater.txt"
@@ -125,6 +126,11 @@ char ServerRegionCode[4];
 Socket ClientSocket;
 Socket ServerSocket;
 ArrayList IRC_Connections_Array;
+
+ArrayList g_aMapList;
+ArrayList g_aMapListFromDB;
+ArrayList g_aMapTiersSolly;
+ArrayList g_aMapTiersDemo;
 
 Menu PrevMenu[MAXPLAYERS+1][10];
 
@@ -1042,13 +1048,19 @@ public void OnPluginStart()
 {
 	ServerOSIsLinux = IsLinux();
 
+	char path[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, path, sizeof(path), "translations/Timer.txt");
+	if (!FileExists(path))
+		SetFailState("Not Found Translation File For Timer!!!");
+
+	LoadTranslations("Timer.txt");
+
 	ServerCommand("sv_hudhint_sound 0");
 	AddCommandListener(OnRestrictCommand, "setpos");
 	AddCommandListener(OnRestrictCommand, "setpos_exact");
 	AddCommandListener(OnRestrictCommand, "noclip");
 
 	requested = false;
-	char path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), "recordings/bz2/");
 	if(!DirExists(path)) {
 		CreateDirectory(path, FPERM_U_READ|FPERM_U_WRITE|FPERM_U_EXEC|FPERM_G_READ|FPERM_G_EXEC|FPERM_O_READ|FPERM_O_EXEC);
@@ -1142,6 +1154,7 @@ public void OnPluginStart()
 	HookEvent( "round_start", OnRoundStartPost );
 
 	g_aMapList = new ArrayList( ByteCountToCells(PLATFORM_MAX_PATH) );
+	g_aMapListFromDB = new ArrayList( ByteCountToCells(PLATFORM_MAX_PATH) );
 	g_aMapTiersSolly = new ArrayList();
 	g_aMapTiersDemo = new ArrayList();
 	g_aNominateList = new ArrayList( ByteCountToCells(PLATFORM_MAX_PATH) );
@@ -1306,6 +1319,17 @@ public void OnPluginStart()
 
 	RegAdminCmd( "sm_customstart", Command_Set_CustomStart, ZONE_EDIT_ADMFLAG );
 	
+
+	RegAdminCmd( "sm_addmaps", Command_Admin_MapsManagement, ZONE_EDIT_ADMFLAG, "maps menagment menu." ); // Menu
+	RegAdminCmd( "sm_addmap", Command_Admin_MapsManagement, ZONE_EDIT_ADMFLAG, "maps menagment menu." ); // Menu
+	RegAdminCmd( "sm_disable", Command_Admin_MapsManagement, ZONE_EDIT_ADMFLAG, "maps menagment menu." ); // Menu
+	RegAdminCmd( "sm_enable", Command_Admin_MapsManagement, ZONE_EDIT_ADMFLAG, "maps menagment menu." ); // Menu
+	RegAdminCmd( "sm_disablemap", Command_Admin_MapsManagement, ZONE_EDIT_ADMFLAG, "maps menagment menu." ); // Menu
+	RegAdminCmd( "sm_disablemaps", Command_Admin_MapsManagement, ZONE_EDIT_ADMFLAG, "maps menagment menu." ); // Menu
+	
+	RegAdminCmd( "sm_downloadmaps", Command_Admin_EnableAllMaps, ZONE_EDIT_ADMFLAG, "maps menagment menu." ); // Menu
+	RegAdminCmd( "sm_enableall", Command_Admin_EnableAllMaps, ZONE_EDIT_ADMFLAG, "maps menagment menu." ); // Menu
+	RegAdminCmd( "sm_downloadallmaps", Command_Admin_EnableAllMaps, ZONE_EDIT_ADMFLAG, "maps menagment menu." ); // Menu
 
 	RegAdminCmd( "sm_zone", Command_Admin_ZoneMenu, ZONE_EDIT_ADMFLAG, "Zone menu." ); // Menu
 	RegConsoleCmd( "sm_unzoned", Command_Admin_UnzonedMenu); // Menu
@@ -2000,6 +2024,7 @@ public void OnTempusPrInfoReceived(HTTPResponse response, any client)
 
 public void OnMapEnd()
 {
+	Update_PlayersRanksAndPoints();
 	Transaction t;
 	char trans[300];
 	bool isTransactionNotEmpty = false;
@@ -2363,9 +2388,14 @@ public void OnClientDisconnect( int client )
 
 public void DB_Completions( int client, int uid, int style )
 {
+	Panel hPanel = new Panel();
+	hPanel.DrawText( "..." );
+	
+	hPanel.Send( client, Handler_Empty, 5 );
+
 	char szQuery[192];
 	db_style[client] = style;
-	FormatEx( szQuery, sizeof( szQuery ), "SELECT map, recordid, style FROM "...TABLE_RECORDS..." WHERE uid = %i AND run = 0 AND style = %i",
+	FormatEx( szQuery, sizeof( szQuery ), "SELECT map, recordid, style FROM maprecs WHERE uid = %i AND run = 0 AND style = %i AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1",
 	uid,
 	style );
 	g_hDatabase.Query( Threaded_Completions, szQuery, GetClientUserId( client ), DBPrio_Normal );
@@ -2373,12 +2403,17 @@ public void DB_Completions( int client, int uid, int style )
 
 public void DB_TopTimes( int client, int style )
 {
+	Panel hPanel = new Panel();
+	hPanel.DrawText( "..." );
+	
+	hPanel.Send( client, Handler_Empty, 5 );
+
 	char szQuery[192];
 
 	Transaction t = new Transaction();
 	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT %i", style);
 	t.AddQuery(szQuery);
-	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT map, style, run, `rank` FROM "...TABLE_RECORDS..." WHERE uid = %i AND style = %i AND `rank` > 1 AND `rank` < 11",
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT map, style, run, `rank` FROM maprecs WHERE uid = %i AND style = %i AND `rank` > 1 AND `rank` < 11 AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1",
 	db_id[client],
 	style );
 	t.AddQuery(szQuery);
@@ -2496,13 +2531,18 @@ public int Handler_TopTimes( Menu mMenu, MenuAction action, int client, int item
 
 public void DB_RecTimes( int client, int style )
 {
+	Panel hPanel = new Panel();
+	hPanel.DrawText( "..." );
+	
+	hPanel.Send( client, Handler_Empty, 5 );
+
 	char szQuery[192];
 
 	Transaction t = new Transaction();
 
 	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT %i", style);
 	t.AddQuery(szQuery);
-	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT map, run FROM "...TABLE_RECORDS..." WHERE uid = %i AND style = %i AND `rank` = 1",
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT map, run FROM maprecs WHERE uid = %i AND style = %i AND `rank` = 1 AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1",
 	db_id[client],
 	style );
 	t.AddQuery(szQuery);
