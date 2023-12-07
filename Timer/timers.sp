@@ -3,7 +3,7 @@ public Action Timer_Connected( Handle hTimer, int client )
 {
     if ( !(client = GetClientOfUserId( client )) ) return Plugin_Handled;
 
-    CPrintToChat( client,  CHAT_PREFIX..."Welcome to the {lightskyblue}Rachello Network {white}!");
+    CPrintToChat( client,  CHAT_PREFIX..."%T", "Welcome", client);
 
     char i_SteamID[50];
 	GetClientAuthId(client, AuthId_Steam3, i_SteamID, sizeof(i_SteamID));
