@@ -1776,7 +1776,7 @@ public void Threaded_MapsManagement( Database hOwner, DBResultSet hQuery, char[]
 		return;
 	}
 
-	char map[50];
+	char map[50], temp[50];
 	int enabled;
 	char status[50], display[100];
 
@@ -1791,7 +1791,7 @@ public void Threaded_MapsManagement( Database hOwner, DBResultSet hQuery, char[]
 
 		FormatEx(status, sizeof(status), "%s***%s", enabled ? "enabled" : "disabled", map);
 
-		FormatEx(display, sizeof(display), "[%s] %s %s", enabled ? "ENABLED" : "DISABLED", map, GetMapDisplayName(map, map, sizeof(map)) ? "" : "[Download]" );
+		FormatEx(display, sizeof(display), "[%s] %s %s", enabled ? "ENABLED" : "DISABLED", map, GetMapDisplayName(map, temp, sizeof(temp)) ? "" : "[Download]" );
 
 		mMenu.AddItem(status, display);
 		total++;
