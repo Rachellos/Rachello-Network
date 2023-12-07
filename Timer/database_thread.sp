@@ -1021,7 +1021,7 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				transaction.AddQuery(szTrans);
 			}
 
-			SQL_ExecuteTransaction(g_hDatabase, transaction, OnMapRecordUpdated, OnTxnFail);
+			SQL_ExecuteTransaction(g_hDatabase, transaction, OnMapRecordUpdated, OnTxnFail, client);
 
 			for ( int i = 1; i <= MaxClients; i++)
 			{
