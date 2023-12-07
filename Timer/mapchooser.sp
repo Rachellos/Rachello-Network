@@ -963,9 +963,9 @@ public Action Command_RockTheVote( int client, int args )
 	if (g_iClientIdle[client])
 		g_iClientIdle[client] = false;
 
-	if (g_aMapList.Length <= 0)
+	if (g_aMapList.Length < 5)
 	{
-		CReplyToCommand( client, CHAT_PREFIX..."No enabled maps." );
+		CReplyToCommand( client, CHAT_PREFIX..."Less than 5 maps enabled. Can't start rtv." );
 		return Plugin_Handled;
 	}
 
