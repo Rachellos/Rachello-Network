@@ -1053,7 +1053,7 @@ void Update_PlayersRanksAndPoints()
 
 	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET orank = (@curOverRank := @curOverRank + 1) where solly > 0.0 or demo > 0.0 ORDER BY overall DESC;" );
 
-	g_hDatabase.Execute(transaction, OnPlydataUpdated, _, _, DBPrio_Low);
+	g_hDatabase.Execute(transaction, OnPlydataUpdated, _, _, DBPrio_High);
 }
 
 public void OnPlydataUpdated(Database g_hDatabase, any client, int numQueries, DBResultSet[] results, any[] queryData)
