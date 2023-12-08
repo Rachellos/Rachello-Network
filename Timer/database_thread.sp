@@ -1058,8 +1058,6 @@ void Update_PlayersRanksAndPoints()
 
 public void OnPlydataUpdated(Database g_hDatabase, any client, int numQueries, DBResultSet[] results, any[] queryData)
 {
-	if (client <= 0) return;
-
 	if ( results[1] == DBVal_Error || results[1] == DBVal_Null || results[1] == DBVal_TypeMismatch || results[1] == null ) 
 	{
 		char error[200];
@@ -1081,6 +1079,8 @@ public void OnPlydataUpdated(Database g_hDatabase, any client, int numQueries, D
 	}
 
 	PrintToServer("PLYDATA ranks and points updated!");
+
+	return;
 }
 
 public void OnMapRecordUpdated(Database g_hDatabase, any client, int numQueries, DBResultSet[] results, any[] queryData)
@@ -1757,7 +1757,7 @@ public void Threaded_Empty( Handle hOwner, Handle hQuery, char[] szError, any cl
 
 public void MapsManagement(int client)
 {
-	char query[150];
+	char query[250];
 
 	FormatEx(query, sizeof(query), "SELECT map, enabled FROM maplist WHERE map LIKE 'jump_%s%%' OR map like 'rj_%s%%' OR map like 'sj_%s%%' OR map like 'conc_%s%%' ORDER BY `map`", db_map[client],db_map[client],db_map[client],db_map[client]);
 	g_hDatabase.Query(Threaded_MapsManagement, query, client, DBPrio_High);
