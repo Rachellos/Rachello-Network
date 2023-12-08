@@ -110,8 +110,13 @@ public int Handler_UnzonedMaps( Menu mMenu, MenuAction action, int client, int i
 public Action Command_Admin_MapsManagement( int client, int args )
 {
 	if ( !client ) return Plugin_Handled;
+
+	FormatEx(db_map[client], sizeof(db_map), "");
 	
 	menu_page[client] = 0;
+
+	if (args > 0)
+		GetCmdArg(1, db_map[client], sizeof(db_map));
 
 	MapsManagement(client);
 	

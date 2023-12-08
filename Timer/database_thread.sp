@@ -1759,7 +1759,7 @@ public void MapsManagement(int client)
 {
 	char query[150];
 
-	FormatEx(query, sizeof(query), "SELECT map, enabled FROM maplist ORDER BY `map`");
+	FormatEx(query, sizeof(query), "SELECT map, enabled FROM maplist WHERE map LIKE 'jump_%s%%' OR map like 'rj_%s%%' OR map like 'sj_%s%%' OR map like 'conc_%s%%' ORDER BY `map`", db_map[client],db_map[client],db_map[client],db_map[client]);
 	g_hDatabase.Query(Threaded_MapsManagement, query, client, DBPrio_High);
 }
 
@@ -1770,12 +1770,6 @@ public void Threaded_MapsManagement( Database hOwner, DBResultSet hQuery, char[]
 		DB_LogError( szError, client, "Couldn't open map management." );
 	}
 
-	if ( !hQuery.RowCount )
-	{
-		CPrintToChat(client, "{red}ERROR {white}| Map list is empty");
-		return;
-	}
-
 	char map[50], temp[50];
 	int enabled;
 	char status[50], display[100];
@@ -1784,17 +1778,24 @@ public void Threaded_MapsManagement( Database hOwner, DBResultSet hQuery, char[]
 
 	Menu mMenu = new Menu( Handler_MapsManagemet );
 
-	while (hQuery.FetchRow())
+	if (hQuery.RowCount)
 	{
-		hQuery.FetchString(0, map, sizeof(map));
-		enabled = hQuery.FetchInt(1);
+		while (hQuery.FetchRow())
+		{
+			hQuery.FetchString(0, map, sizeof(map));
+			enabled = hQuery.FetchInt(1);
 
-		FormatEx(status, sizeof(status), "%s***%s", enabled ? "enabled" : "disabled", map);
+			FormatEx(status, sizeof(status), "%s***%s", enabled ? "enabled" : "disabled", map);
 
-		FormatEx(display, sizeof(display), "[%s] %s %s", enabled ? "ENABLED" : "DISABLED", map, GetMapDisplayName(map, temp, sizeof(temp)) ? "" : "[Download]" );
+			FormatEx(display, sizeof(display), "[%s] %s %s", enabled ? "ENABLED" : "DISABLED", map, GetMapDisplayName(map, temp, sizeof(temp)) ? "" : "[Download]" );
 
-		mMenu.AddItem(status, display);
-		total++;
+			mMenu.AddItem(status, display);
+			total++;
+		}
+	}
+	else
+	{
+		mMenu.AddItem("", "No found maps.\n \n \n \n \n \n", ITEMDRAW_DISABLED);
 	}
 	mMenu.SetTitle( "Maps Management Menu\n%i Maps Total\n ", total );
 	mMenu.DisplayAt(client, menu_page[client], MENU_TIME_FOREVER);

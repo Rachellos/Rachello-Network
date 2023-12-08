@@ -647,7 +647,7 @@ public int Handler_MapVoteMenu( Menu menu, MenuAction action, int param1, int pa
 					votes++;
 			}
 
-			if (votes == VotersCount)
+			if (votes >= VotersCount)
 			{
 				FinishMapVote(menu, false);
 			}
