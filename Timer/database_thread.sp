@@ -1774,7 +1774,7 @@ public void Threaded_MapsManagement( Database hOwner, DBResultSet hQuery, char[]
 	int enabled;
 	char status[50], display[100];
 
-	int total;
+	int total, enabledMapsCount;
 
 	Menu mMenu = new Menu( Handler_MapsManagemet );
 
@@ -1790,6 +1790,10 @@ public void Threaded_MapsManagement( Database hOwner, DBResultSet hQuery, char[]
 			FormatEx(display, sizeof(display), "[%s] %s %s", enabled ? "ENABLED" : "DISABLED", map, GetMapDisplayName(map, temp, sizeof(temp)) ? "" : "[Download]" );
 
 			mMenu.AddItem(status, display);
+			
+			if (enabled)
+				enabledMapsCount++;
+
 			total++;
 		}
 	}
@@ -1797,7 +1801,7 @@ public void Threaded_MapsManagement( Database hOwner, DBResultSet hQuery, char[]
 	{
 		mMenu.AddItem("", "No found maps.\n \n \n \n \n \n", ITEMDRAW_DISABLED);
 	}
-	mMenu.SetTitle( "Maps Management Menu\n%i Maps Total\n ", total );
+	mMenu.SetTitle( "Maps Management Menu\n%i/%i Maps Total\n ", enabledMapsCount, total );
 	mMenu.DisplayAt(client, menu_page[client], MENU_TIME_FOREVER);
 
 	delete hQuery;

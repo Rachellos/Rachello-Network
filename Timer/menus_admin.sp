@@ -45,15 +45,15 @@ public void UnzonedMaps(int client)
 	hPanel.DrawText( "..." );
 	
 	hPanel.Send( client, Handler_Empty, 5 );
-	
+
 	char query[] = "SELECT map, \
 					(select(EXISTS(select map from mapbounds where map = maplist.map))), \
 					(select(EXISTS(select map_name from map_info where map_name = maplist.map))) \
 					FROM maplist \
-					WHERE NOT EXISTS(SELECT map FROM mapbounds \
+					WHERE (NOT EXISTS(SELECT map FROM mapbounds \
 								WHERE map = maplist.map) \
 							OR NOT EXISTS(SELECT map_name FROM map_info \
-								WHERE map_name = maplist.map) AND enabled = 1";
+								WHERE map_name = maplist.map)) AND enabled = 1";
 
 	g_hDatabase.Query(Threaded_UnzonedMaps, query, client);
 	return;

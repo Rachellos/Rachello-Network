@@ -88,7 +88,8 @@ stock void DB_InitializeDatabase()
 		  `stier` int(11) NOT NULL,\
 		  `dtier` int(11) NOT NULL,\
 		  `solly` int(11) NOT NULL,\
-		  `demo` int(11) NOT NULL\
+		  `demo` int(11) NOT NULL,\
+		  PRIMARY KEY(map_name, run)\
 		)");
 	
 	g_hDatabase.Query( Threaded_Empty,

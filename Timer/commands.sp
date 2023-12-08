@@ -2023,7 +2023,7 @@ public void Threaded_MapList( Database hOwner, DBResultSet results, const char[]
 			}
 		}
 	}
-	mMenu.SetTitle("<Map list :: Total: %i %sMaps>\n%s", maps_count, (g_tier_MapMenu[client] > 0) ? (RunClass[client] == MODE_SOLDIER) ? "Soldier " : "Demoman " : "", (g_tier_MapMenu[client] > 0) ? tierText : " ");
+	mMenu.SetTitle("<Map list :: Total: %i %sMaps>\n%s\n ", maps_count, (g_tier_MapMenu[client] > 0) ? (RunClass[client] == MODE_SOLDIER) ? "Soldier " : "Demoman " : "", (g_tier_MapMenu[client] > 0) ? tierText : " ");
 	mMenu.ExitBackButton = true;
 	mMenu.Display(client, MENU_TIME_FOREVER);
 }
