@@ -356,11 +356,12 @@ void InitiateMapVote( MapChange when )
 		{
 			CPrintToChat(i, CHAT_PREFIX..."({lightskyblue}!runmode{white}) You automatically voted for {lightskyblue}Extend Map{white}. {lightskyblue}!revote{white} if you change your mind.");
 			ClientVote[i] = 5;
+			IsVoteDisplay[i] = false;
 		}
 	}
 
 	for (int i = 1; i <= MaxClients; i++)
-		if (Client_in_vote[i] && ClientVote[i] != 5)
+		if (Client_in_vote[i] && !IsAutoExtendEnabled(i))
 			g_VoteMenu.Display(i, MENU_TIME_FOREVER);
 
 	h_VoteTimer = CreateTimer( 30.0, Timer_EndOfVoting, g_VoteMenu, TIMER_FLAG_NO_MAPCHANGE );

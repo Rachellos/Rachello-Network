@@ -139,12 +139,12 @@ public void Event_Touch_Zone( int trigger, int client )
 	int id = iData[ZONE_ID];
 	int run = zone/2;
 
+	EnteredZone[client][zone][id] = true;
+
 	bool IsStartZone = (zone % 2 == 0 );
 
 	if ( IsStartZone )
 	{
-		if (EnteredZone[client] == zone && g_iClientState[client] == STATE_START) return;
-
 		if ( (!RunIsCourse(run) || run == RUN_COURSE1))
 		{
 			IsMapMode[client] = true;
@@ -159,7 +159,7 @@ public void Event_Touch_Zone( int trigger, int client )
 			}
 			else
 			{
-				if (g_iClientRun[client] != RUN_MAIN && !g_bClientPractising[client] )
+				if (g_iClientRun[client] != RUN_MAIN && !g_bClientPractising[client] && g_iClientState[client] != STATE_START)
 				{
 					if (!IsWarningZoneMissDisplayed[client])
 					{
@@ -224,7 +224,6 @@ public void Event_Touch_Zone( int trigger, int client )
 		}
 	}
 	g_iClientRun[client] = run;
-	EnteredZone[client] = zone;
 }
 
 public void Event_EndTouchPost_Zone( int trigger, int client )
@@ -239,6 +238,13 @@ public void Event_EndTouchPost_Zone( int trigger, int client )
 	int zone = iData[ZONE_TYPE]
 	, id = iData[ZONE_ID]
 	, run = zone/2;
+
+	EnteredZone[client][zone][id] = false;
+
+	for (int i = 0; i < 20; i++)
+	{
+		if (EnteredZone[client][zone][i]) return;
+	}
 
 	if (g_iClientRun[client] != run) return;
 
@@ -283,21 +289,22 @@ public void Event_EndTouchPost_Zone( int trigger, int client )
 				g_flClientStartTime[client] = GetEngineTime();
 		}
 	}
-	EnteredZone[client] = ZONE_INVALID;
 	return;
 }
 
 public void Event_StartTouchPost_Block( int trigger, int ent )
 {
 	if ( ent < 1 || ent > MaxClients ) return;
-	
+
+	EnteredZone[ent][ZONE_BLOCKS][0] = true;
+
 	if ( g_bClientPractising[ent] ) return;
 	
 	if ( !IsClientInGame( ent ) ) return;
 	
 	static int zone;
 	zone = GetTriggerIndex( trigger );
-	EnteredZone[ent] = zone;
+	
 	
 	CPrintToChat( ent, CHAT_PREFIX..."You are not allowed to go there!" );
 	
@@ -312,9 +319,17 @@ public void Event_StartTouchPost_Block( int trigger, int ent )
 	}
 }
 
+public void Event_EndTouchPost_Block( int trigger, int ent )
+{
+	if ( ent < 1 || ent > MaxClients ) return;
+	EnteredZone[ent][ZONE_BLOCKS][0] = false;
+}
+
 public void Event_StartTouchPost_NextCours( int trigger, int ent )
 {
 	if ( ent < 1 || ent > MaxClients ) return;
+
+	EnteredZone[ent][ZONE_COURCE][0] = true;
 	
 	if ( g_bClientPractising[ent] ) return;
 	
@@ -322,7 +337,7 @@ public void Event_StartTouchPost_NextCours( int trigger, int ent )
 	
 	static int zone;
 	zone = GetTriggerIndex( trigger );
-	EnteredZone[ent] = zone;
+	
 
 	if (g_iClientRun[ent]+1 < NUM_RUNS && RUN_COURSE1 < g_iClientRun[ent]+1 <= RUN_COURSE10 && g_bIsLoaded[g_iClientRun[ent]+1])
 		TeleportEntity( ent, g_vecSpawnPos[g_iClientRun[ent]+1], g_vecSpawnAngles[g_iClientRun[ent]+1], g_vecNull );
@@ -330,10 +345,18 @@ public void Event_StartTouchPost_NextCours( int trigger, int ent )
 		CPrintToChat(ent, CHAT_PREFIX... "You cannot teleport to the next course because it does not exist.");
 }
 
+public void Event_EndTouchPost_NextCours( int trigger, int ent )
+{
+	if ( ent < 1 || ent > MaxClients ) return;
+	EnteredZone[ent][ZONE_COURCE][0] = false;
+}
+
 public void Event_StartTouchPost_Skip( int trigger, int ent )
 {
 	if ( ent < 1 || ent > MaxClients ) return;
 	
+	EnteredZone[ent][ZONE_SKIP][0] = true;
+
 	if ( g_bClientPractising[ent] ) return;
 	
 	if ( !IsClientInGame( ent ) ) return;
@@ -342,28 +365,25 @@ public void Event_StartTouchPost_Skip( int trigger, int ent )
 	
 	static int zone;
 	zone = GetTriggerIndex( trigger );
-	EnteredZone[ent] = zone;
 	
 	TeleportEntity( ent, g_vecSkipPos, g_vecSkipAngles, g_vecNull );
+}
+
+public void Event_EndTouchPost_Skip( int trigger, int ent )
+{
+	if ( ent < 1 || ent > MaxClients ) return;
+	EnteredZone[ent][ZONE_SKIP][0] = false;
 }
 
 public void Event_StartTouchPost_CheckPoint( int trigger, int ent )
 {
 	if ( ent < 1 || ent > MaxClients ) return;
 
-	EnteredZone[ent] = ZONE_CP;
-	
-	// I'm not even going to try get practising to work. It'll just be a major headache and nobody will notice it, anyway.
-	if ( g_bClientPractising[ent] ) return;
-	
 	if ( !IsClientInGame( ent ) ) return;
 	
 	if ( g_hClientCPData[ent] == null ) return;
 	
 	if ( g_hCPs == null ) return;
-
-	if ( !IsMapMode[ent] )
-		return;
 
 	int cp, id;
 	cp = GetTriggerIndex( trigger );
@@ -376,7 +396,14 @@ public void Event_StartTouchPost_CheckPoint( int trigger, int ent )
 	// Player ended up in the wrong run! :(
 	
 	id = g_hCPs.Get( cp, view_as<int>( CP_ID ) );
+
+	EnteredZone[ent][ZONE_CP][0] = true;
+	CurrentCheckpointIndexClientStay[ent] = cp;
+
+	if ( g_bClientPractising[ent] ) return;
 	
+	if ( !IsMapMode[ent] ) return;
+
 	// Client attempted to re-enter the cp.
 	if ( g_iClientCurCP[ent] >= id ) return;
 	
@@ -464,4 +491,10 @@ public void Event_StartTouchPost_CheckPoint( int trigger, int ent )
 	iCData[C_CP_GAMETIME] = flCurTime;
 	
 	g_hClientCPData[ent].PushArray( iCData, view_as<int>( C_CPData ) );
+}
+
+public void Event_EndTouchPost_CheckPoint( int trigger, int ent )
+{
+	if ( ent < 1 || ent > MaxClients ) return;
+	EnteredZone[ent][ZONE_CP][0] = false;
 }

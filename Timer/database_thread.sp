@@ -991,8 +991,8 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				if (rank <= 10)
 				{ 
 					g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = \
-						((SELECT wr_pts from points where run_type = '%s' and tier = %i) \
-						* (SELECT multipler FROM points_multipler where `rank` = maprecs.`rank`) \
+						(COALESCE((SELECT wr_pts from points where run_type = '%s' and tier = %i) \
+						* (SELECT multipler FROM points_multipler where `rank` = maprecs.`rank`), 0.0) \
 						+ (SELECT completion from points where run_type = '%s' and tier = %i) ) \
 						WHERE recordid = maprecs.recordid AND map = '%s' AND run = %i AND mode = %i",
 						db_run, g_Tiers[run][mode], db_run, g_Tiers[run][mode], g_szCurrentMap, run, mode);
@@ -1111,7 +1111,7 @@ public void GetTiers_CallBack( Database hOwner, DBResultSet results, const char[
 		return;
 	}
 
-	char map[100], szCourses[60], szBonuses[60], szInfo[120], szInfo2[160];
+	char map[100], szCourses[60], szBonuses[60], szInfo[120], szInfo2[200];
 
 	int run, stier, dtier, courses, bonuses;
 
@@ -1178,14 +1178,12 @@ public void Threaded_NewID( Database hOwner, DBResultSet hQuery, const char[] sz
 	}
 	
 	if ( !(client = GetClientOfUserId( client )) ) return;
-	
-	
+
 	char szSteam[MAX_ID_LENGTH];
 	
 	GetClientSteam( client, szSteam, sizeof( szSteam ) );
 	int args;
 	ShowHelp(client, args);
-	
 	
 	static char szQuery[92];
 	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT uid FROM "...TABLE_PLYDATA..." WHERE steamid = '%s'", szSteam );

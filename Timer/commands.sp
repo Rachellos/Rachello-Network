@@ -917,9 +917,6 @@ public Action Command_Spawn( int client, int args )
 	if ( !client ) return Plugin_Handled;
 	
 	TF2_RegeneratePlayer(client);
-
-	g_iClientRun[client] = RUN_SETSTART;
-	g_iClientState[client] = STATE_SETSTART;
 	RespawnPlayerRun( client );
 	
 	return Plugin_Handled;
@@ -1449,7 +1446,6 @@ public int Menu_Ranks_Callback( Menu mMenu, MenuAction action, int client, int i
 
 public Action Command_Set_Start(int client, int args)
 {
-
 	static int target;
     target = client;
 	if (!client) return Plugin_Handled;
@@ -2317,10 +2313,8 @@ public Action RegenAmmo( int client, int args )
 {
 	if (IsPlayerAlive(client))
 	{
-		if (RegenOn[client])
-			RegenOn[client] = false;
-		else 
-			RegenOn[client] = true;
+		RegenOn[client] = !RegenOn[client];
+
 		
 		CPrintToChat(client, CHAT_PREFIX... "Regen {lightskyblue}%s", RegenOn[client] ? "ON" : "OFF");
 
@@ -2358,8 +2352,6 @@ public Action Command_SetClass( int client, int args )
 	if ( !client ) return Plugin_Handled;
 	
 	if ( IsSpammingCommand( client ) ) return Plugin_Handled;
-
-	
 	
 	SetClass( client );
 	
@@ -2747,7 +2739,6 @@ public int Handler_IncompleteSort( Menu mMenu, MenuAction action, int client, in
 	if ( action == MenuAction_End ) { delete mMenu; return 0; }
 	if ( action != MenuAction_Select ) return 0;
 
-		
 	if (action == MenuAction_Select)
 	{
 		char szItem[30];
@@ -4204,11 +4195,11 @@ public int Handler_SetCustimStart(Menu mMenu, MenuAction action, int client, int
 {
 	if ( action == MenuAction_Select )
 	{
-	int args;
-	char szItem[32];
-	GetMenuItem( mMenu, item, szItem, sizeof( szItem ) );
-	StringToIntEx(szItem, args);
-	SetCustomStartAdv( client, args );
+		int args;
+		char szItem[32];
+		GetMenuItem( mMenu, item, szItem, sizeof( szItem ) );
+		StringToIntEx(szItem, args);
+		SetCustomStartAdv( client, args );
 	}
 }
 

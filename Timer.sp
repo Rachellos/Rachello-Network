@@ -210,7 +210,8 @@ Handle TimerEye[MAXPLAYERS+1] = null;
 // Misc player stuff.
 float Weather_delayTime[MAXPLAYERS+1];
 float ClientConnectTime[MAXPLAYERS+1];
-int EnteredZone[MAXPLAYERS+1];
+bool EnteredZone[MAXPLAYERS+1][NUM_ZONES_W_CP][20];
+int CurrentCheckpointIndexClientStay[MAXPLAYERS+1];
 bool IsBuildingOnGround[MAXPLAYERS+1];
 int menu_page[MAXPLAYERS+1];
 int ZoneType[MAXPLAYERS+1];
@@ -303,7 +304,7 @@ float g_SavePointEye[MAXPLAYERS+1][3];
 
 float g_vecSkipAngles[3], g_vecSkipPos[3]; 
 
-bool RegenOn[MAXPLAYERS+1] = false;
+bool RegenOn[MAXPLAYERS+1];
 
 int STVTickStart;
 float g_iClientPoints[MAXPLAYERS+1];
@@ -1364,6 +1365,7 @@ public void OnPluginStart()
 	//LoadTranslations( "opentimer.phrases" );
 
 	DB_InitializeDatabase();
+	RequestFrame(HudDrawingFrame);
 }
 
 public void OnAllPluginsLoaded()
@@ -1518,18 +1520,18 @@ public void OnMapStart()
 		RemoveAllPrevMenus(i);
 	}
 
-secure = false;
+	secure = false;
 
-/*for (int i = 1; i <= MaxClients; i++) {
-        g_bShowIRC[i] = true;
-    }
-if (g_bLateLoad) {
-}*/
-GetCurrentMap( g_szCurrentMap, sizeof( g_szCurrentMap ) );
-/*IRC_MsgFlaggedChannels("relay", "%t", "Map Changed", g_szCurrentMap);*/
-ServerCommand("mp_timelimit 30");
-int iCP = -1;
-while ((iCP = FindEntityByClassname(iCP, "trigger_capture_area")) != -1)
+	/*for (int i = 1; i <= MaxClients; i++) {
+			g_bShowIRC[i] = true;
+		}
+	if (g_bLateLoad) {
+	}*/
+	GetCurrentMap( g_szCurrentMap, sizeof( g_szCurrentMap ) );
+	/*IRC_MsgFlaggedChannels("relay", "%t", "Map Changed", g_szCurrentMap);*/
+	ServerCommand("mp_timelimit 30");
+	int iCP = -1;
+	while ((iCP = FindEntityByClassname(iCP, "trigger_capture_area")) != -1)
 	{
 		SetVariantString("2 0");
 		AcceptEntityInput(iCP, "SetTeamCanCap");
@@ -2123,7 +2125,8 @@ public void OnClientPutInServer( int client )
 	g_flClientCourseStartTime[client] = TIME_INVALID;
 
 	g_iClientRun[client] = RUN_SETSTART;
-	GetClientUserId(client);
+	g_iClientState[client] = STATE_SETSTART;
+
 	SDKHook( client, SDKHook_OnTakeDamage, Event_OnTakeDamage_Client );
 	SDKHook( client, SDKHook_WeaponDropPost, Event_WeaponDropPost ); // No more weapon dropping.
 	SDKHook( client, SDKHook_SetTransmit, Event_SetTransmit_Client ); // Has to be hooked to everybody(?)
@@ -2145,11 +2148,14 @@ public void OnClientPutInServer( int client )
 	for (int i = 0; i < NUM_MODES; i++)
 		g_iClientMapPR_id[client][i] = -1;
 
+	for (int i = 0; i < NUM_ZONES_W_CP; i++)
+		for (int b = 0; b < 20; b++)
+			EnteredZone[client][i][b] = false;
+
 	// Practicing
 	g_bClientPractising[client] = false;
 
 	g_flClientWarning[client] = TIME_INVALID;
-
 
 	// Welcome message for players.
 	CreateTimer( 5.0, Timer_Connected, GetClientUserId( client ), TIMER_FLAG_NO_MAPCHANGE );
@@ -2667,27 +2673,41 @@ stock void GetStylePostfix( int mode, char szTarget[STYLEPOSTFIX_LENGTH], bool b
 
 stock void TeleportPlayerToStart( int client )
 {
-
 	g_flClientStartTime[client] = TIME_INVALID;
-	ChangeClientState( client, STATE_SETSTART );
 
+	if( g_fClientRespawnPosition[client][0] != 0 )
+	{
+		g_iClientRun[client] = RUN_SETSTART;
+		g_iClientState[client] = STATE_SETSTART;
 
-	if(g_fClientRespawnPosition[client][0] != 0){
-		TeleportEntity(client, g_fClientRespawnPosition[client], g_fClientRespawnAngles[client], g_vecNull);
+		if (TF2_GetPlayerClass(client) == TFClass_DemoMan)
+		{
+			SetEntityHealth(client, 175);
+		   	DestroyProjectilesDemo(client);
+		}
+		else if (TF2_GetPlayerClass(client) == TFClass_Soldier)
+		{
+		    DestroyProjectilesSoldier(client);
+		}
+
+		SetEntityGravity(client, 1.0);
+		TeleportEntity(client, g_fClientRespawnPosition[client], g_fClientRespawnEyes[client], g_vecNull );
+
+		
 		//SetPlayerPractice(client, true);
 		return;
 	}
 
-
-	if ( g_bIsLoaded[RUN_MAIN] )
-	{
-		TeleportEntity( client, g_vecSpawnPos[RUN_MAIN], g_vecSpawnAngles[RUN_MAIN], g_vecNull );
-	}
 	if ( g_bIsLoaded[RUN_COURSE1] )
 	{
 		TeleportEntity( client, g_vecSpawnPos[RUN_COURSE1], g_vecSpawnAngles[RUN_COURSE1], g_vecNull );
-	
 	}
+	else if ( g_bIsLoaded[RUN_MAIN] )
+	{
+		TeleportEntity( client, g_vecSpawnPos[RUN_MAIN], g_vecSpawnAngles[RUN_MAIN], g_vecNull );
+	}
+	 
+	return;
 }
 
 stock void SetPlayerStyle( int client, int reqstyle )
@@ -2714,29 +2734,14 @@ stock void PrintStyle( int client )
 
 stock void RespawnPlayerRun( int client)
 {
-	if(g_fClientRespawnPosition[client][0] != 0){
-		if (TF2_GetPlayerClass(client) == TFClass_DemoMan) {
-			SetEntityHealth(client, 175);
-		   	DestroyProjectilesDemo(client);
-		} else if (TF2_GetPlayerClass(client) == TFClass_Soldier) {
-		    DestroyProjectilesSoldier(client);
-		}
+	if ( !IsPlayerAlive( client ) ) return;
 
-		SetEntityGravity(client, 1.0);
-		TeleportEntity(client, g_fClientRespawnPosition[client], g_fClientRespawnEyes[client], g_vecNull );
-		
-		//SetPlayerPractice(client, true);
-		return;
-	}
 	if ( !g_bIsLoaded[RUN_MAIN] && !g_bIsLoaded[RUN_COURSE1] )
 	{
 		CPrintToChat( client, CHAT_PREFIX..."%s is not available!", g_szRunName[NAME_LONG][RUN_MAIN] );
 		return;
 	}
-	if ( !IsPlayerAlive( client ) )
-	{
-		return;
-	}
+	
 	if ( g_bIsLoaded[RUN_COURSE1] )
 	{
 		if (TF2_GetPlayerClass(client) == TFClass_DemoMan) {
@@ -2749,7 +2754,7 @@ stock void RespawnPlayerRun( int client)
 		SetPlayerRun(client, RUN_COURSE1);
 		return;
 	}
-	if ( g_bIsLoaded[RUN_MAIN] )
+	else if ( g_bIsLoaded[RUN_MAIN] )
 	{
 		if (TF2_GetPlayerClass(client) == TFClass_DemoMan) {
 			SetEntityHealth(client, 175);
@@ -2760,14 +2765,6 @@ stock void RespawnPlayerRun( int client)
 		SetEntityGravity(client, 1.0);
 		SetPlayerRun(client, RUN_MAIN);
 		return;
-	}
-	if (TF2_GetPlayerClass(client) == TFClass_DemoMan) {
-		SetEntityGravity(client, 1.0);
-		SetEntityHealth(client, 175);
-	   	DestroyProjectilesDemo(client);
-	} else if (TF2_GetPlayerClass(client) == TFClass_Soldier) {
-		SetEntityGravity(client, 1.0);
-		DestroyProjectilesSoldier(client);
 	}
 }
 
@@ -2785,9 +2782,8 @@ stock void SetPlayerRun( int client, int reqrun )
 		return;
 	}
 
-
 	TeleportPlayerToStart( client );
-
+	return;
 }
 
 public void CheckpointTimes( int client, int uid, char[] map, int mode )
@@ -2963,7 +2959,6 @@ public int checkpoint_control(Menu mMenu, MenuAction action, int client, int ite
 
 stock void SetPlayerPractice( int client, bool mode )
 {
-
 	if ( mode )
 	{
 		if ( mode != g_bClientPractising[client] && !IsSpamming( client ) )
@@ -2973,13 +2968,13 @@ stock void SetPlayerPractice( int client, bool mode )
 	{
 		if ( g_iClientState[client] != STATE_START )
 			TeleportPlayerToStart( client );
-		}
+	}
 
-		if ( mode != g_bClientPractising[client] && !IsSpamming( client ) )
-		{
-			SetEntityMoveType( client, MOVETYPE_WALK );
-			CPrintToChat( client, CHAT_PREFIX..."Timer enabled" );
-			RegenOn[client] = false;
+	if ( mode != g_bClientPractising[client] && !IsSpamming( client ) )
+	{
+		SetEntityMoveType( client, MOVETYPE_WALK );
+		CPrintToChat( client, CHAT_PREFIX..."Timer enabled" );
+		RegenOn[client] = false;
 	}
 
 	g_bClientPractising[client] = mode;
@@ -3098,15 +3093,18 @@ stock void CreateZoneEntity( int zone )
 	{
 		case ZONE_BLOCKS :
 		{
-			SDKHook( ent, SDKHook_StartTouchPost, Event_StartTouchPost_Block );
+			SDKHook( ent, SDKHook_StartTouch, Event_StartTouchPost_Block );
+			SDKHook( ent, SDKHook_EndTouch, Event_EndTouchPost_Block );
 		}
 		case ZONE_COURCE :
 		{
-			SDKHook( ent, SDKHook_StartTouchPost, Event_StartTouchPost_NextCours );
+			SDKHook( ent, SDKHook_StartTouch, Event_StartTouchPost_NextCours );
+			SDKHook( ent, SDKHook_EndTouch, Event_EndTouchPost_NextCours );
 		}
 		case ZONE_SKIP :
 		{
-			SDKHook( ent, SDKHook_StartTouchPost, Event_StartTouchPost_Skip );
+			SDKHook( ent, SDKHook_StartTouch, Event_StartTouchPost_Skip );
+			SDKHook( ent, SDKHook_EndTouch, Event_EndTouchPost_Skip );
 		}
 		default :
 		{
@@ -3136,6 +3134,7 @@ stock void CreateCheckPoint( int cp )
 
 	SetTriggerIndex( ent, cp );
 	SDKHook( ent, SDKHook_Touch, Event_StartTouchPost_CheckPoint );
+	SDKHook( ent, SDKHook_EndTouch, Event_EndTouchPost_CheckPoint );
 
 	g_hCPs.Set( cp, EntIndexToEntRef( ent ), view_as<int>( CP_ENTREF ) );
 }
@@ -3713,7 +3712,6 @@ stock void SpawnPlayer( int client )
 	{
 		TeleportPlayerToStart( client );
 	}
-
 
 	if (TF2_GetPlayerClass(client) == TFClass_Soldier)
 	{

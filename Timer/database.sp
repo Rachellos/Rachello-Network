@@ -117,7 +117,7 @@ stock void DB_InitializeDatabase()
 		`style` int(11) DEFAULT NULL,\
 		`mode` int(11) DEFAULT NULL,\
 		`time` double DEFAULT NULL,\
-		`pts` double DEFAULT NULL,\
+		`pts` double DEFAULT 0.0,\
 		`date` varchar(30) DEFAULT NULL,\
 		`rank` int(11) DEFAULT NULL,\
 		`demourl` char(255) DEFAULT NULL,\
