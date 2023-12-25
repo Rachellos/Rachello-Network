@@ -236,6 +236,7 @@ char db_map[MAXPLAYERS+1][100];
 
 bool isHudDrawed[MAXPLAYERS+1];
 float LastHudDrawing[MAXPLAYERS+1];
+Handle g_HudSync;
 
 float g_CustomRespawnPos[NUM_RUNS][3];
 float g_CustomRespawnAng[NUM_RUNS][3];
@@ -1365,7 +1366,7 @@ public void OnPluginStart()
 	//LoadTranslations( "opentimer.phrases" );
 
 	DB_InitializeDatabase();
-	RequestFrame(HudDrawingFrame);
+	g_HudSync = CreateHudSynchronizer();
 }
 
 public void OnAllPluginsLoaded()
@@ -2247,7 +2248,7 @@ public void GetJoiningRank( int client )
 
 	if ( !GetClientSteam( client, szSteam, sizeof( szSteam ) ) ) return;
 	
-	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT solly, demo, srank, drank FROM "...TABLE_PLYDATA..." WHERE steamid = '%s'", szSteam );
+	g_hDatabase.Format( szQuery, sizeof( szQuery ), "SELECT srank, drank FROM "...TABLE_PLYDATA..." WHERE steamid = '%s'", szSteam );
 			
 			
 	g_hDatabase.Query( Threaded_GetRank, szQuery, client, DBPrio_High );
@@ -2664,6 +2665,7 @@ stock void ChangeClientState( int client, PlayerState state )
 		Call_Finish();
 
 		g_iClientState[client] = state;
+		LastHudDrawing[client] = GetEngineTime() - 0.5;
 	}
 }
 

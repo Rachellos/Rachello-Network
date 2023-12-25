@@ -810,21 +810,26 @@ public void Threaded_GetRank( Database hOwner, DBResultSet hQuery, const char[] 
 
 	if ( hQuery.FetchRow() )
 	{
-		float solly = hQuery.FetchFloat( 0 );
-		float demo = hQuery.FetchFloat( 1 );
-		int srank = hQuery.FetchInt( 2 );
-		int drank = hQuery.FetchInt( 3 );
+		int srank = hQuery.FetchInt( 0 );
+		int drank = hQuery.FetchInt( 1 );
 
-		if (solly > 0.0 || demo > 0.0)
+		int bestRank, class;
+
+		if (srank > 0 || drank > 0)
 		{
-			if (drank >= srank && srank > 0 && drank > 0)
+			if (srank > 0 && drank > 0)
 			{
-				CPrintToChatAll("{lightskyblue}%s {orange}(Rank %d Soldier){white} joining from {green}%s", name, srank, Country );
+				bestRank = drank >= srank ? srank : drank;
+				class = drank >= srank ? MODE_SOLDIER : MODE_DEMOMAN;
 			}
 			else
 			{
-				CPrintToChatAll("{lightskyblue}%s {orange}(Rank %d Demoman){white} joining from {green}%s", name, drank, Country );
+				bestRank = srank > 0 ? srank : drank;
+				class = srank > 0 ? MODE_SOLDIER : MODE_DEMOMAN;
 			}
+			
+			CPrintToChatAll("{lightskyblue}%s {orange}(Rank %d %s){white} joining from {green}%s", 
+							name, bestRank, g_szModeName[NAME_LONG][class], Country );
 		}
 		else
 		{
@@ -979,7 +984,7 @@ public void OnDisplayRankTxnSuccess( Database g_hDatabase, ArrayList hData, int 
 				points3 = points + points2;
 				CPrintToChat(client, CHAT_PREFIX..."Gained {lightskyblue}%.1f {white}%s points!", points3, (style == STYLE_DEMOMAN) ? "Demoman" : "Soldier" );
 				
-				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = pts + %.1f%s WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? ", beaten = 0" : "", g_szCurrentMap, g_iClientId[client], run, mode);
+				g_hDatabase.Format(szTrans, sizeof(szTrans), "UPDATE "...TABLE_RECORDS..." SET pts = COALESCE(pts, 0.0) + %.1f%s WHERE map = '%s' AND uid = %i AND run = %i AND mode = %i;", points3, (rank == 1) ? ", beaten = 0" : "", g_szCurrentMap, g_iClientId[client], run, mode);
 				transaction.AddQuery(szTrans);
 
 				g_hDatabase.Format(szTrans, sizeof(szTrans), "(SELECT @curRank := 0);");
@@ -1053,7 +1058,7 @@ void Update_PlayersRanksAndPoints()
 
 	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET orank = (@curOverRank := @curOverRank + 1) where solly > 0.0 or demo > 0.0 ORDER BY overall DESC;" );
 
-	g_hDatabase.Execute(transaction, OnPlydataUpdated, _, _, DBPrio_High);
+	g_hDatabase.Execute(transaction, OnPlydataUpdated, _, _, DBPrio_Low);
 }
 
 public void OnPlydataUpdated(Database g_hDatabase, any client, int numQueries, DBResultSet[] results, any[] queryData)

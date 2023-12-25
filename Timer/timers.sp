@@ -59,8 +59,9 @@ public Action Timer_Ad( Handle hTimer )
     return Plugin_Continue; 
 }
 
+/* 
 // Main component of the HUD timer.
-public void HudDrawingFrame()
+public void OnGameFrame()
 {
     static float TimeToDrawRightHud[MAXPLAYERS+1];
     static PlayerState PrevState[MAXPLAYERS+1];
@@ -270,7 +271,232 @@ public void HudDrawingFrame()
         }
         PrevState[client] = g_iClientState[target];
     }
-    RequestFrame(HudDrawingFrame);
+    return;
+}
+*/
+
+// Main component of the HUD timer.
+public void OnGameFrame()
+{
+    static float TimeToDrawRightHud[MAXPLAYERS+1];
+    static PlayerState PrevState[MAXPLAYERS+1];
+    float flEngineTime = GetEngineTime();
+
+    for ( int client = 1; client <= MaxClients; client++ )
+    {
+        if ( !IsClientInGame( client ) || !IsClientConnected(client) || IsFakeClient( client ) || IsClientSourceTV( client )) continue;
+
+        if ( !g_bClientPractising[client] && GetEntityMoveType( client ) == MOVETYPE_NOCLIP ) SetPlayerPractice( client, true );
+
+        if (TimeToDrawRightHud[client] <= 0.0)
+            TimeToDrawRightHud[client] = flEngineTime - 0.5;
+
+        int target
+            , prefix
+            , run
+            , mode;
+
+        float flCurTime, TimeSplit;
+
+        char hintOutput[256]
+            , speed[32]
+            , CpSplit[100]
+            , RunName[100]
+            , szCurTime[TIME_SIZE_DEF]
+            , szTimeSplit[TIME_SIZE_DEF];
+
+        target = client;
+
+        // Dead? Find the player we're spectating.
+        if ( GetClientTeam( client ) == TFTeam_Spectator)
+        {
+            target = GetClientSpecTarget( client );
+
+            // Invalid spec target?
+            // -1 = No spec target.
+            // No target? No HUD.
+
+            if ( target < 1 || target > MaxClients || !IsPlayerAlive( target ) )
+            {
+                continue;
+            }
+            int iSpecMode = GetEntProp(client, Prop_Send, "m_iObserverMode");
+			
+			// The client isn't spectating any one person, so ignore them.
+		    if (iSpecMode != 4 && iSpecMode != 5)
+				continue;
+        }
+
+		if ( TF2_GetPlayerClass(target) != TFClass_DemoMan && TF2_GetPlayerClass(target) != TFClass_Soldier && GetClientTeam( target ) != TFTeam_Spectator ) { isHudDrawed[target] = false; continue; }
+
+        if ( g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD
+            && g_fClientHideFlags[client] & HIDEHUD_SIDEINFO )
+            { isHudDrawed[client] = false; continue; }
+        
+        run = g_iClientRun[target];
+        mode = g_iClientMode[target];
+        
+        if (g_iClientRun[target] == RUN_INVALID || g_iClientState[target] == STATE_INVALID ) {isHudDrawed[client] = false; continue;}
+
+        if (DisplayCpTime[target])
+            FormatEx(CpSplit, sizeof(CpSplit), "\n(%s %c%s)", g_fClientHideFlags[target] & HIDEHUD_PRTIME ? "PR" : "WR", CpPlusSplit[target], CpTimeSplit[target]);
+
+        if ( szClass[g_iClientRun[target]][g_iClientMode[target]] <= 0 || RegenOn[target])
+            FormatEx(szAmmo[target], sizeof(szAmmo), "+regen");
+        else
+            FormatEx(szAmmo[target], sizeof(szAmmo), "");
+
+        if ( g_fClientHideFlags[client] & HIDEHUD_SPEED )
+            FormatEx(speed, sizeof( speed ), "\n(%.0f u/s)", GetEntitySpeed(target));
+
+        if ( RunIsBonus(g_iClientRun[target]) )
+                FormatEx( szTimerMode[target], sizeof(szTimerMode), " \nBonus mode %s", szAmmo[target]);
+
+        else if ( g_iClientRun[target] == RUN_MAIN || RunIsCourse(g_iClientRun[target]))
+            FormatEx( szTimerMode[target], sizeof(szTimerMode), " \n%s mode %s", (IsMapMode[target]) ?
+                ((RunIsCourse(g_iClientRun[target])) ? "Map" : "Linear") : "Course",
+                szAmmo[target] );     
+
+        if (g_iClientState[target] == STATE_END)
+        {
+            if ( RUN_COURSE1 <= run < RUN_COURSE10 && g_bIsLoaded[run + 1] && IsMapMode[target])
+                flCurTime = flEngineTime - g_flClientStartTime[target];
+            else
+                flCurTime = g_flClientFinishTime[target];
+
+            FormatSeconds( flCurTime, szCurTime );
+
+            float OldTime;
+
+            if ( g_fClientHideFlags[client] & HIDEHUD_PRTIME )
+                OldTime = szOldTimePts[target][run][mode];
+            else
+                OldTime = szOldTimeWr;
+
+            if ( RUN_COURSE1 <= run < RUN_COURSE10 )
+            {
+                TimeSplit = (flNewTimeCourse[target] < OldTime) ? OldTime - flNewTimeCourse[target] : flNewTimeCourse[target] - OldTime;
+                prefix = (flNewTimeCourse[target] < OldTime) ? '-' : '+';
+            }
+            else
+            {
+                TimeSplit = (g_flClientFinishTime[target] < OldTime) ? OldTime - g_flClientFinishTime[target] : g_flClientFinishTime[target] - OldTime;
+                prefix = (g_flClientFinishTime[target] < OldTime) ? '-' : '+';       
+            }
+
+            FormatSeconds( TimeSplit, szTimeSplit );
+            if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER) )
+            {
+                FormatSeconds( flCurTime, szCurTime );
+            }
+
+            FormatEx(CpSplit, sizeof(CpSplit), "\n(%s %c%s)", (g_fClientHideFlags[client] & HIDEHUD_PRTIME) ? "PR" : "WR", prefix, szTimeSplit);
+
+            FormatEx(RunName, sizeof(RunName), "\n[%s End]", g_szRunName[NAME_LONG][run]);
+
+            FormatEx(hintOutput, 256, "%s%s%s%s%s", 
+            (g_fClientHideFlags[client] & HIDEHUD_TIMER) ? "" : szCurTime, 
+            (g_fClientHideFlags[client] & HIDEHUD_CP_SPLIT) ? "" : CpSplit,
+            (g_fClientHideFlags[client] & HIDEHUD_RUN_NAME) ? "" : RunName,
+            (g_fClientHideFlags[client] & HIDEHUD_SPEED) ? speed : "",
+            (g_fClientHideFlags[client] & HIDEHUD_MODE_NAME) ? "" : szTimerMode[target]);
+        }
+        else if ( g_iClientState[target] == STATE_START )
+        {
+            flCurTime = flEngineTime - g_flClientStartTime[target];
+            if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER) )
+            {
+                FormatSeconds( flCurTime, szCurTime );
+            }
+            char Time[100];
+            FormatEx(Time, sizeof(Time), "%s", 
+            IsMapMode[target] ? ( (RunIsCourse(g_iClientRun[target]) && g_iClientRun[target] != RUN_COURSE1) ? szCurTime : g_szCurrentMap ) : g_szCurrentMap);
+
+            FormatEx(RunName, sizeof(RunName), "\n[%s Start]", g_szRunName[NAME_LONG][run]);
+            FormatEx(hintOutput, 256, "%s%s%s%s",
+            (g_fClientHideFlags[client] & HIDEHUD_TIMER) ? "" : Time,
+            (g_fClientHideFlags[client] & HIDEHUD_RUN_NAME) ? "" : RunName, 
+            (g_fClientHideFlags[client] & HIDEHUD_SPEED) ? speed : "", 
+            (g_fClientHideFlags[client] & HIDEHUD_MODE_NAME) ? "" : szTimerMode[target] );
+        }
+        else
+        {
+            flCurTime = flEngineTime - g_flClientStartTime[target];
+
+            if ( !(g_fClientHideFlags[client] & HIDEHUD_TIMER) )
+            {
+                FormatSeconds( flCurTime, szCurTime );
+            }
+
+            FormatEx(RunName, sizeof(RunName), "\n[%s]", g_szRunName[NAME_LONG][run]);
+
+            Format(hintOutput, 256, "%s%s%s%s%s",
+                (g_fClientHideFlags[client] & HIDEHUD_TIMER) ? "" : szCurTime, 
+                (g_fClientHideFlags[client] & HIDEHUD_CP_SPLIT) ? "" : CpSplit,
+                (g_fClientHideFlags[client] & HIDEHUD_RUN_NAME) ? "" : RunName,
+                (g_fClientHideFlags[client] & HIDEHUD_SPEED) ? speed : "",
+                (g_fClientHideFlags[client] & HIDEHUD_MODE_NAME) ? "" : szTimerMode[target]);
+        }
+        if ((g_Tiers[run][MODE_SOLDIER] + g_Tiers[run][MODE_DEMOMAN]) <= 0)
+            Format(hintOutput, 256, "No info about tiers :(\nYou cannot set runs or earn points.\nUse /calladmin to report this.", szAmmo[target] );
+        
+        if (g_bClientPractising[target])
+            Format(hintOutput, 256, "Timer Disabled Mode %s", szAmmo[target] );
+
+        if ( (g_iClientRun[target] != RUN_SETSTART || g_bClientPractising[target]) &&
+            !(g_fClientHideFlags[client] & HIDEHUD_CENTRAL_HUD))
+        {
+            if ( g_fClientHideFlags[client] & HIDEHUD_FAST_HUD ) 
+            {
+                SetHudTextParams(
+                    -1.0,
+                    0.70,
+                    0.1,
+                    0,
+                    137,
+                    71,
+                    255,
+                    .fadeIn = 0.0,
+                    .fadeOut = 0.0
+                );
+                
+                ShowSyncHudText(client, g_HudSync, hintOutput);
+                LastHudDrawing[client] = flEngineTime;
+            }
+            else
+            {
+                SetHudTextParams(
+                        -1.0,
+                        0.70,
+                        1.0,
+                        0,
+                        137,
+                        71,
+                        255,
+                        .fadeIn = 0.0,
+                        .fadeOut = 0.0
+                        );
+
+                if ((flEngineTime - LastHudDrawing[client]) >= 0.5)
+                {
+                    for (int i = 0; i < 5; i++)
+                        ShowSyncHudText(client, g_HudSync, hintOutput);
+
+                    LastHudDrawing[client] = flEngineTime;
+                }
+            }       
+        }
+        //Right side hud
+        if ( !(g_fClientHideFlags[client] & HIDEHUD_SIDEINFO) )
+        {
+            if ((flEngineTime - TimeToDrawRightHud[client]) >= 0.5)
+            {
+                ShowKeyHintText( client, target );
+                TimeToDrawRightHud[client] = flEngineTime;
+            }
+        }
+        PrevState[client] = g_iClientState[target];
+    }
     return;
 }
 

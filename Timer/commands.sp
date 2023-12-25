@@ -2466,7 +2466,7 @@ public void ShowMapTop(int client, const char[] map, RunType run_type)
 		case BONUS_RUN: FormatEx(run_type_query, sizeof(run_type_query), "AND run BETWEEN %i AND %i", RUN_BONUS1, RUN_BONUS10);
 	}
 	FormatEx(query, sizeof( query ), "SELECT run FROM map_info WHERE map_name = '%s' %s AND (SELECT enabled FROM maplist where map = map_name) = 1", map, run_type_query );
-	g_hDatabase.Query( NormalTop, query, client );
+	g_hDatabase.Query( NormalTop, query, client, DBPrio_High );
 }
 
 public Action Command_PersonalRecords( int client, int args )
@@ -2507,7 +2507,7 @@ public Action Command_PersonalRecords( int client, int args )
 		}
 	}
 
-	g_hDatabase.Query(PersonalRecordsCallBack, query, client);
+	g_hDatabase.Query(PersonalRecordsCallBack, query, client, DBPrio_High);
 	return Plugin_Handled;
 }
 
@@ -2549,7 +2549,7 @@ public void MapPoints(int client, char[] map, int class)
 		(select time from maprecs where uid = %i and run = map_info.run and mode = %i and map = '%s' limit 1), \
 		map_name FROM `map_info` WHERE map_name = '%s' AND (SELECT enabled FROM maplist where map = map_name) = 1", (class == MODE_SOLDIER) ? "stier" : "dtier", (class == MODE_SOLDIER) ? "stier" : "dtier", RUN_COURSE5, (class == MODE_SOLDIER) ? "stier" : "dtier", RUN_COURSE5, g_iClientId[client], class, map, map);
 
-	g_hDatabase.Query(MapPointsCallBack, query, client);
+	g_hDatabase.Query(MapPointsCallBack, query, client, DBPrio_High);
 }
 
 public void MapPointsCallBack( Database hOwner, DBResultSet results, const char[] szError, int client )
