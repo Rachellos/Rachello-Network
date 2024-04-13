@@ -59,7 +59,6 @@ public Action Timer_Ad( Handle hTimer )
     return Plugin_Continue; 
 }
 
-/* 
 // Main component of the HUD timer.
 public void OnGameFrame()
 {
@@ -273,8 +272,8 @@ public void OnGameFrame()
     }
     return;
 }
-*/
 
+/*
 // Main component of the HUD timer.
 public void OnGameFrame()
 {
@@ -499,6 +498,7 @@ public void OnGameFrame()
     }
     return;
 }
+*/
 
 public Action Timer_EndMap( Handle hTimer )
 {
