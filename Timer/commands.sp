@@ -2214,8 +2214,8 @@ public void OnVideoInfoReceivedDemo(HTTPResponse response, any value)
 	return;
 }
 
-public Action Cmd_CallAdmin(int client, int argc) {
-
+public Action Cmd_CallAdmin(int client, int argc)
+{
 	if (argc > 0)
 	{
 		if(GetTime() < LastUsage[client] + 60) {
@@ -2263,6 +2263,84 @@ public Action Cmd_CallAdmin(int client, int argc) {
 		CPrintToChat(client, CHAT_PREFIX..."Usage {lightskyblue}/calladmin <reason>");
 	}
 	return Plugin_Continue;
+}
+
+public Action Command_FakeDelay(int client, int arg)
+{
+	if ( !client ) return Plugin_Handled;
+
+	if ( arg < 1 )
+	{
+		CPrintToChat(client, "Usage {lightskyblue}/ping <number>");
+		return Plugin_Handled;
+	}
+
+	char szValue[10];
+	GetCmdArg(1, szValue, sizeof(szValue));
+
+	for (int i=0; i < strlen(szValue); i++)
+	{
+		if (!IsCharNumeric(szValue[i]))
+		{
+			CPrintToChat(client, "Usage {lightskyblue}/ping <number>");
+			return Plugin_Handled;
+		}
+	}
+
+	int value = StringToInt(szValue);
+
+	Jumpqol_SetSettingValue("fakedelay", client, value, false);
+
+
+	
+	return Plugin_Handled;
+}
+
+public SettingAllow Jumpqol_OnSettingChange(const char[] setting, int client, SettingType type, any value_old, any value_new)
+{
+	if ( StrEqual(setting, "fakedelay") && value_new != value_old )
+	{
+		char query[256];
+
+		if ( TF2_GetPlayerClass(client) == TFClass_Soldier )
+		{
+			if ( value_new != -1)
+			{
+				FormatEx(query, sizeof(query), "UPDATE plydata SET solly_fakedelay = %i WHERE uid = %i", value_new, g_iClientId[client]);
+
+				CPrintToChat(client, "Saved fakedelay value {green}<%i> {white}for {lightskyblue}Soldier{white}. Enter -1 value to disable");
+			}
+			else
+			{
+				FormatEx(query, sizeof(query), "UPDATE plydata SET solly_fakedelay = NULL WHERE uid = %i", g_iClientId[client]);
+				
+				CPrintToChat(client, "Disabled fakedelay for {lightskyblue}Soldier{white}.");
+			}
+			
+			g_clientSollyDelay[client] = value_new;
+			g_hDatabase.Query(Threaded_Empty, query, client);
+		}
+		else if ( TF2_GetPlayerClass(client) == TFClass_DemoMan )
+		{				
+			if ( value_new != -1)
+			{
+				FormatEx(query, sizeof(query), "UPDATE plydata SET demo_fakedelay = %i WHERE uid = %i", value_new, g_iClientId[client]);
+
+				CPrintToChat(client, "Saved fakedelay value {green}<%i> {white}for {lightskyblue}Demoman{white}. Enter -1 value to disable");
+			}
+			else
+			{
+				FormatEx(query, sizeof(query), "UPDATE plydata SET demo_fakedelay = NULL WHERE uid = %i", g_iClientId[client]);
+				
+				CPrintToChat(client, "Disabled fakedelay for {lightskyblue}Demoman{white}.");
+			}
+
+			g_clientDemoDelay[client] = value_new;
+			g_hDatabase.Query(Threaded_Empty, query, client);
+		}
+	}
+
+	return JUMPQOL_ALLOW;
 }
 
 stock void GetIP(char[] buffer, int maxlength) {

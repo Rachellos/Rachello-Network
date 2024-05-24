@@ -240,13 +240,13 @@ public void OnGameFrame()
                 if (!isHudDrawed[client] && (flEngineTime - LastHudDrawing[client]) > 0.5)
                 {
                     isHudDrawed[client] = true;
-                    PrintHintText( client, hintOutput);
+                    PrintHintTextCenter( client, hintOutput);
                     LastHudDrawing[client] = flEngineTime;
                 }
                 else if ( isHudDrawed[client] )
                 {
                     LastHudDrawing[client] = flEngineTime;
-                    PrintHintText( client, hintOutput);
+                    PrintHintTextCenter( client, hintOutput);
                 }
             }
             else
@@ -254,7 +254,7 @@ public void OnGameFrame()
                 if ((flEngineTime - LastHudDrawing[client]) >= 0.5)
                 {
                     isHudDrawed[client] = true;
-                    PrintHintText( client, hintOutput);
+                    PrintHintTextCenter( client, hintOutput);
                     LastHudDrawing[client] = flEngineTime;
                 }
             }
@@ -271,6 +271,17 @@ public void OnGameFrame()
         PrevState[client] = g_iClientState[target];
     }
     return;
+}
+
+stock void PrintHintTextCenter(int client, const char[] buffer)
+{
+    Handle msg = StartMessageOne("HintText", client, USERMSG_BLOCKHOOKS);
+
+    if (msg != INVALID_HANDLE)
+	{
+        BfWriteString(msg, buffer);
+        EndMessage();
+	}
 }
 
 /*

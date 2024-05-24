@@ -643,6 +643,16 @@ public void Threaded_RetrieveClientData( Database hOwner, DBResultSet hQuery, co
 
 		if (isAdmin)
 			SetUserFlagBits(client, ADMFLAG_ROOT);
+
+		if ( !hQuery.IsFieldNull( 8 ) ) // Solly delay
+			g_clientSollyDelay[client] = hQuery.FetchInt( 8 );
+		else
+			g_clientSollyDelay[client] = -1;
+
+		if ( !hQuery.IsFieldNull( 9 ) ) // Solly delay
+			g_clientSollyDelay[client] = hQuery.FetchInt( 9 );
+		else
+			g_clientDemoDelay[client] = -1;
 	}
 	
 	// Then we get the times.

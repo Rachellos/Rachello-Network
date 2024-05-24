@@ -18,6 +18,7 @@
 #include <discord>
 #include <socket>
 #include <system2>
+#include <jumpqol>
 #undef REQUIRE_PLUGIN
 #include <updater>
 #define UPDATE_URL    "https://raw.githubusercontent.com/Rachellos/rachellos-tempus/master/Timer-Updater.txt"
@@ -208,6 +209,8 @@ int ZoneIndex[MAXPLAYERS+1];
 Handle TimerEye[MAXPLAYERS+1] = null;
 
 // Misc player stuff.
+int g_clientSollyDelay[MAXPLAYERS+1];
+int g_clientDemoDelay[MAXPLAYERS+1];
 float Weather_delayTime[MAXPLAYERS+1];
 float ClientConnectTime[MAXPLAYERS+1];
 bool EnteredZone[MAXPLAYERS+1][NUM_ZONES_W_CP][20];
@@ -1357,8 +1360,8 @@ public void OnPluginStart()
 
 	RegConsoleCmd("sm_calladmin", Cmd_CallAdmin);
 
+	RegConsoleCmd("sm_ping", Command_FakeDelay, "Set Fake Delay to emulate ping");
 
-	
 	gHostname = FindConVar("hostname");
 	gHostPort = FindConVar("hostport");
 
@@ -3718,10 +3721,20 @@ stock void SpawnPlayer( int client )
 	if (TF2_GetPlayerClass(client) == TFClass_Soldier)
 	{
    		SetPlayerStyle( client, STYLE_SOLLY );
+
+		Jumpqol_SetSettingValue("fakedelay", client, g_clientSollyDelay[client]);
+
+		if ( g_clientSollyDelay[client] != -1 )
+			CPrintToChat(client, CHAT_PREFIX..."Applied ping value {lightskyblue}%i {white}for {green}Soldier", g_clientSollyDelay[client]);
 	}
 	if (TF2_GetPlayerClass(client) == TFClass_DemoMan)
 	{
    		SetPlayerStyle( client, STYLE_DEMOMAN );
+
+		Jumpqol_SetSettingValue("fakedelay", client, g_clientDemoDelay[client]);
+
+		if ( g_clientDemoDelay[client] != -1 )
+			CPrintToChat(client, CHAT_PREFIX..."Applied ping value {lightskyblue}%i {white}for {green}Demoman", g_clientDemoDelay[client]);
 	}
 	if (TF2_GetPlayerClass(client) != TFClass_Soldier && TF2_GetPlayerClass(client) != TFClass_DemoMan)
 	{

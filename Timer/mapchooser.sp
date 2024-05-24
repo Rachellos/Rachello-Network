@@ -361,7 +361,7 @@ void InitiateMapVote( MapChange when )
 	}
 
 	for (int i = 1; i <= MaxClients; i++)
-		if (Client_in_vote[i] && !IsAutoExtendEnabled(i))
+		if (Client_in_vote[i] && (!IsAutoExtendEnabled(i) || when == MapChange_Instant))
 			g_VoteMenu.Display(i, MENU_TIME_FOREVER);
 
 	h_VoteTimer = CreateTimer( 30.0, Timer_EndOfVoting, g_VoteMenu, TIMER_FLAG_NO_MAPCHANGE );
@@ -721,12 +721,12 @@ public void LoadMapsTiersCallback(Database g_hDatabase, any client, int numQueri
 		results[0].FetchString( 0, map, sizeof(map) );
 		
 		// TODO: can this cause duplicate entries?
-		if( GetMapDisplayName(map, buff, sizeof(buff)) )
-		{
+		//if ( GetMapDisplayName(map, buff, sizeof(buff)) )
+		//{
 			g_aMapList.PushString( map );
 			g_aMapTiersSolly.Push( results[0].FetchInt( 1 ) );
 			g_aMapTiersDemo.Push( results[0].FetchInt( 2 ) );
-		}
+		//}
 	}
 
 	while( results[1].FetchRow() )
@@ -734,15 +734,15 @@ public void LoadMapsTiersCallback(Database g_hDatabase, any client, int numQueri
 		results[1].FetchString( 0, map, sizeof(map) );
 		
 		// TODO: can this cause duplicate entries?
-		if( GetMapDisplayName(map, buff, sizeof(buff)) )
-		{
+		//if ( GetMapDisplayName(map, buff, sizeof(buff)) )
+		//{
 			if (g_aMapList.FindString(map) == -1)
 			{
 				g_aMapList.PushString( map );
 				g_aMapTiersSolly.Push( -1 );
 				g_aMapTiersDemo.Push( -1 );
 			}
-		}
+		//}
 	}
 
 	
