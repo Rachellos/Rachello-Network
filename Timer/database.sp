@@ -1195,7 +1195,7 @@ stock void DB_RetrieveClientData( int client )
 
 	static char szQuery[192];
 
-	FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, hideflags, overall, solly, demo, srank, drank, isadmin, solly_fakedelay, demo_fakedelay FROM "...TABLE_PLYDATA..." WHERE steamid = '%s'", szSteam );
+	FormatEx( szQuery, sizeof( szQuery ), "SELECT uid, hideflags, overall, solly, demo, srank, drank, isadmin, solly_fakeping, demo_fakeping FROM "...TABLE_PLYDATA..." WHERE steamid = '%s'", szSteam );
 	
 	g_hDatabase.Query( Threaded_RetrieveClientData, szQuery, GetClientUserId( client ), DBPrio_Normal );
 }

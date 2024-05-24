@@ -2306,13 +2306,13 @@ public SettingAllow Jumpqol_OnSettingChange(const char[] setting, int client, Se
 		{
 			if ( value_new != -1)
 			{
-				FormatEx(query, sizeof(query), "UPDATE plydata SET solly_fakedelay = %i WHERE uid = %i", value_new, g_iClientId[client]);
+				FormatEx(query, sizeof(query), "UPDATE plydata SET solly_fakeping = %i WHERE uid = %i", value_new, g_iClientId[client]);
 
 				CPrintToChat(client, "Saved fakedelay value {green}<%i> {white}for {lightskyblue}Soldier{white}. Enter -1 value to disable");
 			}
 			else
 			{
-				FormatEx(query, sizeof(query), "UPDATE plydata SET solly_fakedelay = NULL WHERE uid = %i", g_iClientId[client]);
+				FormatEx(query, sizeof(query), "UPDATE plydata SET solly_fakeping = NULL WHERE uid = %i", g_iClientId[client]);
 				
 				CPrintToChat(client, "Disabled fakedelay for {lightskyblue}Soldier{white}.");
 			}
@@ -2324,13 +2324,13 @@ public SettingAllow Jumpqol_OnSettingChange(const char[] setting, int client, Se
 		{				
 			if ( value_new != -1)
 			{
-				FormatEx(query, sizeof(query), "UPDATE plydata SET demo_fakedelay = %i WHERE uid = %i", value_new, g_iClientId[client]);
+				FormatEx(query, sizeof(query), "UPDATE plydata SET demo_fakeping = %i WHERE uid = %i", value_new, g_iClientId[client]);
 
 				CPrintToChat(client, "Saved fakedelay value {green}<%i> {white}for {lightskyblue}Demoman{white}. Enter -1 value to disable");
 			}
 			else
 			{
-				FormatEx(query, sizeof(query), "UPDATE plydata SET demo_fakedelay = NULL WHERE uid = %i", g_iClientId[client]);
+				FormatEx(query, sizeof(query), "UPDATE plydata SET demo_fakeping = NULL WHERE uid = %i", g_iClientId[client]);
 				
 				CPrintToChat(client, "Disabled fakedelay for {lightskyblue}Demoman{white}.");
 			}
