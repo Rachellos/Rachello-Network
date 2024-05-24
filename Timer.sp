@@ -735,10 +735,20 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 		if (TF2_GetPlayerClass(client) == TFClass_Soldier)
 		{
 		    SetPlayerStyle( client, STYLE_SOLLY );
+
+			Jumpqol_SetSettingValue("fakedelay", client, g_clientSollyDelay[client]);
+
+			if ( g_clientSollyDelay[client] != -1 )
+				CPrintToChat(client, CHAT_PREFIX..."Applied ping value {lightskyblue}%i {white}for {green}Soldier", g_clientSollyDelay[client]);
 		}
 		if (TF2_GetPlayerClass(client) == TFClass_DemoMan)
 		{
 		   SetPlayerStyle( client, STYLE_DEMOMAN );
+
+		   Jumpqol_SetSettingValue("fakedelay", client, g_clientDemoDelay[client]);
+
+			if ( g_clientDemoDelay[client] != -1 )
+				CPrintToChat(client, CHAT_PREFIX..."Applied ping value {lightskyblue}%i {white}for {green}Demoman", g_clientDemoDelay[client]);
 		}
 	}
 	IsMapMode[client] = false;
@@ -3721,20 +3731,10 @@ stock void SpawnPlayer( int client )
 	if (TF2_GetPlayerClass(client) == TFClass_Soldier)
 	{
    		SetPlayerStyle( client, STYLE_SOLLY );
-
-		Jumpqol_SetSettingValue("fakedelay", client, g_clientSollyDelay[client]);
-
-		if ( g_clientSollyDelay[client] != -1 )
-			CPrintToChat(client, CHAT_PREFIX..."Applied ping value {lightskyblue}%i {white}for {green}Soldier", g_clientSollyDelay[client]);
 	}
 	if (TF2_GetPlayerClass(client) == TFClass_DemoMan)
 	{
    		SetPlayerStyle( client, STYLE_DEMOMAN );
-
-		Jumpqol_SetSettingValue("fakedelay", client, g_clientDemoDelay[client]);
-
-		if ( g_clientDemoDelay[client] != -1 )
-			CPrintToChat(client, CHAT_PREFIX..."Applied ping value {lightskyblue}%i {white}for {green}Demoman", g_clientDemoDelay[client]);
 	}
 	if (TF2_GetPlayerClass(client) != TFClass_Soldier && TF2_GetPlayerClass(client) != TFClass_DemoMan)
 	{

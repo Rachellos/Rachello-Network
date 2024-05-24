@@ -2278,20 +2278,27 @@ public Action Command_FakeDelay(int client, int arg)
 	char szValue[10];
 	GetCmdArg(1, szValue, sizeof(szValue));
 
-	for (int i=0; i < strlen(szValue); i++)
+	int value;
+
+	if ( StrEqual(szValue, "-1") )
 	{
-		if (!IsCharNumeric(szValue[i]))
+		value = -1;
+	}
+	else
+	{
+		for (int i=0; i < strlen(szValue); i++)
 		{
-			CPrintToChat(client, "Usage {lightskyblue}/ping <number>");
-			return Plugin_Handled;
+			if (!IsCharNumeric(szValue[i]))
+			{
+				CPrintToChat(client, "Usage {lightskyblue}/ping <number>");
+				return Plugin_Handled;
+			}
 		}
+		
+		value = StringToInt(szValue);
 	}
 
-	int value = StringToInt(szValue);
-
 	Jumpqol_SetSettingValue("fakedelay", client, value, false);
-
-
 	
 	return Plugin_Handled;
 }
@@ -2308,7 +2315,7 @@ public SettingAllow Jumpqol_OnSettingChange(const char[] setting, int client, Se
 			{
 				FormatEx(query, sizeof(query), "UPDATE plydata SET solly_fakeping = %i WHERE uid = %i", value_new, g_iClientId[client]);
 
-				CPrintToChat(client, "Saved fakedelay value {green}<%i> {white}for {lightskyblue}Soldier{white}. Enter -1 value to disable");
+				CPrintToChat(client, "Saved fakedelay value {green}<%i> {white}for {lightskyblue}Soldier{white}. Enter -1 value to disable", value_new );
 			}
 			else
 			{
@@ -2326,7 +2333,7 @@ public SettingAllow Jumpqol_OnSettingChange(const char[] setting, int client, Se
 			{
 				FormatEx(query, sizeof(query), "UPDATE plydata SET demo_fakeping = %i WHERE uid = %i", value_new, g_iClientId[client]);
 
-				CPrintToChat(client, "Saved fakedelay value {green}<%i> {white}for {lightskyblue}Demoman{white}. Enter -1 value to disable");
+				CPrintToChat(client, "Saved fakedelay value {green}<%i> {white}for {lightskyblue}Demoman{white}. Enter -1 value to disable", value_new);
 			}
 			else
 			{
