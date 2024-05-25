@@ -78,7 +78,9 @@ stock void DB_InitializeDatabase()
 		  ip varchar(30) DEFAULT NULL,\
 		  online int(11) DEFAULT '0',\
 		  total_hours float NOT NULL DEFAULT '0.0',\
-		  isadmin int DEFAULT '0'\
+		  isadmin int DEFAULT '0',\
+		  solly_fakeping int(11) DEFAULT NULL,\
+		  demo_fakeping int(11) DEFAULT NULL\
 		)");
 	
 	g_hDatabase.Query( Threaded_Empty,
