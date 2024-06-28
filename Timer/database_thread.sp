@@ -1053,10 +1053,11 @@ void Update_PlayersRanksAndPoints()
 
 	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET overall = COALESCE((SELECT SUM(pts) FROM "...TABLE_RECORDS..." WHERE uid = plydata.uid AND (SELECT enabled FROM maplist where map = maprecs.`map`) = 1), 0.0) WHERE uid = plydata.uid;");
 
-	transaction.AddQuery("(SELECT @curClassRank := 0);");
-
-	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET srank = (@curClassRank := @curClassRank + 1) where solly > 0.0 ORDER BY solly DESC;");
-	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET drank = (@curClassRank := @curClassRank + 1) where demo > 0.0 ORDER BY demo DESC;");
+	transaction.AddQuery("(SELECT @curClassSollyRank := 0);");
+	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET srank = (@curClassSollyRank := @curClassSollyRank + 1) where solly > 0.0 ORDER BY solly DESC;");
+	
+	transaction.AddQuery("(SELECT @curClassDemoRank := 0);");
+	transaction.AddQuery("UPDATE "...TABLE_PLYDATA..." SET drank = (@curClassDemoRank := @curClassDemoRank + 1) where demo > 0.0 ORDER BY demo DESC;");
 
 	transaction.AddQuery("(SELECT @curOverRank := 0);");
 
